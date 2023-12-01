@@ -6,77 +6,273 @@
 %   quatify which cluster responds to which event
 %       response = fire (spiketime) in event window
 %   quantify firing rates? changes expected after events vs spontaneous
-% last changes 27/10/2023 - seperate functions
+% last changes 29/11/2023 - save aligned spikes per session + plotting
 
 clearvars
 
-%recPath = 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_15-26-26\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\'; % raw recording
-%TTLPath = 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_15-26-26\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data\TTL\'; % TTLs
+% path S0506 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_12-47-20\Record Node 103\experiment5\recording1\continuous\Intan-100.Rhythm Data\'
+% path S07-S15 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_12-47-20\Record Node 103\experiment5\recording2\continuous\Intan-100.Rhythm Data\'
+% path S17-S21 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_15-26-26\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\'
 
-recPath = 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_12-47-20\Record Node 103\experiment5\recording1\continuous\Intan-100.Rhythm Data\';
-TTLPath = 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_12-47-20\Record Node 103\experiment5\recording1\events\Intan-100.Rhythm Data\TTL\';
-KSPath = 'D:\DATA\EphysRecordingsSorted\M02_S0506\kilosort3\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M2\'; % stimuli parameters
-relevant_sessions = [5 6]; % behaviour files
+recPath = 'D:\DATA\EphysRecordings\M1\M01_2023-07-07_15-34-38_S06\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\';
+TTLPath = 'D:\DATA\EphysRecordings\M1\M01_2023-07-07_15-34-38_S06\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data\TTL\';
+KSPath = 'D:\DATA\EphysRecordingsSorted\M01\M01_S06\kilosort3\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M1\'; % stimuli parameters
+relevant_sessions = [6 6]; % behaviour files (if only 1 behavior file in rec: [1 1])
+
 OutPath = 'D:\DATA\Processed'; % output directory
 
 %% IRC: post-curation unit extraction
 
-[spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
+%[spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 
 %% Kilosort: post-curation unit extraction
 % spike extraction from curated units
 
 [spiketimes, cids, Srise, Sfall, cpos] = extractspikes(KSPath, recPath, TTLPath);
 
+% save details good units
+set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
+filename = ['M01_S' set '_InfoGoodUnits'];
+save(fullfile('D:\DATA\Processed', filename), "cpos")
+
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
+% good to have: TTL signaling start & end of stim presentation set
 
-% if aligned_spikes exist load that, else align spikes first
-[aligned_spikes] = alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids);
+% function saves aligned spikes cell array, change mouse name
+alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids);
+
+%% FRA analysis
+% output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
+
+% select correct input files
+aligned_spikes = load('D:\DATA\Processed\M02_S15_FRA_AlignedSpikes');
+stimuli_parameters = load([BehaviorPath 'M2_S15_FRA.mat']);
+cids = load('D:\DATA\Processed\M01_S06-06_InfoGoodUnits.mat'); 
+
+% function saves figures, change mouse name
+FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
 %% plotting stimuli
-plotSession = ['FRA']; %options: FRA / SOM / noise 
-plotResponses(BehaviorPath, relevant_sessions, aligned_spikes, cids, plotSession);
+
+% select which session to plot
+%BehaviorPath = 'D:\DATA\Behavioral Stimuli\M2\'; % stimuli parameters
+%stim_files = dir(fullfile(BehaviorPath, '\*_S07_*.mat'));
+%stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M1\M1_S06_SOM.mat');
+%cids = [1 25 38 39 49 62 98 107 110 112 115]; %S0506
+%cids = [4 92 121 154 174 185 189 196]; %S07-S15 
+% cids = [39 91 101 122 133 142 144 148 188 192 195 200 205 208 210]; %S17-S21
+
+% edit to flexibly choose session?
+% what to do with multiple same kind sessions?
+switch stimuli_parameters.Par.Rec
+    case 'FRA'
+        aligned_spikes = load('D:\DATA\Processed\M02_S15_FRA_AlignedSpikes.mat');
+    case 'SOM'
+        aligned_spikes = load('D:\DATA\Processed\M02_S12_SOM_AlignedSpikes.mat');
+    case 'AMn'
+        aligned_spikes = load('D:\DATA\Processed\M02_S07_AMn_AlignedSpikes.mat');
+end
+
+plotResponses(stimuli_parameters, aligned_spikes, cids, OutPath);
+
+%% FSL SOM analysis
+% function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)
+% input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
+% output: first spike latency SOM/AM trials
+
+% IN PROGRESS
+
+stimuli_parameters = 'D:\DATA\Behavioral Stimuli\M2\M2_S09_SOM'; 
+aligned_spikes = load('D:\DATA\Processed\M02_S09_SOM_AlignedSpikes.mat');
+cids = [4 92 121 154 174 185 189 196]; %S07-S15
+
+% stimulus parameters
+NClu = length(cids); % cluster info
+UAmp = unique([stimuli_parameters.Stm.Amplitude]);
+NAmp = length(UAmp);
+
+% analysis period
+winStart = 0;
+winEnd   = 0.2; % changed from FRA
+
+% % initiation variables
+NTrials = nan(NAmp, NClu); % number of trials
+MedFSL = nan(NAmp, NClu); % median first spike latency
+
+for cluster = 1:NClu
+    %disp(['Analysing cluster ' num2str(cluster) ' of ' num2str(NClu)]);
+
+    % Spike count analysis
+    for amplitude = 1:NAmp
+            sel = [stimuli_parameters.Stm.Amplitude] == UAmp(amplitude);
+            NTrials(amplitude,cluster) = sum(sel);
+
+            if (NTrials(amplitude,cluster) == 0); continue; end
+
+            %count spikes
+            SCnt = nan(NTrials(amplitude,cluster), 1);
+
+            tempSpiketimes = aligned_spikes(sel,cluster);
+            for t = 1:length(tempSpiketimes)
+                if (isnan(tempSpiketimes{t})); continue; end
+                if(isempty(tempSpiketimes{t}))
+                    SCnt(t) = 0;
+                else
+                    SCnt(t) = sum(tempSpiketimes{t} > winStart & tempSpiketimes{t} < winEnd);
+                end
+            end
+
+            %FSL
+            fsl = inf(length(tempSpiketimes), 1);
+            for t = 1:length(tempSpiketimes)
+                if (isnan(tempSpiketimes{t}))
+                    continue
+                end
+
+                spks = tempSpiketimes{t};
+                spks = spks (spks > 0);
+
+                if (~isempty(spks))
+                    fsl(t) = min(spks);
+                end
+            end
+            
+            MedFSL(amplitude,cluster) = median(fsl);
+
+    end % amplitude loop
+    clearvars('tempSpiketimes');
+
+end % cluster loop
+
+
+% Output data Experiment meta data
+
+% cluster
+SOM.NClu = NClu;
+
+% stimulus parameters
+SOM.UAmp = UAmp;
+SOM.NAmp = NAmp;
+
+% results - number of trials
+SOM.NTrials = NTrials;
+
+% results - spike latency
+SOM.MedFSL = MedFSL;
+
+% MedFSL heatmap
+for clustNum = 1:NClu
+    NSets       =	1;
+    NClu       =	SOM.NClu;
+    UAmp       =	SOM.UAmp;
+    NAmp       =	SOM.NAmp;
+
+
+    startTime = 0;%FRA.startTime;
+    meanTime = 0;%FRA.meanTime;
+
+    M   =   MedFSL; % the thing to plot
+    zMax = max(M(:,clustNum),[],'all');
+    zMin = min([ 0, min(M(:,clustNum),[],'all')]);
+
+    % fig = myfig(0.4,'fig');
+    fig = figure;%(3);
+
+    nRows = 1;
+    nNSets = 1;
+
+    Colour = 'k';%jet(NFreq);
+    % Colour = parula(NFreq);
+
+    % xMin = -min([Stm(sel).PreT]) * 1e-3;
+    % xMax = max([Stm(sel).StimT]+[Stm(sel).PostT]) * 1e-3;
+
+    for s = 1:NSets
+        setNum = 1; %plotSet(s);
+        setIdx = 1; %find(FRA.FRASetNum == setNum);
+
+        %FRA
+        h = subplot(nRows, nNSets, s+0*NSets, 'Parent', fig);
+        cla(h);
+
+        % color map of spike rate
+        CData = M(:, :, setIdx, clustNum);
+        imagesc(h, CData, 'AlphaData', ~isnan(CData), [zMin,zMax]);
+
+        % format and label graph
+        % title(h, [num2str(reTime(setIdx), '%.2f') ' h']);
+        set(h,'Xscale', 'lin', 'YDir', 'normal',...
+            'FontName', 'Arial', 'FontWeight', 'bold','FontSize', 12, ...
+            'XTick',2:4:NAmp,'XTickLabel',round(UAmp(2:4:NAmp),1), 'XTickLabelRotation',45,...
+            'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
+        xlabel(h,'Stimulus frequency (kHz)')
+
+        if s==1
+            ylabel(h, 'Stimulus intensity (dB SPL)')
+        end
+        cb = colorbar(h, 'eastoutside');
+        cb.Label.String = 'Spike rate (Hz)';
+
+    end
+    sgtitle(['FSL: Cluster ' num2str(cids(clustNum))]) % whole figure title
+    %if (length(spiketimes{clustNum}) < 500); close(gcf); end
+end
 
 %% plotting channel map
 % match unit position to channel map
-% to do
 
-    channel_map = readNPY([KSPath 'channel_map.npy']);
-    channel_positions = readNPY([KSPath 'channel_positions.npy']);
+channel_map = readNPY([KSPath 'channel_map.npy']);
+channel_positions = readNPY([KSPath 'channel_positions.npy']);
 
-    %channel_map = readNPY('D:\DATA\EphysRecordingsSorted\M01_S07\kilosort3\channel_map.npy');
-    %channel_positions = readNPY('D:\DATA\EphysRecordingsSorted\M01_S07\kilosort3\channel_positions.npy');
+%channel_map = readNPY('D:\DATA\EphysRecordingsSorted\M01_S07\kilosort3\channel_map.npy');
+%channel_positions = readNPY('D:\DATA\EphysRecordingsSorted\M01_S07\kilosort3\channel_positions.npy');
 
-    fig = scatter(channel_positions(:,1), channel_positions(:,2), ".", 'k');
-    fig.SizeData = 100;
-    hold on;
+fig = scatter(channel_positions(:,1), channel_positions(:,2), ".", 'k');
+fig.SizeData = 100;
+hold on;
 
-    for i = 1:64
-        text((channel_positions(i,1)+1), (channel_positions(i,2)+1),num2str(channel_map(i)))
-    end
+for i = 1:64
+    text((channel_positions(i,1)+1), (channel_positions(i,2)+1),num2str(channel_map(i)))
+end
 
-    title('Channel map')
-    xlim([-10 200])
-    ylabel('Relative depth')
+title('Channel map')
+xlim([-10 200])
+ylabel('Relative depth')
 
-    hold on
+hold on
 
-    % add position of units in analysis
-     % NIET JUIST, probleem: verkeerde positie
-    idx = cpos(:,2);
-    fig = scatter(channel_positions(unique(idx),1), channel_positions(unique(idx),2), 'o');
-    text((channel_positions(unique(idx),1)+1), (channel_positions(unique(idx),1)+1),num2str(channel_map()))
+% add position of units in analysis
+% NIET JUIST, probleem: verkeerde positie
+idx = cpos(:,2);
+fig = scatter(channel_positions(unique(idx),1), channel_positions(unique(idx),2), 'o');
+text((channel_positions(unique(idx),1)+1), (channel_positions(unique(idx),1)+1),num2str(channel_map()))
 
-    % to do: reflect number of clusters on 1 channel
+% to do: reflect number of clusters on 1 channel
+
+%% channel waveforms
+% extract and plot waveform traces
+addpath('C:\Users\TDT\Documents\GitHub\ephys_analysis');
+for k=1:length(cids)
+    close all
+    %F = myfig(1,'fig');
+    F = figure;
+    F.Position = [2405,214,838,890];
+    F = ChannelWaveforms(F,KSPath,cids(k),cpos(k,3),200);
+    F.Renderer = 'painter';
+    F.PaperUnits = 'inches';
+    F.PaperSize = F.Position(3:4)./96;
+    %saveas(F,[UserPath 'Processed\' DirName '\Units\' DirName '-U' num2str(cids(k)) '.pdf']);
+    %     saveas(F,[UserPath 'Processed\' Mouse '\Units\' Mouse '-U' num2str(cids(k)) '.png']);
+end
 
 %% quantify reactive units
 % to do
 
-%% FRA analysis
-% input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
-% output: FRA
+%% FRA analysis old
+% works correctly if whole recording corresponds with 1 behaviour file
 
 % quantify firing rate per unit in response to every sound intensity x frequency combination
 % needed for this:
@@ -485,24 +681,6 @@ Stm = stimuli_parameters.Stm;
 plotSet = [];
 
 plotFRASummary(axFRA,axRast,FRA, clustNum,RefTime,spiketimes,Stm, plotSet)
-
-
-
-
-
-
-%%
-for k=1:length(cids)
-    close all
-    F = myfig(1,'fig');
-    F.Position = [2405,214,838,890];
-    F = ChannelWaveforms(F,KSPath,DirName,cids(k),cpos(k),200);
-    F.Renderer = 'painter';
-    F.PaperUnits = 'inches';
-    F.PaperSize = F.Position(3:4)./96;
-    saveas(F,[UserPath 'Processed\' DirName '\Units\' DirName '-U' num2str(cids(k)) '.pdf']);
-    %     saveas(F,[UserPath 'Processed\' Mouse '\Units\' Mouse '-U' num2str(cids(k)) '.png']);
-end
 
 %% FRA analysis OLD
 selSets = [];
@@ -968,8 +1146,6 @@ gwfparams.spikeTimes =    ST; % Vector of cluster spike times (in samples) same 
 gwfparams.spikeClusters = ids; % Vector of cluster IDs (Phy nomenclature)   same length as .spikeTimes
 
 wf = getWaveForms(gwfparams,ChMap);
-
-
 
 mWav = wf.waveFormsMean; mWav = reshape(mWav,[64 62]); mWav = 0.195*mWav;
 Wav = wf.waveForms; Wav = reshape(Wav,[nWav,64,62]); Wav = 0.195*Wav;

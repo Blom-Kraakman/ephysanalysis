@@ -1,12 +1,10 @@
 function [aligned_spikes] = alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids)
-
 % align spikes
 % INPUT - spiketimes (cell array, 1 cell: timestamp of spike for 1 unit),
 % TTLs (vector), stimulus parameters (struct)
 % OUTPUT - cell aray (aligned_spikes) where 1 cell contains all spike times of one unit
 % relative to stim onset
 % based on AlignSpkS in PostCuration_ABW.m
-% good to have: TTL signaling end of stim presentation
 
 % check input
 if isempty(spiketimes) || isempty(cids) || isempty(Srise) || isempty(Sfall)
@@ -32,7 +30,7 @@ for file = relevant_sessions(1):relevant_sessions(2)
     % select correct analysis window and
     if strcmp(stimuli_parameters.Par.Rec, 'SOM') % abs(TTL_states(1,1)) == 5 %TTL 5 = SOM
         PreT  = 200; % amount of msec. to include before Srise;
-        PostT = 550; % amount of msec. to include after Sfall;
+        PostT = 700; % amount of msec. to include after Sfall;
     elseif strcmp(stimuli_parameters.Par.Rec, 'FRA') % abs(TTL_states(1,1)) == 2 %TTL 2 = AUD
         PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
         PostT = str2double(stimuli_parameters.Par.FRAPostTime);
@@ -67,10 +65,13 @@ for file = relevant_sessions(1):relevant_sessions(2)
     stim_counter = stim_counter + NStim; % keep track of how many stimuliu have past
     aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
 
+    % save aligned spikes
+    set = sprintf('%02d', str2double(stimuli_parameters.Par.Set));
+    filename = ['M01_S' set '_' stimuli_parameters.Par.Rec '_AlignedSpikes'];
+    save(fullfile('D:\DATA\Processed', filename), "SpkT")
+
 end
 
-% save aligned spikes
-% save(fullfile(OutPath, filename), "aligned_spikes")
 fprintf('spike alignment done\n');
 
 end

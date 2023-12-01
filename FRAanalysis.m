@@ -1,131 +1,106 @@
-function FRA = FRAanalysis(BehaviorPath, aligned_spikes, cids, relevant_sessions)
-
-%% FRA analysis
+function FRA = FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath)
+% FRA analysis
 % input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
-% output: FRA
+% output: FRA and first spike latency
 
-% quantify firing rate per unit in response to every sound intensity x frequency combination
-% needed for this:
-% aligned_spikes (trial x unit, # spike times per combo) amount of spikes in certain time window
-% freq = nrspikes / 290 (ms, timewindow alignment)
+NClu = length(cids); % cluster info
+NSets = 1;
+setNum = 1; % set info
 
-% TO DO: select correct part of aligned_spikes to analyse (look at set
-% approach from source script
+% stimulus parameters - frecuency
+UFreq = unique([stimuli_parameters.Stm.Freq]);
+NFreq = length(UFreq);
 
-% select correct behaviour file
-stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
+% stimulus parameters - intensity
+UInt = unique([stimuli_parameters.Stm.Intensity]);
+UInt = UInt(~isnan(UInt)); % get no NaNs
+NInt = length(UInt);
 
-% initiate stimcounter
+% analysis period
+winStart = 0;
+winEnd   = 0.115;
 
-for file = relevant_sessions(1):relevant_sessions(2)
-    stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
+% % initiation variables
+FRAScntSD = nan(NInt, NFreq, NSets, NClu); % spike count
+FRAScnt = nan(NInt, NFreq, NSets, NClu); % spike count
+FRASR = nan(NInt, NFreq, NSets, NClu); % spike count
+NTrials = nan(NInt, NFreq, NSets, NClu); % number of trials
+MedFSL = nan(NInt, NFreq, NSets, NClu); % median first spike latency
 
-    if strcmp(stimuli_parameters.Par.Rec, 'FRA')
-        NClu = length(cids); % cluster info
+for cluster = 1:NClu
+    disp(['Analysing cluster ' num2str(cluster) ' of ' num2str(NClu)]);
 
-        NSets = 1;
-        setNum = 1; % set info
+    % Spike count analysis
+    for freq = 1:NFreq
+        for intensity = 1:NInt
+            sel = [stimuli_parameters.Stm.Freq] == UFreq(freq) & [stimuli_parameters.Stm.Intensity] == UInt(intensity);
+            NTrials(intensity,freq,setNum,cluster) = sum(sel);
 
-        % stimulus parameters - frecuency
-        UFreq = unique([stimuli_parameters.Stm.Freq]);
-        NFreq = length(UFreq);
+            if (NTrials(intensity,freq,setNum,cluster) == 0); continue; end
 
-        % stimulus parameters - intensity
-        UInt = unique([stimuli_parameters.Stm.Intensity]);
-        UInt = UInt(~isnan(UInt)); % get no NaNs
-        NInt = length(UInt);
+            %count spikes
+            SCnt = nan(NTrials(intensity,freq,setNum,cluster), 1);
 
-        % analysis period
-        winStart = 0;
-        winEnd   = 0.115;
+            tempSpiketimes = aligned_spikes(sel,cluster); % spike times per combination per cluster
+            for t = 1:length(tempSpiketimes)
+                if (isnan(tempSpiketimes{t})); continue; end
+                if(isempty(tempSpiketimes{t}))
+                    SCnt(t) = 0;
+                else
+                    SCnt(t) = sum(tempSpiketimes{t} > winStart & tempSpiketimes{t} < winEnd);
+                end
+            end
 
-        % % initiation variables
-        FRAScntSD = nan(NInt, NFreq, NSets, NClu); % spike count
-        FRAScnt = nan(NInt, NFreq, NSets, NClu); % spike count
-        FRASR = nan(NInt, NFreq, NSets, NClu); % spike count
-        NTrials = nan(NInt, NFreq, NSets, NClu); % number of trials
-        MedFSL = nan(NInt, NFreq, NSets, NClu); % median first spike latency
+            FRAScntSD(intensity,freq,setNum,cluster)  = std(SCnt,'omitnan');
+            FRAScnt(intensity,freq,setNum,cluster)    = mean(SCnt,'omitnan');
+            FRASR(intensity,freq,setNum,cluster)      = mean(SCnt,'omitnan') / (winEnd - winStart);
 
-        for cluster = 1:NClu
-            disp(['Analysing cluster ' num2str(cluster) ' of ' num2str(NClu)]);
+            %FSL
+            fsl = inf(length(tempSpiketimes), 1); % intiate
+            for t = 1:length(tempSpiketimes)
+                if (isnan(tempSpiketimes{t}))
+                    continue
+                end
 
-            % Spike count analysis
-            for freq = 1:NFreq
-                for intensity = 1:NInt
-                    sel = [stimuli_parameters.Stm.Freq] == UFreq(freq) & [stimuli_parameters.Stm.Intensity] == UInt(intensity); % selects correct trials from params
-                    NTrials(intensity,freq,setNum,cluster) = sum(sel);
+                spks = tempSpiketimes{t};
+                spks = spks (spks > 0);
 
-                    if (NTrials(intensity,freq,setNum,cluster) == 0); continue; end
+                if (~isempty(spks))
+                    fsl(t) = min(spks);
+                end
+            end
+            
+            MedFSL(intensity, freq, setNum, cluster) = median(fsl);
 
-                    %count spikes
-                    SCnt = nan(NTrials(intensity,freq,setNum,cluster), 1);
+        end % intensity loop
+    end % frequency loop
+    clearvars('tempSpiketimes');
 
-                    tempSpiketimes = aligned_spikes(sel,cluster); % adjust for previous sessions, selects incorrect rows from alined_spikes
-                    for t = 1:length(tempSpiketimes)
-                        if (isnan(tempSpiketimes{t})); continue; end
-                        if(isempty(tempSpiketimes{t}))
-                            SCnt(t) = 0;
-                        else
-                            SCnt(t) = sum(tempSpiketimes{t} > winStart & tempSpiketimes{t} < winEnd);
-                        end
-                    end
+end % cluster loop
 
-                    FRAScntSD(intensity,freq,setNum,cluster)  = std(SCnt,'omitnan');
-                    FRAScnt(intensity,freq,setNum,cluster)    = mean(SCnt,'omitnan');
-                    FRASR(intensity,freq,setNum,cluster)      = mean(SCnt,'omitnan') / (winEnd - winStart);
+% Output data
+% Experiment meta data
+FRA.NSets        = NSets;
 
-                    % to do: adapt for SOM
-                    %FSL function, make into seperate function to
-                    %accomodate for more flexible use
-                    fsl = inf(length(tempSpiketimes), 1);
-                    for t = 1:length(tempSpiketimes)
-                        if (isnan(tempSpiketimes{t}))
-                            continue
-                        end
+% cluster
+FRA.NClu = NClu;
 
-                        spks = tempSpiketimes{t};
-                        spks = spks (spks > 0);
+% stimulus parameters
+FRA.UFreq = UFreq;
+FRA.NFreq = NFreq;
+FRA.UInt = UInt;
+FRA.NInt = NInt;
 
-                        if (~isempty(spks))
-                            fsl(t) = min(spks);
-                        end
-                    end
+% results - number of trials
+FRA.NTrials = NTrials;
 
-                    MedFSL(intensity, freq, setNum, cluster)     = median(fsl);
+% results - spike latency
+FRA.MedFSL = MedFSL;
 
-                end % intensity loop
-            end % frequency loop
-            clearvars('tempSpiketimes');
-
-        end % cluster loop
-
-        % Output data
-        % Experiment meta data
-        FRA.NSets        = NSets;
-
-        % cluster
-        FRA.NClu = NClu;
-
-        % stimulus parameters
-        FRA.UFreq = UFreq;
-        FRA.NFreq = NFreq;
-        FRA.UInt = UInt;
-        FRA.NInt = NInt;
-
-        % results - number of trials
-        FRA.NTrials = NTrials;
-
-        % results - spike latency
-        FRA.MedFSL = MedFSL;
-
-        % results - spike count
-        FRA.FRASR = FRASR;
-        FRA.FRAScnt = FRAScnt;
-        FRA.FRAScntSD = FRAScntSD;
-    end
-
-    % increment counter
-end
+% results - spike count
+FRA.FRASR = FRASR;
+FRA.FRAScnt = FRAScnt;
+FRA.FRAScntSD = FRAScntSD;
 
 %% FRA heatmap
 for clustNum = 1:NClu
@@ -140,7 +115,8 @@ for clustNum = 1:NClu
     meanTime = 0;%FRA.meanTime;
 
     M   =   FRASR; % the thing to plot
-    zMax = max(M(:,:,:,clustNum),[],'all');
+    zMax = max(M(:,:,:,clustNum),[],'all'); 
+    if zMax == 0; continue; end
     zMin = min([ 0, min(M(:,:,:,clustNum),[],'all')]);
 
     % fig = myfig(0.4,'fig');
@@ -193,8 +169,92 @@ for clustNum = 1:NClu
         cb = colorbar(h, 'eastoutside');
         cb.Label.String = 'Spike rate (Hz)';
 
+    end
+
+    sgtitle(['FRA (unit ' num2str(cids(clustNum)) ')']) % whole figure title
+    %if (length(spiketimes{clustNum}) < 500); close(gcf); end
+
+    figname = sprintf('M02_FRA_cluster %i', cids(clustNum));
+    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    saveas(fig, fullfile(OutPath, figname));
+
+end
+
+
+%% MedFSL heatmap
+for clustNum = 1:NClu
+    NSets       =	1;
+    NClu       =	FRA.NClu;
+    UFreq       =	FRA.UFreq;
+    NFreq       =	FRA.NFreq;
+    UInt       =	FRA.UInt;
+    NInt       =	FRA.NInt;
+
+    startTime = 0;%FRA.startTime;
+    meanTime = 0;%FRA.meanTime;
+
+    M   =   MedFSL; % the thing to plot
+    zMax = max(M(:,:,:,clustNum),[],'all');
+    zMin = min([ 0, min(M(:,:,:,clustNum),[],'all')]);
+
+    % fig = myfig(0.4,'fig');
+    fig = figure;%(3);
+
+    nRows = 1;
+    nNSets = 1;
+
+    Colour = 'k';%jet(NFreq);
+    % Colour = parula(NFreq);
+
+    % xMin = -min([Stm(sel).PreT]) * 1e-3;
+    % xMax = max([Stm(sel).StimT]+[Stm(sel).PostT]) * 1e-3;
+
+    for s = 1:NSets
+        setNum = 1; %plotSet(s);
+        setIdx = 1; %find(FRA.FRASetNum == setNum);
+
+        %FRA
+        h = subplot(nRows, nNSets, s+0*NSets, 'Parent', fig);
+        cla(h);
+
+        % color map of spike rate
+        CData = M(:, :, setIdx, clustNum);
+        imagesc(h, CData, 'AlphaData', ~isnan(CData), [zMin,zMax]);
+
+        % % contour of FACA p-value
+        % Cont = -log10(FRA.FACApval(:, :, setIdx, clustNum));
+        % hold(h,'on');
+        % contour(h, Cont, [2, 3], 'w', 'ShowText', 'on');
+        % hold(h, 'off');
+        %
+        % % contour of max neighbour correlation
+        % Cont = (FRA.MaxNeighCorr(:, :, setIdx, clustNum));
+        % hold(h,'on');
+        % contour(h, Cont, [0.1, 0.2, 0.5], 'r', 'ShowText', 'on');
+        % hold(h,'off');
+
+        % format and label graph
+        % title(h, [num2str(reTime(setIdx), '%.2f') ' h']);
+        set(h,'Xscale', 'lin', 'YDir', 'normal',...
+            'FontName', 'Arial', 'FontWeight', 'bold','FontSize', 12, ...
+            'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1), 'XTickLabelRotation',45,...
+            'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
+        xlabel(h,'Stimulus frequency (kHz)')
+
+        if s==1
+            ylabel(h, 'Stimulus intensity (dB SPL)')
+        end
+        cb = colorbar(h, 'eastoutside');
+        cb.Label.String = 'Latency first spike (s)';
+
+
 
     end
-    sgtitle(['Cluster ' num2str(cids(clustNum))]) % whole figure title
+
+    sgtitle(['FSL (unit ' num2str(cids(clustNum)) ')']) % whole figure title
+    figname = sprintf('M02_FRA FSL_cluster %i', cids(clustNum));
+    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    saveas(fig, fullfile(OutPath, figname));
+
     %if (length(spiketimes{clustNum}) < 500); close(gcf); end
 end
