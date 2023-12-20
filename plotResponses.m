@@ -165,9 +165,9 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
         sgtitle(['Broadband noise (unit ' num2str(cids(cluster)) ')'])
 
-        figname = sprintf('M02_AMn_cluster %i', cids(cluster));
-        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-        saveas(fig, fullfile(OutPath, figname));
+        % figname = sprintf('M02_AMn_cluster %i', cids(cluster));
+        % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+        % saveas(fig, fullfile(OutPath, figname));
 
         % display untill button press
         %waitforbuttonpress

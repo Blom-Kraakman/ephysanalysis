@@ -14,11 +14,12 @@ clearvars
 % path S07-S15 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_12-47-20\Record Node 103\experiment5\recording2\continuous\Intan-100.Rhythm Data\'
 % path S17-S21 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_15-26-26\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\'
 
-recPath = 'D:\DATA\EphysRecordings\M1\M01_2023-07-07_15-34-38_S06\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\';
-TTLPath = 'D:\DATA\EphysRecordings\M1\M01_2023-07-07_15-34-38_S06\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data\TTL\';
-KSPath = 'D:\DATA\EphysRecordingsSorted\M01\M01_S06\kilosort3\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M1\'; % stimuli parameters
-relevant_sessions = [6 6]; % behaviour files (if only 1 behavior file in rec: [1 1])
+recPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\';
+TTLPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data\TTL\';
+messagesPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\MessageCenter\'; % session TTLs
+KSPath = 'D:\DATA\EphysRecordingsSorted\M04\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M4\'; % stimuli parameters
+relevant_sessions = [1 27]; % behaviour files (if only 1 behavior file in rec: [1 1])
 
 OutPath = 'D:\DATA\Processed'; % output directory
 
@@ -29,12 +30,13 @@ OutPath = 'D:\DATA\Processed'; % output directory
 %% Kilosort: post-curation unit extraction
 % spike extraction from curated units
 
-[spiketimes, cids, Srise, Sfall, cpos] = extractspikes(KSPath, recPath, TTLPath);
+%break on line 111
+[spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, recPath, TTLPath, messagesPath, relevant_sessions);
 
-% save details good units
+%% save details good units
 set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
-filename = ['M01_S' set '_InfoGoodUnits'];
-save(fullfile('D:\DATA\Processed', filename), "cpos")
+filename = ['M03_S' set '_InfoGoodUnits'];
+save(fullfile('D:\DATA\Processed', filename), "cpos") %cpos variables: unit id, channel, depth, avg firing rate, nr spikes;
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
@@ -47,9 +49,9 @@ alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids);
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
 
 % select correct input files
-aligned_spikes = load('D:\DATA\Processed\M02_S15_FRA_AlignedSpikes');
-stimuli_parameters = load([BehaviorPath 'M2_S15_FRA.mat']);
-cids = load('D:\DATA\Processed\M01_S06-06_InfoGoodUnits.mat'); 
+aligned_spikes = load('D:\DATA\Processed\M04_S01_FRA_AlignedSpikes');
+stimuli_parameters = load([BehaviorPath 'M4_S01_FRA.mat']);
+% cids = load('D:\DATA\Processed\M01_S06-06_InfoGoodUnits.mat'); 
 
 % function saves figures, change mouse name
 FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
@@ -60,7 +62,7 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 %BehaviorPath = 'D:\DATA\Behavioral Stimuli\M2\'; % stimuli parameters
 %stim_files = dir(fullfile(BehaviorPath, '\*_S07_*.mat'));
 %stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M1\M1_S06_SOM.mat');
+stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M4\M4_S01_FRA.mat');
 %cids = [1 25 38 39 49 62 98 107 110 112 115]; %S0506
 %cids = [4 92 121 154 174 185 189 196]; %S07-S15 
 % cids = [39 91 101 122 133 142 144 148 188 192 195 200 205 208 210]; %S17-S21
@@ -69,14 +71,14 @@ stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M1\M1_S06_SOM.mat');
 % what to do with multiple same kind sessions?
 switch stimuli_parameters.Par.Rec
     case 'FRA'
-        aligned_spikes = load('D:\DATA\Processed\M02_S15_FRA_AlignedSpikes.mat');
+        aligned_spikes = load('D:\DATA\Processed\M04_S01_FRA_AlignedSpikes.mat');
     case 'SOM'
-        aligned_spikes = load('D:\DATA\Processed\M02_S12_SOM_AlignedSpikes.mat');
+        aligned_spikes = load('D:\DATA\Processed\M03_S06_SOM_AlignedSpikes.mat');
     case 'AMn'
-        aligned_spikes = load('D:\DATA\Processed\M02_S07_AMn_AlignedSpikes.mat');
+        aligned_spikes = load('D:\DATA\Processed\M03_S04_AMn_AlignedSpikes.mat');
 end
 
-plotResponses(stimuli_parameters, aligned_spikes, cids, OutPath);
+plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
 %% FSL SOM analysis
 % function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)
@@ -85,8 +87,9 @@ plotResponses(stimuli_parameters, aligned_spikes, cids, OutPath);
 
 % IN PROGRESS
 
-stimuli_parameters = 'D:\DATA\Behavioral Stimuli\M2\M2_S09_SOM'; 
+stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M2\M2_S09_SOM'); 
 aligned_spikes = load('D:\DATA\Processed\M02_S09_SOM_AlignedSpikes.mat');
+aligned_spikes = aligned_spikes.SpkT;
 cids = [4 92 121 154 174 185 189 196]; %S07-S15
 
 % stimulus parameters
@@ -98,7 +101,7 @@ NAmp = length(UAmp);
 winStart = 0;
 winEnd   = 0.2; % changed from FRA
 
-% % initiation variables
+% initiation variables
 NTrials = nan(NAmp, NClu); % number of trials
 MedFSL = nan(NAmp, NClu); % median first spike latency
 
@@ -141,6 +144,7 @@ for cluster = 1:NClu
             end
             
             MedFSL(amplitude,cluster) = median(fsl);
+            IqrFSL(amplitude,cluster) = iqr(fsl);
 
     end % amplitude loop
     clearvars('tempSpiketimes');
@@ -162,7 +166,15 @@ SOM.NTrials = NTrials;
 
 % results - spike latency
 SOM.MedFSL = MedFSL;
+SOM.IqrFSL = IqrFSL;
+% plot medFSL
+scatter(SOM.UAmp(1), SOM.MedFSL(1,:))
+hold on
+scatter(SOM.UAmp(2), SOM.MedFSL(2,:))
 
+
+
+%%
 % MedFSL heatmap
 for clustNum = 1:NClu
     NSets       =	1;
@@ -227,30 +239,43 @@ end
 channel_map = readNPY([KSPath 'channel_map.npy']);
 channel_positions = readNPY([KSPath 'channel_positions.npy']);
 
-%channel_map = readNPY('D:\DATA\EphysRecordingsSorted\M01_S07\kilosort3\channel_map.npy');
-%channel_positions = readNPY('D:\DATA\EphysRecordingsSorted\M01_S07\kilosort3\channel_positions.npy');
+xcoords = channel_positions(:,1);
+ycoords = channel_positions(:,2);
+margin = 50;
+xMin = min(xcoords); xMax = max(xcoords);
+xSpan = xMax-xMin; xMid = 0.5*(xMax+xMin);
+yMin = min(ycoords); yMax = max(ycoords);
+ySpan = yMax-yMin; yMid = 0.5*(yMax+yMin);
+maxSpan = max(xSpan,ySpan);
 
-fig = scatter(channel_positions(:,1), channel_positions(:,2), ".", 'k');
-fig.SizeData = 100;
+fig = scatter(xcoords, ycoords, ".", 'k');
 hold on;
 
-for i = 1:64
+for i = 1:length(channel_map)
     text((channel_positions(i,1)+1), (channel_positions(i,2)+1),num2str(channel_map(i)))
 end
 
-title('Channel map')
-xlim([-10 200])
-ylabel('Relative depth')
-
+% add position of units included in analysis
 hold on
+units = table2array(cpos(:,2));
+idx = ismember(channel_map, units);
+fig = scatter(channel_positions(idx,1), channel_positions(idx,2), 'o'); % wrongly indexed
 
-% add position of units in analysis
-% NIET JUIST, probleem: verkeerde positie
-idx = cpos(:,2);
-fig = scatter(channel_positions(unique(idx),1), channel_positions(unique(idx),2), 'o');
-text((channel_positions(unique(idx),1)+1), (channel_positions(unique(idx),1)+1),num2str(channel_map()))
+% to do: reflect number of clusters on 1 channel. apply jitter in circle
+% marking to achieve this
+% to do: add unit number with corresponding channel
+%text((channel_positions(unique(idx),1)+1), (channel_positions(unique(idx),1)+1),num2str(channel_map()))
 
-% to do: reflect number of clusters on 1 channel
+% format figure
+title('Channel map')
+ylabel('Relative depth')
+fig.SizeData = 100;
+axis square
+xlim([xMid - 0.5*maxSpan - margin, xMid + 0.5*maxSpan + margin]);
+ylim([yMid - 0.5*maxSpan - margin, yMid + 0.5*maxSpan + margin]);
+xticks(unique(xcoords));
+yticks(unique(ycoords));
+
 
 %% channel waveforms
 % extract and plot waveform traces
@@ -676,7 +701,7 @@ axRast = [];
 FRA = [];
 clustNum = cids(:);
 RefTime = [];
-spiketimes = alined_spikes;
+spiketimes = aligned_spikes;
 Stm = stimuli_parameters.Stm;
 plotSet = [];
 

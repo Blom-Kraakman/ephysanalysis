@@ -174,9 +174,9 @@ for clustNum = 1:NClu
     sgtitle(['FRA (unit ' num2str(cids(clustNum)) ')']) % whole figure title
     %if (length(spiketimes{clustNum}) < 500); close(gcf); end
 
-    figname = sprintf('M02_FRA_cluster %i', cids(clustNum));
-    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-    saveas(fig, fullfile(OutPath, figname));
+    % figname = sprintf('M02_FRA_cluster %i', cids(clustNum));
+    % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    % saveas(fig, fullfile(OutPath, figname));
 
 end
 
@@ -252,9 +252,9 @@ for clustNum = 1:NClu
     end
 
     sgtitle(['FSL (unit ' num2str(cids(clustNum)) ')']) % whole figure title
-    figname = sprintf('M02_FRA FSL_cluster %i', cids(clustNum));
-    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-    saveas(fig, fullfile(OutPath, figname));
+    % figname = sprintf('M03_FRA FSL_cluster %i', cids(clustNum));
+    % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    % saveas(fig, fullfile(OutPath, figname));
 
     %if (length(spiketimes{clustNum}) < 500); close(gcf); end
 end

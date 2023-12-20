@@ -11,7 +11,6 @@ for i = 1:64
     text((channel_positions(i,1) +2) ,(channel_positions(i,2) +2),num2str(channel_map(i)), 'FontSize',10)
 end
 
-
 title('Channel map')
 xlim([-10 200])
 ylabel('Relative depth')
