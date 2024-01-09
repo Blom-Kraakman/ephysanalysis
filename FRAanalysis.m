@@ -1,4 +1,4 @@
-function FRA = FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath)
+function FRA = FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath, FSL)
 % FRA analysis
 % input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
 % output: FRA and first spike latency
@@ -69,7 +69,7 @@ for cluster = 1:NClu
                     fsl(t) = min(spks);
                 end
             end
-            
+
             MedFSL(intensity, freq, setNum, cluster) = median(fsl);
 
         end % intensity loop
@@ -115,7 +115,7 @@ for clustNum = 1:NClu
     meanTime = 0;%FRA.meanTime;
 
     M   =   FRASR; % the thing to plot
-    zMax = max(M(:,:,:,clustNum),[],'all'); 
+    zMax = max(M(:,:,:,clustNum),[],'all');
     if zMax == 0; continue; end
     zMin = min([ 0, min(M(:,:,:,clustNum),[],'all')]);
 
@@ -174,87 +174,88 @@ for clustNum = 1:NClu
     sgtitle(['FRA (unit ' num2str(cids(clustNum)) ')']) % whole figure title
     %if (length(spiketimes{clustNum}) < 500); close(gcf); end
 
-    % figname = sprintf('M02_FRA_cluster %i', cids(clustNum));
-    % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-    % saveas(fig, fullfile(OutPath, figname));
+    figname = sprintf('M04_FRA_cluster %i', cids(clustNum));
+    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    saveas(fig, fullfile(OutPath, figname));
 
 end
 
 
 %% MedFSL heatmap
-for clustNum = 1:NClu
-    NSets       =	1;
-    NClu       =	FRA.NClu;
-    UFreq       =	FRA.UFreq;
-    NFreq       =	FRA.NFreq;
-    UInt       =	FRA.UInt;
-    NInt       =	FRA.NInt;
+if FSL == 1
+    for clustNum = 1:NClu
+        NSets       =	1;
+        NClu       =	FRA.NClu;
+        UFreq       =	FRA.UFreq;
+        NFreq       =	FRA.NFreq;
+        UInt       =	FRA.UInt;
+        NInt       =	FRA.NInt;
 
-    startTime = 0;%FRA.startTime;
-    meanTime = 0;%FRA.meanTime;
+        startTime = 0;%FRA.startTime;
+        meanTime = 0;%FRA.meanTime;
 
-    M   =   MedFSL; % the thing to plot
-    zMax = max(M(:,:,:,clustNum),[],'all');
-    zMin = min([ 0, min(M(:,:,:,clustNum),[],'all')]);
+        M   =   MedFSL; % the thing to plot
+        zMax = max(M(:,:,:,clustNum),[],'all');
+        zMin = min([ 0, min(M(:,:,:,clustNum),[],'all')]);
 
-    % fig = myfig(0.4,'fig');
-    fig = figure;%(3);
+        % fig = myfig(0.4,'fig');
+        fig = figure;%(3);
 
-    nRows = 1;
-    nNSets = 1;
+        nRows = 1;
+        nNSets = 1;
 
-    Colour = 'k';%jet(NFreq);
-    % Colour = parula(NFreq);
+        Colour = 'k';%jet(NFreq);
+        % Colour = parula(NFreq);
 
-    % xMin = -min([Stm(sel).PreT]) * 1e-3;
-    % xMax = max([Stm(sel).StimT]+[Stm(sel).PostT]) * 1e-3;
+        % xMin = -min([Stm(sel).PreT]) * 1e-3;
+        % xMax = max([Stm(sel).StimT]+[Stm(sel).PostT]) * 1e-3;
 
-    for s = 1:NSets
-        setNum = 1; %plotSet(s);
-        setIdx = 1; %find(FRA.FRASetNum == setNum);
+        for s = 1:NSets
+            setNum = 1; %plotSet(s);
+            setIdx = 1; %find(FRA.FRASetNum == setNum);
 
-        %FRA
-        h = subplot(nRows, nNSets, s+0*NSets, 'Parent', fig);
-        cla(h);
+            %FRA
+            h = subplot(nRows, nNSets, s+0*NSets, 'Parent', fig);
+            cla(h);
 
-        % color map of spike rate
-        CData = M(:, :, setIdx, clustNum);
-        imagesc(h, CData, 'AlphaData', ~isnan(CData), [zMin,zMax]);
+            % color map of spike rate
+            CData = M(:, :, setIdx, clustNum);
+            imagesc(h, CData, 'AlphaData', ~isnan(CData), [zMin,zMax]);
 
-        % % contour of FACA p-value
-        % Cont = -log10(FRA.FACApval(:, :, setIdx, clustNum));
-        % hold(h,'on');
-        % contour(h, Cont, [2, 3], 'w', 'ShowText', 'on');
-        % hold(h, 'off');
-        %
-        % % contour of max neighbour correlation
-        % Cont = (FRA.MaxNeighCorr(:, :, setIdx, clustNum));
-        % hold(h,'on');
-        % contour(h, Cont, [0.1, 0.2, 0.5], 'r', 'ShowText', 'on');
-        % hold(h,'off');
+            % % contour of FACA p-value
+            % Cont = -log10(FRA.FACApval(:, :, setIdx, clustNum));
+            % hold(h,'on');
+            % contour(h, Cont, [2, 3], 'w', 'ShowText', 'on');
+            % hold(h, 'off');
+            %
+            % % contour of max neighbour correlation
+            % Cont = (FRA.MaxNeighCorr(:, :, setIdx, clustNum));
+            % hold(h,'on');
+            % contour(h, Cont, [0.1, 0.2, 0.5], 'r', 'ShowText', 'on');
+            % hold(h,'off');
 
-        % format and label graph
-        % title(h, [num2str(reTime(setIdx), '%.2f') ' h']);
-        set(h,'Xscale', 'lin', 'YDir', 'normal',...
-            'FontName', 'Arial', 'FontWeight', 'bold','FontSize', 12, ...
-            'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1), 'XTickLabelRotation',45,...
-            'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
-        xlabel(h,'Stimulus frequency (kHz)')
+            % format and label graph
+            % title(h, [num2str(reTime(setIdx), '%.2f') ' h']);
+            set(h,'Xscale', 'lin', 'YDir', 'normal',...
+                'FontName', 'Arial', 'FontWeight', 'bold','FontSize', 12, ...
+                'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1), 'XTickLabelRotation',45,...
+                'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
+            xlabel(h,'Stimulus frequency (kHz)')
 
-        if s==1
-            ylabel(h, 'Stimulus intensity (dB SPL)')
+            if s==1
+                ylabel(h, 'Stimulus intensity (dB SPL)')
+            end
+            cb = colorbar(h, 'eastoutside');
+            cb.Label.String = 'Latency first spike (s)';
+
         end
-        cb = colorbar(h, 'eastoutside');
-        cb.Label.String = 'Latency first spike (s)';
 
+        sgtitle(['FSL (unit ' num2str(cids(clustNum)) ')']) % whole figure title
+        figname = sprintf('M04_FRA FSL_cluster %i', cids(clustNum));
+        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+        saveas(fig, fullfile(OutPath, figname));
 
-
+        %if (length(spiketimes{clustNum}) < 500); close(gcf); end
     end
-
-    sgtitle(['FSL (unit ' num2str(cids(clustNum)) ')']) % whole figure title
-    % figname = sprintf('M03_FRA FSL_cluster %i', cids(clustNum));
-    % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-    % saveas(fig, fullfile(OutPath, figname));
-
-    %if (length(spiketimes{clustNum}) < 500); close(gcf); end
+end
 end

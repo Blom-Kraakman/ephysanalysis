@@ -18,13 +18,13 @@ end
 %cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278]; % M4
 
 % 250 trials each
-stimuli_parameters_som = load('D:\DATA\Behavioral Stimuli\M4\M4_S04_SOM.mat');
-stimuli_parameters_ctrl = load('D:\DATA\Behavioral Stimuli\M4\M4_S05_SOM.mat');
+stimuli_parameters_ctrl = load('D:\DATA\Behavioral Stimuli\M4\M4_S11_SOM.mat');
+stimuli_parameters_som = load('D:\DATA\Behavioral Stimuli\M4\M4_S12_SOM.mat');
 
-aligned_spikes_som = load('D:\DATA\Processed\M04_S04_SOM_AlignedSpikes.mat');
-aligned_spikes_som = aligned_spikes_som.SpkT;
-aligned_spikes_ctrl = load('D:\DATA\Processed\M04_S05_SOM_AlignedSpikes.mat');
+aligned_spikes_ctrl = load('D:\DATA\Processed\M04_S11_SOM_AlignedSpikes.mat');
 aligned_spikes_ctrl = aligned_spikes_ctrl.SpkT;
+aligned_spikes_som = load('D:\DATA\Processed\M04_S12_SOM_AlignedSpikes.mat');
+aligned_spikes_som = aligned_spikes_som.SpkT;
 
 %% format data
 stimuli_parameters = vertcat(stimuli_parameters_som.Stm, stimuli_parameters_ctrl.Stm);
@@ -37,7 +37,7 @@ xrange = [-.202, +.702];
 
 for cluster = 1:length(cids)
 
-    figname = sprintf('M04_SOM_S04-S05_cluster_%i', cids(cluster));
+    figname = sprintf('M04_SOM_S09-S12_poke_cluster_%i', cids(cluster));
 
     figure;
 
@@ -111,7 +111,7 @@ for cluster = 1:length(cids)
     xlim(fig,xrange);
 
     %sgtitle(['                    Fur stroke (unit ' num2str(cids(cluster)) ')'])
-    sgtitle([stimuli_parameters.Location(1) 'unit' num2str(cids(cluster))])
+    sgtitle([stimuli_parameters_som' (unit ' num2str(cids(cluster)) ')'])
 
     % % save plot
     saveas(gcf, fullfile(OutPath, [figname '.jpg']));

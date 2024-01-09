@@ -31,9 +31,9 @@ if strcmp(stimuli_parameters.Par.Rec, 'FRA')
         xlabel('Time (s)')
         ylabel('Stimulus frequency (kHz)')
 
-        % figname = sprintf('M02_FRA raster_cluster %i', cids(cluster));
-        % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-        % saveas(fig, fullfile(OutPath, figname));
+        figname = sprintf('M04_FRA raster_cluster %i', cids(cluster));
+        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+        saveas(fig, fullfile(OutPath, figname));
 
         % display untill button press
         %waitforbuttonpress
@@ -136,28 +136,41 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
         ax.FontSize = 11;
         %title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
 
-        % set range & figure
-        % make histogram / PSTH
-        AM_45_idx = stimuli_parameters.Stm.Intensity == 45; % select trials
+        % set variables for PSTH
+        AM_15_idx = stimuli_parameters.Stm.Intensity == 15; % select trials
+        AM_30_idx = stimuli_parameters.Stm.Intensity == 30;
+        AM_45_idx = stimuli_parameters.Stm.Intensity == 45;
         AM_60_idx = stimuli_parameters.Stm.Intensity == 60;
-        AM_0_idx = (stimuli_parameters.Stm.Intensity ~= 45) & (stimuli_parameters.Stm.Intensity ~= 60);
-
+        AM_0_idx = (stimuli_parameters.Stm.Intensity ~= 15) & (stimuli_parameters.Stm.Intensity ~= 30) & ...
+            (stimuli_parameters.Stm.Intensity ~= 45) & (stimuli_parameters.Stm.Intensity ~= 60);
+        
+        % set range & figure
         fig = subplot(2,1,2);
         preT  = -0.2;
         postT = 0.4;
         binsize = 0.01;
-
+        
+        % make histogram / PSTH
         [N, edges] = histcounts(vertcat(aligned_spikes{AM_60_idx, cluster}), preT:binsize:postT);
-        plot(edges(1:end-1), ((N/sum(AM_60_idx))/binsize), 'Color', '#4FC5D3', 'LineWidth',1.5) % spike/s
+        plot(edges(1:end-1), ((N/sum(AM_60_idx))/binsize), 'Color', '#0072BD', 'LineWidth',1.5) % spike/s
+        %plot(edges(1:end-1), ((N/sum(AM_60_idx))/binsize), 'Color', '#4FC5D3', 'LineWidth',1.5) % spike/s
         hold on
+
         [N,edges] = histcounts(vertcat(aligned_spikes{(AM_45_idx), cluster}), preT:binsize:postT);
-        plot(edges(1:end-1), ((N/sum(AM_45_idx))/binsize), 'Color', '#B673C8', 'LineWidth',1.5) % spike/s
+        plot(edges(1:end-1), ((N/sum(AM_45_idx))/binsize), 'Color', '#D95319', 'LineWidth',1.5) % spike/s
+        %plot(edges(1:end-1), ((N/sum(AM_45_idx))/binsize), 'Color', '#B673C8', 'LineWidth',1.5) % spike/s
+        
+        [N,edges] = histcounts(vertcat(aligned_spikes{(AM_30_idx), cluster}), preT:binsize:postT);
+        plot(edges(1:end-1), ((N/sum(AM_30_idx))/binsize), 'Color', '#7E2F8E', 'LineWidth',1.5) % spike/s
+
+        [N,edges] = histcounts(vertcat(aligned_spikes{(AM_15_idx), cluster}), preT:binsize:postT);
+        plot(edges(1:end-1), ((N/sum(AM_15_idx))/binsize), 'Color', '#77AC30', 'LineWidth',1.5) % spike/s
 
         [N, edges] = histcounts(vertcat(aligned_spikes{AM_0_idx, cluster}), preT:binsize:postT);
         plot(edges(1:end-1), ((N/sum(AM_0_idx))/binsize), 'Color', 'k', 'LineWidth',1.5) % spike/s
 
         %format axis
-        legend('60dB (SPL)', ' 45dB (SPL)', 'no sound')
+        legend('60dB (SPL)', '45dB (SPL)', '30dB (SPL)', '15dB (SPL)', 'no sound')
         xlabel('Time (s)')
         ylabel('Spike rate (Hz)')
         fig.FontSize = 11;
@@ -165,9 +178,9 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
         sgtitle(['Broadband noise (unit ' num2str(cids(cluster)) ')'])
 
-        % figname = sprintf('M02_AMn_cluster %i', cids(cluster));
-        % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-        % saveas(fig, fullfile(OutPath, figname));
+        figname = sprintf('M04_AMn_cluster %i', cids(cluster), 'session', stimuli_parameters.Par.Set);
+        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+        saveas(fig, fullfile(OutPath, figname));
 
         % display untill button press
         %waitforbuttonpress

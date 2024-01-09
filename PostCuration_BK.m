@@ -17,11 +17,13 @@ clearvars
 recPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\';
 TTLPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data\TTL\';
 messagesPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\MessageCenter\'; % session TTLs
-KSPath = 'D:\DATA\EphysRecordingsSorted\M04\'; % kilosort ephys data
+KSPath = 'D:\DATA\EphysRecordingsSorted\M04\trimmed\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M4\'; % stimuli parameters
-relevant_sessions = [1 27]; % behaviour files (if only 1 behavior file in rec: [1 1])
+relevant_sessions = [1 23]; % behaviour files (if only 1 behavior file in rec: [1 1])
 
-OutPath = 'D:\DATA\Processed'; % output directory
+OutPath = 'D:\DATA\Processed\M4'; % output directory
+
+rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
 %% IRC: post-curation unit extraction
 
@@ -30,12 +32,11 @@ OutPath = 'D:\DATA\Processed'; % output directory
 %% Kilosort: post-curation unit extraction
 % spike extraction from curated units
 
-%break on line 111
-[spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, recPath, TTLPath, messagesPath, relevant_sessions);
+[spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, recPath, TTLPath, messagesPath, relevant_sessions, rec_samples);
 
 %% save details good units
 set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
-filename = ['M03_S' set '_InfoGoodUnits'];
+filename = ['M04_S' set '_InfoGoodUnits'];
 save(fullfile('D:\DATA\Processed', filename), "cpos") %cpos variables: unit id, channel, depth, avg firing rate, nr spikes;
 
 %% align spikes
@@ -51,10 +52,10 @@ alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids);
 % select correct input files
 aligned_spikes = load('D:\DATA\Processed\M04_S01_FRA_AlignedSpikes');
 stimuli_parameters = load([BehaviorPath 'M4_S01_FRA.mat']);
-% cids = load('D:\DATA\Processed\M01_S06-06_InfoGoodUnits.mat'); 
+% cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
 
 % function saves figures, change mouse name
-FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
+FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 1);
 
 %% plotting stimuli
 
@@ -62,10 +63,7 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 %BehaviorPath = 'D:\DATA\Behavioral Stimuli\M2\'; % stimuli parameters
 %stim_files = dir(fullfile(BehaviorPath, '\*_S07_*.mat'));
 %stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M4\M4_S01_FRA.mat');
-%cids = [1 25 38 39 49 62 98 107 110 112 115]; %S0506
-%cids = [4 92 121 154 174 185 189 196]; %S07-S15 
-% cids = [39 91 101 122 133 142 144 148 188 192 195 200 205 208 210]; %S17-S21
+stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M4\M4_S22_AMn.mat');
 
 % edit to flexibly choose session?
 % what to do with multiple same kind sessions?
@@ -73,9 +71,9 @@ switch stimuli_parameters.Par.Rec
     case 'FRA'
         aligned_spikes = load('D:\DATA\Processed\M04_S01_FRA_AlignedSpikes.mat');
     case 'SOM'
-        aligned_spikes = load('D:\DATA\Processed\M03_S06_SOM_AlignedSpikes.mat');
+        aligned_spikes = load('D:\DATA\Processed\M04_S06_SOM_AlignedSpikes.mat');
     case 'AMn'
-        aligned_spikes = load('D:\DATA\Processed\M03_S04_AMn_AlignedSpikes.mat');
+        aligned_spikes = load('D:\DATA\Processed\M04_S22_AMn_AlignedSpikes.mat'); %2, 13, 22
 end
 
 plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);

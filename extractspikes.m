@@ -1,4 +1,4 @@
-function [spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, recPath, TTLPath, messagesPath, relevant_sessions)
+function [spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, recPath, TTLPath, messagesPath, relevant_sessions, rec_samples)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
 % and matched unit ids (vector), recording time stamps (vector)
@@ -27,7 +27,6 @@ cpos = array2table(cpos, 'VariableNames', {'id' , 'channel', 'depth', 'firing_ra
 fprintf('Found %i good units for analysis\n', length(cids));
 
 % load files
-rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 spike_times = readNPY([KSPath 'spike_times.npy']); % spike_times contains spike time indexing, not time/samplenr itself
 spike_clusters = readNPY([KSPath 'spike_clusters.npy']); % matched cluster ids
 message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs
@@ -44,13 +43,13 @@ TTL_samples(index) = [];
 
 % recording sessions table
 % to do: make imported csv
-sessions_TTLs(:,1) = [1 1 2 2 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16 16 17 17 18 19 19 20 20 21 21 22 22 23 23 24 24 25 25 26 26 27 27]; % session nr
-sessions_TTLs(:,2) = [1 0 1 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0]; % session start/end (1/0)
-sessions_TTLs(:,3) = message_samples; % sample nr
+sessions_TTLs(:,1) = [1 1 2 2 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16 16 17 17 18 19 19 20 20 21 21 22 22 23 23]; % session nr
+sessions_TTLs(:,2) = [1 0 1 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 0 1 0 1 0 1 0 1 0]; % session start/end (1/0)
+sessions_TTLs(:,3) = message_samples(1:44); % sample nr
 
 % make sessions type + nr trials table
 % --> make into function?
-Nr_sessions = relevant_sessions';
+Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
 
 for file = 1:length(Nr_sessions)
    stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
@@ -108,8 +107,8 @@ for i = 1:length(sessions_TTLs)
     tSfall(idx) = [];
 
     % output variables
-    Srise = [Srise, tSrise];
-    Sfall = [Sfall, tSfall];
+    Srise = [Srise; tSrise];
+    Sfall = [Sfall; tSfall];
     %TTLs_sample = [TTLs_sample, tTTL_samples];
     %TTLs_state = [TTLs_state, tTTL_state];
    
