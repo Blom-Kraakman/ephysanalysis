@@ -61,10 +61,10 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 1);
 % AMn: raster + PSTH
 % SOM: raster + PSTH
 
-cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
+%cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
 
 % select which session to plot
-session = 6;
+session = 22;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -74,18 +74,17 @@ stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 
-plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids.cpos.id', OutPath);
+plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
 %% plotting SOM sessions with their controls
-saveplots = 0; %0 don't save, 1 save plots in OutPath
-sessions = [6 7]; % [exp ctrl]
+%saveplots = 0; %0 don't save, 1 save plots in OutPath
+sessions = [23 21]; % [exp ctrl]
 %cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
-%cids = [    90   111   124   126   151   159   169   171   182   188   218   232   256   261   264   265   268   278];
-cids = 90;
+cids = [    90   111   124   126   151   159   169   171   182   188   218   232   256   261   264   265   268   278];
+%cids = 90;
 OutPath = 'D:\DATA\Processed\M4';
 
-SOMplotting(sessions, cids, OutPath, BehaviorPath, saveplots);
-
+SOMplotting(sessions, cids, OutPath, BehaviorPath, 0);
 %% FSL SOM analysis
 % function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)
 % input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes

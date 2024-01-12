@@ -49,15 +49,17 @@ for cluster = 1:length(cids)
     %nAmp = length(UAmp);
     yticks(YTick{2}); %yticks(YTick{1}([1,2:10:nAmp]));
     %yticklabels({' ' 'Actuator off' ' ' 'Actuator on'}); % yticklabels(UAmp([1,2:10:nAmp])); %yticklabels(unique(stimuli_parameters.Stm.Amplitude));
-    yticklabels({'air stim off' 'air stim on' 'stim off' 'stim on'});
+    yticklabels({'air stim off' 'stim off' 'air stim on' 'stim on'});
     yrange = [min(YTick{end}) - 25, max(YTick{end}) + 25]; % yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
     ylim(f, yrange);
     xlim(f, xrange);
 
-    for i = 1:size(YTickLim,1)
-        yline(fig,YTickLim(i,1)-3, ':k');
-        yline(fig,YTickLim(i,2)+3,':k');
-    end
+    horizontalLine(YTickLim, fig)
+
+    % for i = 1:size(YTickLim,1)
+    %     yline(fig,YTickLim(i,1)-3, ':k');
+    %     yline(fig,YTickLim(i,2)+3,':k');
+    % end
 
     % format axis
     xlabel('Time (s)')
@@ -98,7 +100,7 @@ for cluster = 1:length(cids)
     plot(edges(1:end-1),((N/sum(air_on_idx == 1))/binsize),'Color', '#B673C8','LineWidth',1.5)
 
     %format axis
-    legend('stimulus on', 'stimulus off', 'control stimulus on', 'control stimulus off')
+    legend('stimulus on', 'stimulus off', 'air stimulus on', 'air stimulus off')
     xlabel('Time (s)')
     ylabel('Spike rate (Hz)')
     fig.FontSize = 11;
@@ -112,8 +114,6 @@ for cluster = 1:length(cids)
         figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters_som.Par.MouseNum), str2double(stimuli_parameters_som.Par.Set), stimuli_parameters_som.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
-
-        close
     end
 
     hold off
@@ -121,21 +121,16 @@ for cluster = 1:length(cids)
 end
 
 
-%% draw lines - raw code
+function horizontalLine(YTickLim, fig)
 
-%YTickLim: first and last line of each block
-
-%horizontalLine(YTickLim);
-
-function horizontalLine(YTickLim)
 for i = 1:size(YTickLim,1)
-    yline(ax,YTickLim(i,1)-3,'k');
-    yline(ax,YTickLim(i,2)+3,'k');
+    yline(fig,YTickLim(i,1)-3,':k');
+    yline(fig,YTickLim(i,2)+3,':k');
 end
 
 % box
 x = -0.2;w=1;
 for i = 1:size(YTickLim,1)
-    r(i) = rectangle(ax,'Position',[x,YTickLim(i,1)-0.5,w,YTickLim(i,2)-YTickLim(i,1)+1],...
-        'FaceColor',[0,0,1,0.1],'EdgeColor','none');
+    r(i) = rectangle(fig,'Position',[x,YTickLim(i,1)-0.5,w,YTickLim(i,2)-YTickLim(i,1)+1],...
+        'FaceColor',[0,0,0,0],'EdgeColor','none');
 end
