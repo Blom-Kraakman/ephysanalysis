@@ -52,31 +52,39 @@ alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids);
 % select correct input files
 aligned_spikes = load('D:\DATA\Processed\M04_S01_FRA_AlignedSpikes');
 stimuli_parameters = load([BehaviorPath 'M4_S01_FRA.mat']);
-% cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
 
 % function saves figures, change mouse name
 FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 1);
 
-%% plotting stimuli
+%% plotting single sessions
+% FRA: raster
+% AMn: raster + PSTH
+% SOM: raster + PSTH
+
+cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
 
 % select which session to plot
-%BehaviorPath = 'D:\DATA\Behavioral Stimuli\M2\'; % stimuli parameters
-%stim_files = dir(fullfile(BehaviorPath, '\*_S07_*.mat'));
-%stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M4\M4_S22_AMn.mat');
+session = 6;
 
-% edit to flexibly choose session?
-% what to do with multiple same kind sessions?
-switch stimuli_parameters.Par.Rec
-    case 'FRA'
-        aligned_spikes = load('D:\DATA\Processed\M04_S01_FRA_AlignedSpikes.mat');
-    case 'SOM'
-        aligned_spikes = load('D:\DATA\Processed\M04_S06_SOM_AlignedSpikes.mat');
-    case 'AMn'
-        aligned_spikes = load('D:\DATA\Processed\M04_S22_AMn_AlignedSpikes.mat'); %2, 13, 22
-end
+% load corresponsing files
+sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+stim_files = dir(fullfile(BehaviorPath, sessionFile));
+stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
-plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
+aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
+aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+
+plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids.cpos.id', OutPath);
+
+%% plotting SOM sessions with their controls
+saveplots = 0; %0 don't save, 1 save plots in OutPath
+sessions = [6 7]; % [exp ctrl]
+%cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
+%cids = [    90   111   124   126   151   159   169   171   182   188   218   232   256   261   264   265   268   278];
+cids = 90;
+OutPath = 'D:\DATA\Processed\M4';
+
+SOMplotting(sessions, cids, OutPath, BehaviorPath, saveplots);
 
 %% FSL SOM analysis
 % function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)

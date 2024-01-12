@@ -31,7 +31,8 @@ if strcmp(stimuli_parameters.Par.Rec, 'FRA')
         xlabel('Time (s)')
         ylabel('Stimulus frequency (kHz)')
 
-        figname = sprintf('M04_FRA raster_cluster %i', cids(cluster));
+        % save plot
+        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
 
@@ -97,9 +98,11 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         xlim(fig,xrange);
 
         sgtitle(['Cluster ' num2str(cids(cluster))])
-        % % save plot
-        % %figname = sprintf('PSTH_S06_cluster_%i', cluster);
-        % %saveas(gcf, fullfile(OutPath, figname));
+        
+        % save plot
+        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+        saveas(fig, fullfile(OutPath, figname));
 
         % display untill button press
         %waitforbuttonpress
@@ -178,7 +181,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
         sgtitle(['Broadband noise (unit ' num2str(cids(cluster)) ')'])
 
-        figname = sprintf('M04_AMn_cluster %i', cids(cluster), 'session', stimuli_parameters.Par.Set);
+        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
 
