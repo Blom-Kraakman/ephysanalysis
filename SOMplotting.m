@@ -71,7 +71,7 @@ for cluster = 1:length(cids)
     fig = subplot(2,1,2);
     preT  = -0.2;
     postT = 0.7;
-    binsize = 0.03; % bit of smoothing psth
+    binsize = 0.01; %0.03; % bit of smoothing psth
 
     SOM_on_idx = (stimuli_parameters_som.Stm.Amplitude == 8);
     SOM_off_idx = (stimuli_parameters_som.Stm.Amplitude == 0);
@@ -111,7 +111,8 @@ for cluster = 1:length(cids)
 
     % save plot
     if saveplots
-        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters_som.Par.MouseNum), str2double(stimuli_parameters_som.Par.Set), stimuli_parameters_som.Par.Rec, cids(cluster));
+        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', ...
+            str2double(stimuli_parameters_som.Par.MouseNum), str2double(stimuli_parameters_som.Par.Set), stimuli_parameters_som.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
     end

@@ -41,6 +41,7 @@ save(fullfile('D:\DATA\Processed', filename), "cpos") %cpos variables: unit id, 
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
+% spike times in sec
 % good to have: TTL signaling start & end of stim presentation set
 
 % function saves aligned spikes cell array, change mouse name
@@ -90,48 +91,62 @@ SOMplotting(sessions, cids, OutPath, BehaviorPath, 0);
 % input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
 % output: first spike latency SOM/AM trials
 
-% IN PROGRESS
+% select which session to plot
+session = 23;
 
-stimuli_parameters = load('D:\DATA\Behavioral Stimuli\M2\M2_S09_SOM'); 
-aligned_spikes = load('D:\DATA\Processed\M02_S09_SOM_AlignedSpikes.mat');
+% load corresponsing files
+sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+stim_files = dir(fullfile(BehaviorPath, sessionFile));
+stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+
+aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
+aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes = aligned_spikes.SpkT;
-cids = [4 92 121 154 174 185 189 196]; %S07-S15
+
+cids = [    90   111   124   126   151   159   169   171   182   188   218   232   256   261   264   265   268   278];
 
 % stimulus parameters
-NClu = length(cids); % cluster info
-UAmp = unique([stimuli_parameters.Stm.Amplitude]);
+if strcmp(stimuli_parameters.Par.Rec, 'SOM')
+    x = stimuli_parameters.Stm.Amplitude;
+elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
+    x = [stimuli_parameters.Stm.Intensity];
+    x((x ~= 15) & (x ~= 30) & (x ~= 45) & (x ~= 60)) = 0;
+end
+
+UAmp = unique(x);
 NAmp = length(UAmp);
+NClu = length(cids); % cluster info
 
 % analysis period
-winStart = 0;
-winEnd   = 0.2; % changed from FRA
+%winStart = 0;
+%winEnd   = 0.3; % changed from FRA
 
 % initiation variables
 NTrials = nan(NAmp, NClu); % number of trials
 MedFSL = nan(NAmp, NClu); % median first spike latency
+IqrFSL = nan(NAmp, NClu); % IQR first spike latency
 
 for cluster = 1:NClu
-    %disp(['Analysing cluster ' num2str(cluster) ' of ' num2str(NClu)]);
 
     % Spike count analysis
     for amplitude = 1:NAmp
-            sel = [stimuli_parameters.Stm.Amplitude] == UAmp(amplitude);
+            sel = x == UAmp(amplitude);
             NTrials(amplitude,cluster) = sum(sel);
 
             if (NTrials(amplitude,cluster) == 0); continue; end
 
             %count spikes
-            SCnt = nan(NTrials(amplitude,cluster), 1);
-
             tempSpiketimes = aligned_spikes(sel,cluster);
-            for t = 1:length(tempSpiketimes)
-                if (isnan(tempSpiketimes{t})); continue; end
-                if(isempty(tempSpiketimes{t}))
-                    SCnt(t) = 0;
-                else
-                    SCnt(t) = sum(tempSpiketimes{t} > winStart & tempSpiketimes{t} < winEnd);
-                end
-            end
+
+            % SCnt = nan(NTrials(amplitude,cluster), 1);
+            % for t = 1:length(tempSpiketimes)
+            %     if (isnan(tempSpiketimes{t})); continue; end
+            %     if(isempty(tempSpiketimes{t}))
+            %         SCnt(t) = 0;
+            %     else
+            %         SCnt(t) = sum(tempSpiketimes{t} > winStart & tempSpiketimes{t} < winEnd);
+            %     end
+            % end
 
             %FSL
             fsl = inf(length(tempSpiketimes), 1);
@@ -172,70 +187,21 @@ SOM.NTrials = NTrials;
 % results - spike latency
 SOM.MedFSL = MedFSL;
 SOM.IqrFSL = IqrFSL;
+%% Plot FSL data
 % plot medFSL
-scatter(SOM.UAmp(1), SOM.MedFSL(1,:))
-hold on
-scatter(SOM.UAmp(2), SOM.MedFSL(2,:))
+f = plot(SOM.UAmp, SOM.MedFSL, '-x');
 
+% format figure
+legend()
+ylabel('FSL (s)');
+xticks(UAmp);
+xlim([(UAmp(1) - 2), (UAmp(end) +2)]);
 
-
-%%
-% MedFSL heatmap
-for clustNum = 1:NClu
-    NSets       =	1;
-    NClu       =	SOM.NClu;
-    UAmp       =	SOM.UAmp;
-    NAmp       =	SOM.NAmp;
-
-
-    startTime = 0;%FRA.startTime;
-    meanTime = 0;%FRA.meanTime;
-
-    M   =   MedFSL; % the thing to plot
-    zMax = max(M(:,clustNum),[],'all');
-    zMin = min([ 0, min(M(:,clustNum),[],'all')]);
-
-    % fig = myfig(0.4,'fig');
-    fig = figure;%(3);
-
-    nRows = 1;
-    nNSets = 1;
-
-    Colour = 'k';%jet(NFreq);
-    % Colour = parula(NFreq);
-
-    % xMin = -min([Stm(sel).PreT]) * 1e-3;
-    % xMax = max([Stm(sel).StimT]+[Stm(sel).PostT]) * 1e-3;
-
-    for s = 1:NSets
-        setNum = 1; %plotSet(s);
-        setIdx = 1; %find(FRA.FRASetNum == setNum);
-
-        %FRA
-        h = subplot(nRows, nNSets, s+0*NSets, 'Parent', fig);
-        cla(h);
-
-        % color map of spike rate
-        CData = M(:, :, setIdx, clustNum);
-        imagesc(h, CData, 'AlphaData', ~isnan(CData), [zMin,zMax]);
-
-        % format and label graph
-        % title(h, [num2str(reTime(setIdx), '%.2f') ' h']);
-        set(h,'Xscale', 'lin', 'YDir', 'normal',...
-            'FontName', 'Arial', 'FontWeight', 'bold','FontSize', 12, ...
-            'XTick',2:4:NAmp,'XTickLabel',round(UAmp(2:4:NAmp),1), 'XTickLabelRotation',45,...
-            'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
-        xlabel(h,'Stimulus frequency (kHz)')
-
-        if s==1
-            ylabel(h, 'Stimulus intensity (dB SPL)')
-        end
-        cb = colorbar(h, 'eastoutside');
-        cb.Label.String = 'Spike rate (Hz)';
-
-    end
-    sgtitle(['FSL: Cluster ' num2str(cids(clustNum))]) % whole figure title
-    %if (length(spiketimes{clustNum}) < 500); close(gcf); end
+if strcmp(stimuli_parameters.Par.Rec, 'SOM')
+    xlabel('Condition');
+    xticklabels({'stim off' 'stim on'})
+elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
+    xlabel('Codition (dB SPL)');
 end
 
 %% plotting channel map
