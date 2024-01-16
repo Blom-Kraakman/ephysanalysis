@@ -34,32 +34,10 @@ for cluster = 1:NClu
 
             %count spikes
             tempSpiketimes = aligned_spikes(sel,cluster);
-
-            % SCnt = nan(NTrials(amplitude,cluster), 1);
-            % for t = 1:length(tempSpiketimes)
-            %     if (isnan(tempSpiketimes{t})); continue; end
-            %     if(isempty(tempSpiketimes{t}))
-            %         SCnt(t) = 0;
-            %     else
-            %         SCnt(t) = sum(tempSpiketimes{t} > winStart & tempSpiketimes{t} < winEnd);
-            %     end
-            % end
-
-            %FSL
-            fsl = inf(length(tempSpiketimes), 1);
-            for t = 1:length(tempSpiketimes)
-                if (isnan(tempSpiketimes{t}))
-                    continue
-                end
-
-                spks = tempSpiketimes{t};
-                spks = spks (spks > 0);
-
-                if (~isempty(spks))
-                    fsl(t) = min(spks);
-                end
-            end
+            %SCnt = spike_count(NTrials, amplitude, cluster, tempSpiketimes);
             
+            % first spike time analysis
+            fsl = FSL(tempSpiketimes);
             MedFSL(amplitude,cluster) = median(fsl);
             IqrFSL(amplitude,cluster) = iqr(fsl);
 
@@ -68,18 +46,13 @@ for cluster = 1:NClu
 
 end % cluster loop
 
-
-% Output data Experiment meta data
-
-% cluster
-SOM.NClu = NClu;
+% ------ Output data Experiment meta data ------
+SOM.NClu = NClu; % clusters
+SOM.NTrials = NTrials; % results - number of trials
 
 % stimulus parameters
 SOM.UAmp = UAmp;
 SOM.NAmp = NAmp;
-
-% results - number of trials
-SOM.NTrials = NTrials;
 
 % results - spike latency
 SOM.MedFSL = MedFSL;
@@ -87,7 +60,7 @@ SOM.IqrFSL = IqrFSL;
 
 %% Plot FSL data
 % plot medFSL
-f = plot(SOM.UAmp, SOM.MedFSL, '-x');
+plot(SOM.UAmp, SOM.MedFSL, '-x');
 
 % format figure
 legend()
@@ -102,4 +75,33 @@ elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
     xlabel('Codition (dB SPL)');
 end
 
+end
+
+function fsl = FSL(tempSpiketimes)
+%FSL
+fsl = inf(length(tempSpiketimes), 1);
+for t = 1:length(tempSpiketimes)
+    if (isnan(tempSpiketimes{t}))
+        continue
+    end
+    
+    spks = tempSpiketimes{t};
+    spks = spks (spks > 0);
+    
+    if (~isempty(spks))
+        fsl(t) = min(spks);
+    end
+end
+end
+
+function SCnt = spike_count(NTrials, amplitude, cluster, tempSpiketimes)
+SCnt = nan(NTrials(amplitude,cluster), 1);
+for t = 1:length(tempSpiketimes)
+    if (isnan(tempSpiketimes{t})); continue; end
+    if(isempty(tempSpiketimes{t}))
+        SCnt(t) = 0;
+    else
+        SCnt(t) = sum(tempSpiketimes{t} > winStart & tempSpiketimes{t} < winEnd);
+    end
+end
 end

@@ -6,26 +6,22 @@
 %   quatify which cluster responds to which event
 %       response = fire (spiketime) in event window
 %   quantify firing rates? changes expected after events vs spontaneous
-% last changes 29/11/2023 - save aligned spikes per session + plotting
 
 clearvars
 
-% path S0506 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_12-47-20\Record Node 103\experiment5\recording1\continuous\Intan-100.Rhythm Data\'
-% path S07-S15 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_12-47-20\Record Node 103\experiment5\recording2\continuous\Intan-100.Rhythm Data\'
-% path S17-S21 : 'D:\DATA\EphysRecordings\M2\M02_2023-10-12_15-26-26\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\'
-
+% set directories
 recPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\';
 TTLPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data\TTL\';
 messagesPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\MessageCenter\'; % session TTLs
 KSPath = 'D:\DATA\EphysRecordingsSorted\M04\trimmed\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M4\'; % stimuli parameters
-relevant_sessions = [1 23]; % behaviour files (if only 1 behavior file in rec: [1 1])
-
 OutPath = 'D:\DATA\Processed\M4'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-%% IRC: post-curation unit extraction
+relevant_sessions = [1 23]; % behaviour files (if only 1 behavior file in rec: [1 1])
+
+%% IronClust: post-curation unit extraction
 
 %[spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 
@@ -82,7 +78,6 @@ plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 sessions = [23 21]; % [exp ctrl]
 %cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
 cids = [    90   111   124   126   151   159   169   171   182   188   218   232   256   261   264   265   268   278];
-%cids = 90;
 OutPath = 'D:\DATA\Processed\M4';
 
 SOMplotting(sessions, cids, OutPath, BehaviorPath, 0);
@@ -103,7 +98,7 @@ aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes = aligned_spikes.SpkT;
 
-cids = [    90   111   124   126   151   159   169   171   182   188   218   232   256   261   264   265   268   278];
+cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
 
 SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 
@@ -112,6 +107,8 @@ SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 
 channel_map = readNPY([KSPath 'channel_map.npy']);
 channel_positions = readNPY([KSPath 'channel_positions.npy']);
+cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
+cpos = cids.cpos;
 
 xcoords = channel_positions(:,1);
 ycoords = channel_positions(:,2);
