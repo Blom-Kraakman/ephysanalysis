@@ -1,4 +1,4 @@
-function [spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, recPath, TTLPath, messagesPath, relevant_sessions, rec_samples)
+function [spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
 % and matched unit ids (vector), recording time stamps (vector)
@@ -10,13 +10,12 @@ if ~isfile([KSPath,'cluster_info.tsv']) || ~isfile([KSPath,'spike_clusters.npy']
     error('Files not found in KSPath.');
 elseif ~isfile([TTLPath,'sample_numbers.npy']) ||  ~isfile([TTLPath,'states.npy'])
     error('Files not found in TTLPath.')
-elseif ~isfile([recPath, 'sample_numbers.npy'])
-    error('Files not found in RecPath.')
 end
 
 cluster_info = readtable([KSPath,'cluster_info.tsv'],'FileType','text'); % info on clusters
 cids = cluster_info.cluster_id(strcmp(cluster_info.group,'good'))';
 [~, idx] = ismember(cids, cluster_info.cluster_id);
+% to do: improve name of table cpos
 cpos(:,1) = cluster_info.cluster_id(idx);
 cpos(:,2) = cluster_info.ch(idx);
 cpos(:,3) = cluster_info.depth(idx);
@@ -29,7 +28,6 @@ fprintf('Found %i good units for analysis\n', length(cids));
 % load files
 spike_times = readNPY([KSPath 'spike_times.npy']); % spike_times contains spike time indexing, not time/samplenr itself
 spike_clusters = readNPY([KSPath 'spike_clusters.npy']); % matched cluster ids
-message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs
 TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs
 TTL_states = readNPY([TTLPath 'states.npy']);
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
@@ -42,29 +40,26 @@ TTL_states(index) = [];
 TTL_samples(index) = [];
 
 % recording sessions table
-% to do: make imported csv
-sessions_TTLs(:,1) = [1 1 2 2 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16 16 17 17 18 19 19 20 20 21 21 22 22 23 23]; % session nr
-sessions_TTLs(:,2) = [1 0 1 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 0 1 0 1 0 1 0 1 0]; % session start/end (1/0)
-sessions_TTLs(:,3) = message_samples(1:44); % sample nr
+sessions_TTLs = makeSessionTTLs(messagesPath);
 
 % make sessions type + nr trials table
 % --> make into function?
 Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
 
 for file = 1:length(Nr_sessions)
-   stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
+    stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
 
-   Nr_sessions(file,1) = str2double(stimuli_parameters.Par.Set);
-   Nr_sessions(file,2) = size(stimuli_parameters.Stm, 1);
+    Nr_sessions(file,1) = str2double(stimuli_parameters.Par.Set);
+    Nr_sessions(file,2) = size(stimuli_parameters.Stm, 1);
 
-   % notate TTL nr (TTLS: 5 = SOM, 2 = AUD, 8 = CAM)
-   if strcmp(stimuli_parameters.Par.Rec, 'FRA')
-       Nr_sessions(file,3) = 2;
-   elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
-       Nr_sessions(file,3) = 2;
-   elseif strcmp(stimuli_parameters.Par.Rec, 'SOM')
-       Nr_sessions(file,3) = 5;
-   end
+    % notate TTL nr (TTLS: 5 = SOM, 2 = AUD, 8 = CAM)
+    if strcmp(stimuli_parameters.Par.Rec, 'FRA')
+        Nr_sessions(file,3) = 2;
+    elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
+        Nr_sessions(file,3) = 2;
+    elseif strcmp(stimuli_parameters.Par.Rec, 'SOM')
+        Nr_sessions(file,3) = 5;
+    end
 
 end
 
@@ -111,7 +106,7 @@ for i = 1:length(sessions_TTLs)
     Sfall = [Sfall; tSfall];
     %TTLs_sample = [TTLs_sample, tTTL_samples];
     %TTLs_state = [TTLs_state, tTTL_state];
-   
+
 end
 
 % get all spiketimes from each good unit
@@ -130,6 +125,27 @@ for cluster = 1:length(cids)
     % end
 end
 
-fprintf('Unit extraction done\n');
+fprintf('unit extraction done\n');
 
+end
+
+function sessions_TTLs = makeSessionTTLs(messagesPath)
+% import .cvs with text messages
+message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs
+Pathmessage_center_text = 'D:\DATA\Processed\M04_message_text.csv';
+message_center_text= readtable(Pathmessage_center_text,'ReadVariableNames',false,'Format','%s','Delimiter',',');
+test = table2cell(message_center_text);
+sessions_TTLs = table2cell(message_center_text);
+for i = 1:length(sessions_TTLs)
+    if contains(test{i,1}, 'start')
+        sessions_TTLs(i,2) = 1;
+    elseif contains(test{i,1}, 'end')
+        sessions_TTLs(i,2) = 0;
+    else
+        error('Error in makeSessionTTLs, check .csv file')
+    end
+end
+% sessions_TTLs(:,1) = [1 1 2 2 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16 16 17 17 18 19 19 20 20 21 21 22 22 23 23]; % session nr
+% sessions_TTLs(:,2) = [1 0 1 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 0 1 0 1 0 1 0 1 0]; % session start/end (1/0)
+sessions_TTLs(:,3) = message_samples(1:length(sessions_TTLs)); % sample nr
 end
