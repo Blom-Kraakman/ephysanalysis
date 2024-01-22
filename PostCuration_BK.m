@@ -77,7 +77,7 @@ plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 %saveplots = 0; %0 don't save, 1 save plots in OutPath
 sessions = [23 21]; % [exp ctrl]
 %cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
-cids = [    90   111   124   126   151   159   169   171   182   188   218   232   256   261   264   265   268   278];
+cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
 OutPath = 'D:\DATA\Processed\M4';
 
 SOMplotting(sessions, cids, OutPath, BehaviorPath, 0);
@@ -100,70 +100,35 @@ aligned_spikes = aligned_spikes.SpkT;
 
 cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
 
+% maybe try swarmchart
 SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 
 %% plotting channel map
 % match unit position to channel map
-
-channel_map = readNPY([KSPath 'channel_map.npy']);
-channel_positions = readNPY([KSPath 'channel_positions.npy']);
-cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
-cpos = cids.cpos;
-
-xcoords = channel_positions(:,1);
-ycoords = channel_positions(:,2);
-margin = 50;
-xMin = min(xcoords); xMax = max(xcoords);
-xSpan = xMax-xMin; xMid = 0.5*(xMax+xMin);
-yMin = min(ycoords); yMax = max(ycoords);
-ySpan = yMax-yMin; yMid = 0.5*(yMax+yMin);
-maxSpan = max(xSpan,ySpan);
-
-fig = scatter(xcoords, ycoords, ".", 'k');
-hold on;
-
-for i = 1:length(channel_map)
-    text((channel_positions(i,1)+1), (channel_positions(i,2)+1),num2str(channel_map(i)))
-end
-
-% add position of units included in analysis
-hold on
-units = table2array(cpos(:,2));
-idx = ismember(channel_map, units);
-fig = scatter(channel_positions(idx,1), channel_positions(idx,2), 'o'); % wrongly indexed
-
-% to do: reflect number of clusters on 1 channel. apply jitter in circle
-% marking to achieve this
-% to do: add unit number with corresponding channel
-%text((channel_positions(unique(idx),1)+1), (channel_positions(unique(idx),1)+1),num2str(channel_map()))
-
-% format figure
-title('Channel map')
-ylabel('Relative depth')
-fig.SizeData = 100;
-fontsize(13,"points")
-axis square
-xlim([xMid - 0.5*maxSpan - margin, xMid + 0.5*maxSpan + margin]);
-ylim([yMid - 0.5*maxSpan - margin, yMid + 0.5*maxSpan + margin]);
-xticks(unique(xcoords));
-yticks(unique(ycoords));
-
+plot_on_channel_map(KSPath);
 
 %% channel waveforms
 % extract and plot waveform traces
-addpath('C:\Users\TDT\Documents\GitHub\ephys_analysis');
-for k=1:length(cids)
+%addpath('C:\Users\TDT\Documents\GitHub\ephys_analysis');
+%cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
+cids = load('D:\DATA\Processed\M4\M04_S01-23_InfoGoodUnits.mat'); 
+cpos = cids.cpos;
+
+for k=1:size(cpos, 1)
     close all
     %F = myfig(1,'fig');
     F = figure;
     F.Position = [2405,214,838,890];
-    F = ChannelWaveforms(F,KSPath,cids(k),cpos(k,3),200);
+    F = ChannelWaveForms(F, KSPath, cpos.id(k), cpos.channel(k), 200);
     F.Renderer = 'painter';
     F.PaperUnits = 'inches';
     F.PaperSize = F.Position(3:4)./96;
     %saveas(F,[UserPath 'Processed\' DirName '\Units\' DirName '-U' num2str(cids(k)) '.pdf']);
     %     saveas(F,[UserPath 'Processed\' Mouse '\Units\' Mouse '-U' num2str(cids(k)) '.png']);
 end
+
+%% plot spikes of whole session
+% to do
 
 %% quantify reactive units
 % to do

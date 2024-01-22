@@ -8,7 +8,7 @@ sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters_som = load([stim_files.folder '\' stim_files.name]);
 
-aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
+aligned_spikes_files = dir(fullfile('D:\DATA\Processed\M4', sessionFile));
 aligned_spikes_som = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes_som = aligned_spikes_som.SpkT;
 
@@ -19,7 +19,7 @@ sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters_ctrl = load([stim_files.folder '\' stim_files.name]);
 
-aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
+aligned_spikes_files = dir(fullfile('D:\DATA\Processed\M4', sessionFile));
 aligned_spikes_ctrl = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes_ctrl = aligned_spikes_ctrl.SpkT;
 
