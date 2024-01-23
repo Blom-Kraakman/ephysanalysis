@@ -28,13 +28,13 @@ for file = relevant_sessions(1):relevant_sessions(2)
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
 
     % select correct analysis window and
-    if strcmp(stimuli_parameters.Par.Rec, 'SOM') % abs(TTL_states(1,1)) == 5 %TTL 5 = SOM
+    if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         PreT  = 200; % amount of msec. to include before Srise;
         PostT = 700; % amount of msec. to include after Sfall;
-    elseif strcmp(stimuli_parameters.Par.Rec, 'FRA') % abs(TTL_states(1,1)) == 2 %TTL 2 = AUD
+    elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
         PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
         PostT = str2double(stimuli_parameters.Par.FRAPostTime);
-    elseif strcmp(stimuli_parameters.Par.Rec, 'AMn') % abs(TTL_states(1,1)) == 2 %TTL 2 = AUD
+    elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
         PreT = str2double(stimuli_parameters.Par.AMStimTime);
         PostT = str2double(stimuli_parameters.Par.AMPostTime);
         % AMStimTime 200, AMPostTime 400, AMPreTime 100

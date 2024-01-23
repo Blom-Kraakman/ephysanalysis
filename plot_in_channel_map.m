@@ -1,4 +1,4 @@
-function fig = plot_on_channel_map(KSPath)
+function fig = plot_in_channel_map(KSPath)
 
 channel_map = readNPY([KSPath 'channel_map.npy']);
 channel_positions = readNPY([KSPath 'channel_positions.npy']);

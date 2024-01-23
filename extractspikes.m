@@ -32,7 +32,10 @@ TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded 
 TTL_states = readNPY([TTLPath 'states.npy']);
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 
+% define and initiate variables
 Fs = 30000; % Sampling frequency (in Hz)
+Srise = [];
+Sfall = [];
 
 % remove camera TTLs
 index = (abs(TTL_states) == 8);
@@ -42,10 +45,8 @@ TTL_samples(index) = [];
 % recording sessions table
 sessions_TTLs = makeSessionTTLs(messagesPath);
 
-% make sessions type + nr trials table
-% --> make into function?
+% specify TTL nr to be used
 Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
-
 for file = 1:length(Nr_sessions)
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
 
@@ -62,9 +63,6 @@ for file = 1:length(Nr_sessions)
     end
 
 end
-
-Srise = [];
-Sfall = [];
 
 %keep only TTLs recorded during specific session
 for i = 1:length(sessions_TTLs)

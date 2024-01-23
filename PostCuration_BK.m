@@ -33,7 +33,7 @@ relevant_sessions = [1 23]; % behaviour files (if only 1 behavior file in rec: [
 % save details good units
 set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
 filename = ['M04_S' set '_InfoGoodUnits'];
-save(fullfile('D:\DATA\Processed', filename), "cpos") %cpos variables: unit id, channel, depth, avg firing rate, nr spikes;
+save(fullfile(OutPath, filename), "cpos") %cpos variables: unit id, channel, depth, avg firing rate, nr spikes;
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
@@ -47,7 +47,7 @@ alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids);
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
 
 % select correct input files
-aligned_spikes = load('D:\DATA\Processed\M04_S01_FRA_AlignedSpikes');
+aligned_spikes = load([OutPath, '\M04_S01_FRA_AlignedSpikes']);
 stimuli_parameters = load([BehaviorPath 'M4_S01_FRA.mat']);
 
 % function saves figures, change mouse name
@@ -68,9 +68,9 @@ sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
-aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
-
+%%
 plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
 %% plotting SOM sessions with their controls
@@ -78,7 +78,6 @@ plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 sessions = [23 21]; % [exp ctrl]
 %cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
 cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
-OutPath = 'D:\DATA\Processed\M4';
 
 SOMplotting(sessions, cids, OutPath, BehaviorPath, 0);
 %% FSL SOM analysis
@@ -94,7 +93,7 @@ sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
-aligned_spikes_files = dir(fullfile('D:\DATA\Processed', sessionFile));
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes = aligned_spikes.SpkT;
 
@@ -105,13 +104,13 @@ SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 
 %% plotting channel map
 % match unit position to channel map
-plot_on_channel_map(KSPath);
+plot_in_channel_map(KSPath);
 
 %% channel waveforms
 % extract and plot waveform traces
 %addpath('C:\Users\TDT\Documents\GitHub\ephys_analysis');
 %cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
-cids = load('D:\DATA\Processed\M4\M04_S01-23_InfoGoodUnits.mat'); 
+cids = load([OutPath, '\M04_S01-23_InfoGoodUnits.mat']); 
 cpos = cids.cpos;
 
 for k=1:size(cpos, 1)
@@ -129,6 +128,49 @@ end
 
 %% plot spikes of whole session
 % to do
+
+%% plot vibrotac stimulus signal
+% include also feedback signal
+% see plotting in GUI
+% not correct yet, Ramp and offset
+
+Waveform = 'BiSine';
+Fs = 30000;
+StimDur = 500;
+Amplitude = 1;
+SomFreq = 100;
+Ramp = 10;
+ISI = 1000;
+Offset = 0.1;
+
+StimDurSamp = ceil(StimDur * 0.001 * Fs);
+som_waveform = nan(1,StimDurSamp);
+tt = 0:1/Fs:(StimDur* 0.001);
+switch Waveform
+    case {'Square'}
+        som_waveform = Amplitude .* ones(1,StimDurSamp);
+        som_waveform(1) = 0; som_waveform(end) = 0; % zero at beginning or end
+    case {'UniSine'}
+        som_waveform =  0.5 * Amplitude .* ( 1-cos(2*pi*SomFreq .* tt) );
+    case {'BiSine'}
+        som_waveform =  Amplitude .* ( sin(2*pi*SomFreq .* tt) );
+end
+
+% apply envelope (On-/Off-ramps)
+if Ramp > 0
+    Nenv			=	round( Ramp * 10^-3 * Fs );
+    som_waveform    =	envelope(som_waveform',Nenv)';
+end
+
+% padding pre-post stimulus time with zeroes
+PrePostDur = 0.2 * ISI * 0.001;
+PrePostSamp = round(PrePostDur * Fs);
+tt = [-flip(1:PrePostSamp)./Fs, tt, tt(end) + (1:PrePostSamp)./Fs];
+som_waveform = [zeros(1,PrePostSamp), som_waveform, zeros(1,PrePostSamp)];
+
+% plotting the waveform
+plot(tt(1:length(som_waveform)),som_waveform+Offset);
+xlim([min(tt),max(tt)]);
 
 %% quantify reactive units
 % to do

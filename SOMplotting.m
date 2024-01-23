@@ -8,7 +8,7 @@ sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters_som = load([stim_files.folder '\' stim_files.name]);
 
-aligned_spikes_files = dir(fullfile('D:\DATA\Processed\M4', sessionFile));
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes_som = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes_som = aligned_spikes_som.SpkT;
 
@@ -19,7 +19,7 @@ sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters_ctrl = load([stim_files.folder '\' stim_files.name]);
 
-aligned_spikes_files = dir(fullfile('D:\DATA\Processed\M4', sessionFile));
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes_ctrl = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes_ctrl = aligned_spikes_ctrl.SpkT;
 
@@ -27,39 +27,42 @@ aligned_spikes_ctrl = aligned_spikes_ctrl.SpkT;
 stimuli_parameters = vertcat(stimuli_parameters_som.Stm, stimuli_parameters_ctrl.Stm);
 aligned_spikes = vertcat(aligned_spikes_som, aligned_spikes_ctrl);
 
-% plot SOM data based on Location
 xrange = [-.202, +.702];
 
+% plot SOM data based on 'Location'
 for cluster = 1:length(cids)
 
     figure;
 
     fig = subplot(2,1,1); % rasterplot
     %set(fig,'position',[500,150,800,600]) %set(gcf,'position',[500,150,600,400])
-
-    %iscontrol = ismember(stimuli_parameters.Location,{'right flank, velcro','right flank, poke'});
     location = ~contains(stimuli_parameters.Location, {'air', 'ai1'}); % sort exp session first
+    
+    % if strcmp(Par.SomatosensoryActuator, 'Piezo')
+        Var = [stimuli_parameters.Amplitude, location];
+        %Var =  [stimuli_parameters.Stm.Freq,stimuli_parameters.Stm.Intensity];
 
-    Var = [stimuli_parameters.Amplitude, location];
-    %Var =  [stimuli_parameters.Stm.Freq,stimuli_parameters.Stm.Intensity];
+        % [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [15 30], 1);
+        [f, YTick, YTickLab,~,~,YTickLim] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [15 30], 1);
+        yticklabels({'air stim off' 'stim off' 'air stim on' 'stim on'});
 
-    % [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [15 30], 1);
-    [f, YTick, YTickLab,~,~,YTickLim] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [15 30], 1);
-    %UAmp = unique(stimuli_parameters.Amplitude);
-    %nAmp = length(UAmp);
-    yticks(YTick{2}); %yticks(YTick{1}([1,2:10:nAmp]));
-    %yticklabels({' ' 'Actuator off' ' ' 'Actuator on'}); % yticklabels(UAmp([1,2:10:nAmp])); %yticklabels(unique(stimuli_parameters.Stm.Amplitude));
-    yticklabels({'air stim off' 'stim off' 'air stim on' 'stim on'});
-    yrange = [min(YTick{end}) - 25, max(YTick{end}) + 25]; % yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
+    % elseif strcmp(Par.SomatosensoryActuator, 'DC Motor')
+    %     Var = [stimuli_parameters.Amplitude, stimuli_parameters.SomFreq, location];
+    %     %Var =  [stimuli_parameters.Stm.Freq,stimuli_parameters.Stm.Intensity];
+    % 
+    %     % [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [15 30], 1);
+    %     [f, YTick, YTickLab,~,~,YTickLim] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [15 30], 1);
+    %     yticklabels({'air stim off' 'stim off' 'air stim on' 'stim on'});
+    % 
+    % end
+
+    yticks(YTick{2});
+    yrange = [min(YTick{end}) - 25, max(YTick{end}) + 25];
     ylim(f, yrange);
     xlim(f, xrange);
 
+    % add demarcation lines between categories
     horizontalLine(YTickLim, fig)
-
-    % for i = 1:size(YTickLim,1)
-    %     yline(fig,YTickLim(i,1)-3, ':k');
-    %     yline(fig,YTickLim(i,2)+3,':k');
-    % end
 
     % format axis
     xlabel('Time (s)')
