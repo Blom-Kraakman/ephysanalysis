@@ -28,9 +28,7 @@ msgs = strsplit(msg{1}{2},'\0')';
 msgs = msgs(~cellfun('isempty',msgs));
 
 % get timestamps
-%ts = double(readNPY(fnt));
-ts = readNPY(fnt);
-
+ts = double(readNPY(fnt));
 
 for i = 1:length(msgs)
 fprintf('%d %s\n',ts(i),msgs{i})
