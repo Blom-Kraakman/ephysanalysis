@@ -1,4 +1,4 @@
-function [aligned_spikes] = alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids)
+function [aligned_spikes] = alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids, Fs)
 % align spikes
 % INPUT - spiketimes (cell array, 1 cell: timestamp of spike for 1 unit),
 % TTLs (vector), stimulus parameters (struct)
@@ -13,7 +13,7 @@ elseif isempty(relevant_sessions)
     relevant_sessions = input('Enter first and last session number in this recording: ');
 end
 
-Fs = 30000; % Sampling frequency (in Hz)
+%Fs = 30000; % Sampling frequency (in Hz)
 Srise = double(Srise);
 Sfall = double(Sfall);
 stim_counter = 0;

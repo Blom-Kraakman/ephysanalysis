@@ -10,8 +10,8 @@
 clearvars
 
 % set directories
-recPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\';
-TTLPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data\TTL\';
+recPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\';
+TTLPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\';
 messagesPath = 'D:\DATA\EphysRecordings\M4\M04_2023-12-14_12-47-41\Record Node 103\experiment1\recording1\events\MessageCenter\'; % session TTLs
 KSPath = 'D:\DATA\EphysRecordingsSorted\M04\trimmed\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M4\'; % stimuli parameters
@@ -20,20 +20,28 @@ OutPath = 'D:\DATA\Processed\M4'; % output directory
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
 relevant_sessions = [1 23]; % behaviour files (if only 1 behavior file in rec: [1 1])
+Fs = 30000; % sampling freq
 
-%% IronClust: post-curation unit extraction
 
-%[spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
+%% sessions TTLs as extracted from OpenEphys message center
+[sessions_TTLs, sessions_TTLs_details] = getSessionTTLs(messagesPath, rec_samples, Fs);
+
+% save session TTLs
+set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
+filename = ['M07_S' set 'OEttls'];
+save(fullfile(OutPath, filename), "sessions_TTLs")
+
 
 %% Kilosort: post-curation unit extraction
+%IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
-
-[spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples);
+[spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples, sessions_TTLs, Fs);
 
 % save details good units
 set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
 filename = ['M04_S' set '_InfoGoodUnits'];
 save(fullfile(OutPath, filename), "cpos") %cpos variables: unit id, channel, depth, avg firing rate, nr spikes;
+
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
@@ -41,7 +49,7 @@ save(fullfile(OutPath, filename), "cpos") %cpos variables: unit id, channel, dep
 % good to have: TTL signaling start & end of stim presentation set
 
 % function saves aligned spikes cell array, change mouse name
-alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids);
+alignspikes(BehaviorPath, spiketimes, relevant_sessions, Srise, Sfall, cids, Fs);
 
 %% FRA analysis
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster

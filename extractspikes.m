@@ -1,4 +1,4 @@
-function [spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples)
+function [spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, sessions_TTLs, Fs)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
 % and matched unit ids (vector), recording time stamps (vector)
@@ -33,7 +33,7 @@ TTL_states = readNPY([TTLPath 'states.npy']);
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 
 % define and initiate variables
-Fs = 30000; % Sampling frequency (in Hz)
+%Fs = 30000; % Sampling frequency (in Hz)
 Srise = [];
 Sfall = [];
 
@@ -43,7 +43,7 @@ TTL_states(index) = [];
 TTL_samples(index) = [];
 
 % recording sessions table
-sessions_TTLs = makeSessionTTLs(messagesPath);
+%sessions_TTLs = makeSessionTTLs(messagesPath);
 
 % specify TTL nr to be used
 Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
@@ -125,25 +125,4 @@ end
 
 fprintf('unit extraction done\n');
 
-end
-
-function sessions_TTLs = makeSessionTTLs(messagesPath)
-% import .cvs with text messages
-message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs
-Pathmessage_center_text = 'D:\DATA\Processed\M04_message_text.csv';
-message_center_text= readtable(Pathmessage_center_text,'ReadVariableNames',false,'Format','%s','Delimiter',',');
-test = table2cell(message_center_text);
-sessions_TTLs = table2cell(message_center_text);
-for i = 1:length(sessions_TTLs)
-    if contains(test{i,1}, 'start')
-        sessions_TTLs(i,2) = 1;
-    elseif contains(test{i,1}, 'end')
-        sessions_TTLs(i,2) = 0;
-    else
-        error('Error in makeSessionTTLs, check .csv file')
-    end
-end
-% sessions_TTLs(:,1) = [1 1 2 2 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16 16 17 17 18 19 19 20 20 21 21 22 22 23 23]; % session nr
-% sessions_TTLs(:,2) = [1 0 1 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 0 1 0 1 0 1 0 1 0]; % session start/end (1/0)
-sessions_TTLs(:,3) = message_samples(1:length(sessions_TTLs)); % sample nr
 end
