@@ -67,7 +67,7 @@ for file = relevant_sessions(1):relevant_sessions(2)
 
     % save aligned spikes
     set = sprintf('%02d', str2double(stimuli_parameters.Par.Set));
-    filename = ['M04_S' set '_' stimuli_parameters.Par.Rec '_AlignedSpikes'];
+    filename = ['M07_S' set '_' stimuli_parameters.Par.Rec '_AlignedSpikes'];
     save(fullfile('D:\DATA\Processed', filename), "SpkT")
 
 end

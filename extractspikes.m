@@ -73,6 +73,18 @@ for i = 1:length(sessions_TTLs)
         idx = (TTL_samples >= session_start) & (TTL_samples < session_end);
         tTTL_states = TTL_states(idx);
         tTTL_samples = TTL_samples(idx);
+    elseif (i == 1) && (sessions_TTLs(i,2) == 0) %first session start not noted
+        session_start = rec_samples(1); %start
+        session_end = sessions_TTLs(i,3); %end
+        idx = (TTL_samples >= session_start) & (TTL_samples < session_end);
+        tTTL_states = TTL_states(idx);
+        tTTL_samples = TTL_samples(idx);
+    elseif (i == 2) && (sessions_TTLs(i,2) == 0) % special case in M7
+        session_start = sessions_TTLs(i-1,3); %start
+        session_end = sessions_TTLs(i,3); %end
+        idx = (TTL_samples >= session_start) & (TTL_samples < session_end);
+        tTTL_states = TTL_states(idx);
+        tTTL_samples = TTL_samples(idx);
     else
         continue
     end

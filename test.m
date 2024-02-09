@@ -1,20 +1,7 @@
+<<<<<<< HEAD
 %test new function
 
-for i = 1:length(sessions_TTLs)
 
-    if sessions_TTLs(i,2) == 1
-        session_start = sessions_TTLs(i,3); %start
-        session_end = sessions_TTLs(i+1,3); %end
-    elseif (i == 1) && (sessions_TTLs(i,2) == 0) %first session start not noted
-        session_start = rec_samples(1); %start
-        session_end = sessions_TTLs(i); %end
-    elseif (i == 2) && (sessions_TTLs(i,2) == 0) % special case in M7
-        session_start = sessions_TTLs(i-1,3); %start
-        session_end = sessions_TTLs(i); %end
-    else
-        continue
-    end
-end
 %% previous version of reading messages from OE
 % function sessions_TTLs = makeSessionTTLs(messagesPath)
 % import .cvs with text messages
@@ -92,6 +79,8 @@ yticks(unique(ycoords));
 hold off;
 
 %%
+=======
+>>>>>>> parent of bbfc921 ( open text.npy from message center)
 message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs
 Pathmessage_center_text = 'D:\DATA\Processed\M04_message_text.csv';
 message_center_text = readtable(Pathmessage_center_text,'ReadVariableNames',false,'Delimiter',',');
