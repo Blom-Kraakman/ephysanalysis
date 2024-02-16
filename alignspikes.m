@@ -26,6 +26,11 @@ stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 for file = relevant_sessions(1):relevant_sessions(2)
 
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
+    skip_sessions = [9 13 15 16];
+
+    if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions)
+        continue
+    end
 
     % select correct analysis window and
     if strcmp(stimuli_parameters.Par.Rec, 'SOM')
@@ -35,14 +40,19 @@ for file = relevant_sessions(1):relevant_sessions(2)
         PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
         PostT = str2double(stimuli_parameters.Par.FRAPostTime);
     elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
-        PreT = str2double(stimuli_parameters.Par.AMStimTime);
-        PostT = str2double(stimuli_parameters.Par.AMPostTime);
+        PreT = (str2double(stimuli_parameters.Par.AMPreTime) + (str2double(stimuli_parameters.Par.AMPostTime)/4));
+        PostT = (str2double(stimuli_parameters.Par.AMStimTime) + (str2double(stimuli_parameters.Par.AMPostTime)/2));
+        %PreT = str2double(stimuli_parameters.Par.AMStimTime);
+        %PostT = str2double(stimuli_parameters.Par.AMPostTime);
         % AMStimTime 200, AMPostTime 400, AMPreTime 100
     end
 
     % select correct number of TTLs based on stimuli_parameters.par file
     NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
     SpkT = [];
+
+    disp(['session ' num2str(stimuli_parameters.Par.Set)])
+    disp(['Nstim ' num2str(NStim)])
 
     % loop through all clusters
     for cluster = 1:length(cids)
@@ -65,10 +75,12 @@ for file = relevant_sessions(1):relevant_sessions(2)
     stim_counter = stim_counter + NStim; % keep track of how many stimuliu have past
     aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
 
-    % save aligned spikes
+    disp(['stim counter: ' num2str(stim_counter)])
+
+    %save aligned spikes
     set = sprintf('%02d', str2double(stimuli_parameters.Par.Set));
     filename = ['M07_S' set '_' stimuli_parameters.Par.Rec '_AlignedSpikes'];
-    save(fullfile('D:\DATA\Processed', filename), "SpkT")
+    save(fullfile('D:\DATA\Processed\M7', filename), "SpkT")
 
 end
 

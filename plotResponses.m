@@ -40,71 +40,71 @@ if strcmp(stimuli_parameters.Par.Rec, 'FRA')
 end
 
 % plot SOM piezo data
-if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'Piezo')
-    %if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'Piezo') || strcmp(stimuli_parameters.Par.Rec, 'SOM')
-
-    xrange = [-.2, +.7];
-
-    for cluster = 1:length(cids)
-
-        figure;
-
-        fig = subplot(2,1,1); % rasterplot
-        set(gcf,'position',[500,150,800,600])
-        %set(gcf,'position',[500,150,600,400])
-
-        % make rasterplot
-        Var = [stimuli_parameters.Stm.Amplitude, stimuli_parameters.Stm.SomFreq];
-        %[f, YTick, YTickLab] = plotraster(fig, aligned_spikes(1:40, 1), Var, [0, 0, 0], [], 1);
-
-        [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
-        yticks(YTick{1});
-        yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
-        ylim(f,yrange);
-        yticklabels(unique(stimuli_parameters.Stm.Amplitude));
-        xlim(f,xrange);
-
-        % format axis
-        xlabel('Time (s)')
-        ylabel('Stimulus off / on')
-        fig.FontSize = 11;
-        title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
-
-        % make histogram / PSTH
-        SOM_idx = (stimuli_parameters.Stm.Amplitude == 10); % select stimulus trials
-        ctrl_idx = (stimuli_parameters.Stm.Amplitude == 0); % select control trials
-        preT  = -0.2;
-        postT = 0.7;
-        binsize = 0.5;
-
-        fig = subplot(2,1,2);
-
-        [N, edges] = histcounts(vertcat(aligned_spikes{SOM_idx, cluster}), preT:binsize:postT);
-        % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
-        plot(edges(1:end-1),((N/sum(SOM_idx == 1))/binsize),'Color', '#D95319','LineWidth',2.5)
-        hold on
-        [N,edges] = histcounts(vertcat(aligned_spikes{ctrl_idx, cluster}), preT:binsize:postT);
-        % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 0))/binsize), 'FaceColor', '#0072BD')
-        plot(edges(1:end-1),((N/sum(SOM_idx == 0))/binsize),'Color', '#0072BD','LineWidth',2.5)
-
-        %format axis
-        legend('stimulus', 'control')
-        xlabel('Time (s)')
-        ylabel('Spike rate (Hz)')
-        fig.FontSize = 11;
-        xlim(fig,xrange);
-
-        sgtitle(['Cluster ' num2str(cids(cluster))])
-        
-        % save plot
-        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
-        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-        saveas(fig, fullfile(OutPath, figname));
-
-        hold off
-
-    end
-end
+% if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'Piezo')
+%     %if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'Piezo') || strcmp(stimuli_parameters.Par.Rec, 'SOM')
+% 
+%     xrange = [-.2, +.7];
+% 
+%     for cluster = 1:length(cids)
+% 
+%         figure;
+% 
+%         fig = subplot(2,1,1); % rasterplot
+%         set(gcf,'position',[500,150,800,600])
+%         %set(gcf,'position',[500,150,600,400])
+% 
+%         % make rasterplot
+%         Var = [stimuli_parameters.Stm.Amplitude, stimuli_parameters.Stm.SomFreq];
+%         %[f, YTick, YTickLab] = plotraster(fig, aligned_spikes(1:40, 1), Var, [0, 0, 0], [], 1);
+% 
+%         [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
+%         yticks(YTick{1});
+%         yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
+%         ylim(f,yrange);
+%         yticklabels(unique(stimuli_parameters.Stm.Amplitude));
+%         xlim(f,xrange);
+% 
+%         % format axis
+%         xlabel('Time (s)')
+%         ylabel('Stimulus off / on')
+%         fig.FontSize = 11;
+%         title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+% 
+%         % make histogram / PSTH
+%         SOM_idx = (stimuli_parameters.Stm.Amplitude == 10); % select stimulus trials
+%         ctrl_idx = (stimuli_parameters.Stm.Amplitude == 0); % select control trials
+%         preT  = -0.2;
+%         postT = 0.7;
+%         binsize = 0.5;
+% 
+%         fig = subplot(2,1,2);
+% 
+%         [N, edges] = histcounts(vertcat(aligned_spikes{SOM_idx, cluster}), preT:binsize:postT);
+%         % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
+%         plot(edges(1:end-1),((N/sum(SOM_idx == 1))/binsize),'Color', '#D95319','LineWidth',2.5)
+%         hold on
+%         [N,edges] = histcounts(vertcat(aligned_spikes{ctrl_idx, cluster}), preT:binsize:postT);
+%         % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 0))/binsize), 'FaceColor', '#0072BD')
+%         plot(edges(1:end-1),((N/sum(SOM_idx == 0))/binsize),'Color', '#0072BD','LineWidth',2.5)
+% 
+%         %format axis
+%         legend('stimulus', 'control')
+%         xlabel('Time (s)')
+%         ylabel('Spike rate (Hz)')
+%         fig.FontSize = 11;
+%         xlim(fig,xrange);
+% 
+%         sgtitle(['Cluster ' num2str(cids(cluster))])
+% 
+%         % save plot
+%         figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+%         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+%         saveas(fig, fullfile(OutPath, figname));
+% 
+%         hold off
+% 
+%     end
+% end
 
 % plot SOM vibrotactile data
 if strcmp(stimuli_parameters.Par.Rec, 'SOM')
@@ -116,14 +116,18 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
 
         fig = figure;
         %fig = subplot(2,1,1); % rasterplot
-        set(gcf,'position',[500,150,800,600])
+        %set(gcf,'position',[500,150,800,600])
 
+        % define stimulus variable space
+        if max(stimuli_parameters.Stm.SomFreq) == 0
+            Var = stimuli_parameters.Stm.Amplitude;
+        else
+            Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
+        end
+
+       % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
         % make rasterplot
-        %Var = stimuli_parameters.Stm.SomFreq;
-        Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
-        %[f, YTick, YTickLab] = plotraster(fig, aligned_spikes(1:40, 1), Var, [0, 0, 0], [], 1);
-
-        [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
+        [f, YTick, YTickLab, varargout] = plotraster(gca, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
         yticks(YTick{1});
         yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
         ylim(f,yrange);
@@ -132,17 +136,17 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
 
         % format axis
         xlabel('Time (s)')
-        ylabel('Stimulus off / on')
-        fig.FontSize = 11;
+        ylabel('Vibrotactile stimulation (Hz)')
+        %fig.FontSize = 11;
         title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
 
-        % make histogram / PSTH
-        SOM_idx = (stimuli_parameters.Stm.Amplitude ~= 0); % select stimulus trials
-        ctrl_idx = (stimuli_parameters.Stm.Amplitude == 0); % select control trials
-        preT  = -0.2;
-        postT = 0.7;
-        binsize = 0.5;
-
+        % % make histogram / PSTH
+        % SOM_idx = (stimuli_parameters.Stm.Amplitude ~= 0); % select stimulus trials
+        % ctrl_idx = (stimuli_parameters.Stm.Amplitude == 0); % select control trials
+        % preT  = -0.2;
+        % postT = 0.7;
+        % binsize = 0.5;
+        % 
         % fig = subplot(2,1,2);
         % 
         % [N, edges] = histcounts(vertcat(aligned_spikes{SOM_idx, cluster}), preT:binsize:postT);
@@ -153,14 +157,14 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         % % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 0))/binsize), 'FaceColor', '#0072BD')
         % plot(edges(1:end-1),((N/sum(SOM_idx == 0))/binsize),'Color', '#0072BD','LineWidth',2.5)
 
-        %format axis
-        legend('stimulus', 'control')
-        xlabel('Time (s)')
-        ylabel('Spike rate (Hz)')
-        fig.FontSize = 11;
-        xlim(fig,xrange);
-
-        sgtitle(['Cluster ' num2str(cids(cluster))])
+        % %format axis
+        % legend('stimulus', 'control')
+        % xlabel('Time (s)')
+        % ylabel('Spike rate (Hz)')
+        % fig.FontSize = 11;
+        % xlim(fig,xrange);
+        % 
+        % sgtitle(['Cluster ' num2str(cids(cluster))])
 
         % save plot
         figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
@@ -168,15 +172,15 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         saveas(fig, fullfile(OutPath, figname));
 
         hold off
-
     end
+
 end
 
 
 % plot noise data
 if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
-    xrange = [-.2, +.4];
+    xrange = [-.2, +1.2];
 
     for cluster = 1:length(cids)
 
@@ -186,17 +190,17 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
         %set(gcf,'position',[500,150,600,400])
 
         % make rasterplot
-        Var = stimuli_parameters.Stm.Intensity;
+        Var = [stimuli_parameters.Stm.Intensity, stimuli_parameters.Stm.Mf];
         [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
-        yticks(YTick{1});
+        yticks(YTick{2});
         yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
         ylim(f,yrange);
-        yticklabels(unique(stimuli_parameters.Stm.Intensity));
+        yticklabels(unique(stimuli_parameters.Stm.Mf));
         xlim(f,xrange);
 
         % format axis
         xlabel('Time (s)')
-        ylabel('Intensity (dB SPL)')
+        ylabel('AM frequency (Hz)')
         ax.FontSize = 11;
         %title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
 
@@ -207,13 +211,13 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
         AM_60_idx = stimuli_parameters.Stm.Intensity == 60;
         AM_0_idx = (stimuli_parameters.Stm.Intensity ~= 15) & (stimuli_parameters.Stm.Intensity ~= 30) & ...
             (stimuli_parameters.Stm.Intensity ~= 45) & (stimuli_parameters.Stm.Intensity ~= 60);
-        
+
         % set range & figure
         fig = subplot(2,1,2);
         preT  = -0.2;
-        postT = 0.4;
+        postT = 1.1;
         binsize = 0.01;
-        
+
         % make histogram / PSTH
         [N, edges] = histcounts(vertcat(aligned_spikes{AM_60_idx, cluster}), preT:binsize:postT);
         plot(edges(1:end-1), ((N/sum(AM_60_idx))/binsize), 'Color', '#0072BD', 'LineWidth',1.5) % spike/s
@@ -223,7 +227,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
         [N,edges] = histcounts(vertcat(aligned_spikes{(AM_45_idx), cluster}), preT:binsize:postT);
         plot(edges(1:end-1), ((N/sum(AM_45_idx))/binsize), 'Color', '#D95319', 'LineWidth',1.5) % spike/s
         %plot(edges(1:end-1), ((N/sum(AM_45_idx))/binsize), 'Color', '#B673C8', 'LineWidth',1.5) % spike/s
-        
+
         [N,edges] = histcounts(vertcat(aligned_spikes{(AM_30_idx), cluster}), preT:binsize:postT);
         plot(edges(1:end-1), ((N/sum(AM_30_idx))/binsize), 'Color', '#7E2F8E', 'LineWidth',1.5) % spike/s
 
