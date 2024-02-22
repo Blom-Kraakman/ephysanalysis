@@ -32,7 +32,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'FRA')
         ylabel('Stimulus frequency (kHz)')
 
         % save plot
-        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i_raster', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
 
@@ -180,7 +180,9 @@ end
 % plot noise data
 if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
-    xrange = [-.2, +1.2];
+    preT  = -0.2;
+    postT = 1.5;
+    xrange = [preT, postT];
 
     for cluster = 1:length(cids)
 
@@ -214,8 +216,6 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
         % set range & figure
         fig = subplot(2,1,2);
-        preT  = -0.2;
-        postT = 1.1;
         binsize = 0.01;
 
         % make histogram / PSTH

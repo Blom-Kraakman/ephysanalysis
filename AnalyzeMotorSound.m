@@ -1,8 +1,21 @@
 clearvars
-filename = 'M7_S04_SOM';
-load([filename,'.mat'],'Aud','Stm','Par');
-%%
+filename = 'M6_S16_SOM';
+%load([filename,'.mat']);
+load(['D:\DATA\Behavioral Stimuli\M6\' filename,'.mat'],'Stm','Par');
 Fs = Par.Fs_stm;
+
+%%
+filename = [filename '_Sound'];
+load([filename,'.mat']);
+%load([filename,'.mat'],'Aud','Stm','Par');
+%% Format Aud
+AudTemp = [];
+for i = 1:size(Aud,2)
+    AudTemp(i,:) = Aud{i};
+end
+Aud = AudTemp;
+%%
+
 nSamp = size(Aud,2);
 sound = Aud(1,:);
 %
@@ -89,10 +102,10 @@ for ii = 1:nUStim
 end
 
 % make space for legend in subplot
-ax = subplot(nRows,nCols,ii+1,'Visible','off');
-axPos = ax.Position;
+%ax = subplot(nRows,nCols,ii+1,'Visible','off');
+%axPos = ax.Position;
 hL = legend(ax1,{'all (>10Hz)','low (500-2000Hz)','mid (2-10kHz)','high (>10kHz)'});
-hL.Position(1:2) = axPos(1:2); % move legend to position of extra axes
+%hL.Position(1:2) = axPos(1:2); % move legend to position of extra axes
 
 sgtitle(['Ramp: ',num2str(Stm.Ramp(1)),'ms','   ',...
          'Actuator: ',Stm.Actuator(1,:),    '   ', ...

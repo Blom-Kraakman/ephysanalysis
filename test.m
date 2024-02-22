@@ -1,4 +1,11 @@
-%test new function
+%%
+expression = 'end s';
+startpoint = strfind(msgs(1), expression);
+
+extractAfter(msgs(16), expression)
+
+
+%%test new function
 OutPath = 'D:\DATA\Processed\M7';
 stim_files = dir(fullfile(OutPath, '*_cluster.fig'));
 for filenr = 1:length(stim_files)
@@ -120,6 +127,13 @@ end
 % sessions_TTLs(:,1) = [1 1 2 2 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10 11 11 12 12 13 13 14 14 15 15 16 16 17 17 18 19 19 20 20 21 21 22 22 23 23]; % session nr
 % sessions_TTLs(:,2) = [1 0 1 0 1 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 1 0 1 0 1 0 1 0 1 0]; % session start/end (1/0)
 sessions_TTLs(:,4) = message_samples(1:length(sessions_TTLs)); % add sample nr
+
+% manual making of sessions_TTLs
+message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs
+sessions_TTLs = [];
+sessions_TTLs(:,1) = [1 2 3 3 4 4 5 5 6 6 7 7 8 8 10 10 11 11 12 12 13 13 14 14 17 17]; % session nr
+sessions_TTLs(:,2) = [0 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0]; % session start/end (1/0)
+sessions_TTLs(:,3) = message_samples(1:length(sessions_TTLs)); % sample nr
 
 %% TTLs recorded
 % to read text: in python save as csv. perhaps also combine all measures in
