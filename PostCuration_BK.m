@@ -14,17 +14,17 @@ clearvars
 %messagesPath = 'D:\DATA\EphysRecordings\M7\M07_2024-02-01_14-09-33\Record Node 103\experiment1\recording1\events\MessageCenter\'; % session TTLs
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M6\M06_2024-02-20_16-02-19\Record Node 103\experiment1\recording1\';
+recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M06\rec2\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M6\rec2\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M6\'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M08\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-relevant_sessions = [10 12]; % behaviour files (if only 1 behavior file in rec: [1 1])
+relevant_sessions = [1 11]; % behaviour files (if only 1 behavior file in rec: [1 1])
 Fs = 30000; % sampling freq
 
 
@@ -43,13 +43,8 @@ filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par
 %IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
 
-% ! Attention ! Removes part of matrix, hardcoded (S13 for M7)
-[spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples, Fs);
-
-%% save details good units
-set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
-filename = ['M07_S' set '_InfoGoodUnits'];
-save(fullfile(OutPath, filename), "cpos") %cpos variables: unit id, channel, depth, avg firing rate, nr spikes;
+% ! Attention ! Removes part of matrix, hardcoded
+[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples, Fs, OutPath);
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
@@ -64,11 +59,11 @@ alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, Srise, Sfall, 
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
 close all
 % select correct input files
-aligned_spikes = load([OutPath, '\M06_S01_FRA_AlignedSpikes']);
-stimuli_parameters = load([BehaviorPath 'M6_S01_FRA.mat']);
+aligned_spikes = load([OutPath, '\M08_S08_FRA_AlignedSpikes']);
+stimuli_parameters = load([BehaviorPath 'M8_S08_FRA.mat']);
 
 % function saves figures, change mouse name
-FSL = 0;
+FSL = 1;
 FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 
 %% plotting single sessions
@@ -80,7 +75,7 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 
 % select which session to plot
 close all
-session = 9;
+session = 8;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];

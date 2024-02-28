@@ -26,7 +26,7 @@ stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 for file = relevant_sessions(1):relevant_sessions(2)
 
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
-    skip_sessions = [];
+    skip_sessions = 10;
     %skip_sessions = (1:9);
 
     if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions)

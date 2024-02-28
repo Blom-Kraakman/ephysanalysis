@@ -14,17 +14,17 @@ clearvars
 %messagesPath = 'D:\DATA\EphysRecordings\M7\M07_2024-02-01_14-09-33\Record Node 103\experiment1\recording1\events\MessageCenter\'; % session TTLs
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M6\M06_2024-02-20_16-02-19\Record Node 103\experiment1\recording1\';
+recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M06\rec2\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M6\rec2\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M6\'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M08\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M8\'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-relevant_sessions = [10 15]; % behaviour files (if only 1 behavior file in rec: [1 1])
+relevant_sessions = [1 11]; % behaviour files (if only 1 behavior file in rec: [1 1])
 Fs = 30000; % sampling freq
 
 
@@ -36,10 +36,8 @@ Fs = 30000; % sampling freq
 set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
 filename = ['M06_S' set '_OE_TTLs'];
 save(fullfile(OutPath, filename), "sessions_TTLs")
-
-
 %filename = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
-
+filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
 
 %% Kilosort: post-curation unit extraction
 %IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);

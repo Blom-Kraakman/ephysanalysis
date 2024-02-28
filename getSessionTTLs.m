@@ -35,8 +35,8 @@ sessions_TTLs_details = [msgs, ttl_samples];
 ttls_norm = num2cell((message_samples - rec_samples(1))/Fs);
 sessions_TTLs_details = [sessions_TTLs_details, ttls_norm]; % time since recording onset
 
-filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
-save(fullfile(OutPath, filename), "sessions_TTLs")
+%filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
+%save(fullfile(OutPath, filename), "sessions_TTLs")
 
 
     function msgs = getMessageText(message_text)
