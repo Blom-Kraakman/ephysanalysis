@@ -30,12 +30,14 @@ spike_times = readNPY([KSPath 'spike_times.npy']); % spike_times contains spike 
 spike_clusters = readNPY([KSPath 'spike_clusters.npy']); % matched cluster ids
 TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs
 TTL_states = readNPY([TTLPath 'states.npy']);
+TTL_words = readNPY([TTLPath 'full_words.npy']);
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 
 % remove camera TTLs
 index = (abs(TTL_states) == 8);
 TTL_states(index) = [];
 TTL_samples(index) = [];
+TTL_words(index) = [];
 
 % recording sessions table
 sessions_TTLs = getSessionTTLs(messagesPath, rec_samples, Fs);
@@ -68,7 +70,7 @@ sessions_TTLs([1,9,21],:) = [];
 Nr_sessions(10,:) = [];
 
 %keep only TTLs recorded during specific session
-[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, rec_samples, Nr_sessions);
+[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples, Nr_sessions);
 
 % get all spiketimes from each good unit
 spiketimes = cell(length(cids), 1);
@@ -92,7 +94,7 @@ fprintf('unit extraction done\n');
 
 end
 
-function [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, rec_samples, Nr_sessions)
+function [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples, Nr_sessions)
 
 % define and initiate variables
 Srise = [];
@@ -122,6 +124,7 @@ for i = 1:length(sessions_TTLs)
     % retrieve all session samples
     idx = (TTL_samples >= session_start) & (TTL_samples < session_end);
     tTTL_states = TTL_states(idx);
+    tTTL_words = TTL_words(idx);
     tTTL_samples = TTL_samples(idx);
     clear idx;
 
@@ -130,37 +133,50 @@ for i = 1:length(sessions_TTLs)
     disp(['end sample: ' num2str(session_end)])
     disp(['Session related samples: ' num2str(size(tTTL_states, 1))])
 
+    % SOMETHING GOING WRONG WITH FLICKER AT START
     % keep only session specific TTLs
-    idx = (Nr_sessions(:,1) == sessions_TTLs(i,1)); % get TTLnr corresponding to session
-    TTLnr = Nr_sessions(idx, 3); %TTLnr = Nr_sessions(sessions_TTLs(i,1), 3);
-    index = (abs(tTTL_states) == TTLnr);
+    % gives 1 when either and both stim (2: aud, 16(2^4): som) are on/high
+    stim_on = bitand(tTTL_words, (2+16)) > 0; % numbers depend on session type?
+    stim_rise = [true; diff(stim_on) > 0];
+    stim_fall = [false; diff(stim_on) < 0];
+
+    % idx = (Nr_sessions(:,1) == sessions_TTLs(i,1)); % get TTLnr corresponding to session
+    % TTLnr = Nr_sessions(idx, 3); %TTLnr = Nr_sessions(sessions_TTLs(i,1), 3);
+    % index = (abs(tTTL_states) == TTLnr);
+    %
+    % % SxA session TTLs
+    % if Nr_sessions(idx, 3) == 0
+    %     TTLnr = [2, 5];
+    %     index = ((abs(tTTL_states) == TTLnr(1)) | (abs(tTTL_states) == TTLnr(2)));
+    % end
+
+    %ttTTL_states = tTTL_states(index);
+    %ttTTL_samples = tTTL_samples(index);
+
+    % % session always starts with high/positive TTL number
+    % if ttTTL_states(1) < 0
+    %     ttTTL_samples(1) = [];
+    %     ttTTL_states(1) = [];
+    % end
+
+    % % group TTLs on rising or falling edge
+    % tSrise = ttTTL_samples(ttTTL_states >= 0);
+    % tSfall = ttTTL_samples(ttTTL_states <= 0);
     
-    % SxA session TTLs
-    if Nr_sessions(idx, 3) == 0
-        TTLnr = [2, 5];
-        index = ((abs(tTTL_states) == TTLnr(1)) | (abs(tTTL_states) == TTLnr(2)));
-    end
-
-    ttTTL_states = tTTL_states(index);
-    ttTTL_samples = tTTL_samples(index);
-
-    % session always starts with high/positive TTL number
-    if ttTTL_states(1) < 0
-        ttTTL_samples(1) = [];
-        ttTTL_states(1) = [];
-    end
-
     % group TTLs on rising or falling edge
-    tSrise = ttTTL_samples(ttTTL_states >= 0);
-    tSfall = ttTTL_samples(ttTTL_states <= 0);
+    tSrise = tTTL_samples(stim_rise);
+    tSfall = tTTL_samples(stim_fall);
 
+    idx = (tSrise(1) == tTTL_samples(2));
+    tSrise(idx) = [];
+    
     % remove artefacts where Srise == Sfall
     minDur = 30; % samples (= 1ms)
     idx = find ((tSfall - tSrise) < minDur);
     tSrise(idx) = [];
     tSfall(idx) = [];
 
-    disp(['saved TTLs: ' num2str(size(tSrise,1))])
+    disp(['saved TTLs: ' (num2str(size(tSrise,1)*2))])
 
     % output variables
     Srise = [Srise; tSrise];

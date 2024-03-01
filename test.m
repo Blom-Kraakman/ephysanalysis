@@ -1,9 +1,15 @@
+%% use full words TTLs for spike alignment
+full_words = readNPY('D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\full_words.npy');
+
+% gives 1 when either and both stim (2: aud, 16(2^4): som) are on/high
+stim_on = bitand(full_words,(2+16)) > 0; 
+stim_rise = [true;diff(stim_on) > 0];
+stim_fall = [false;diff(stim_on) < 0];
 %% check nr ttls in som+aud
 TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs
 TTL_states = readNPY([TTLPath 'states.npy']);
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 stimuli_parameters = load([stim_files(1).folder '\' stim_files(1).name]);
-
 
 % remove camera TTLs
 index = (abs(TTL_states) == 8);
@@ -14,8 +20,6 @@ TTL_samples(index) = [];
 index = (abs(TTL_states) ~= 2 & abs(TTL_states) ~= 5);
 TTL_states(index) = [];
 TTL_samples(index) = [];
-
-
 
 %%
 expression = 'end s';

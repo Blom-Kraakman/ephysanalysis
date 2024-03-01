@@ -26,8 +26,7 @@ stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 for file = relevant_sessions(1):relevant_sessions(2)
 
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
-    skip_sessions = 10;
-    %skip_sessions = (1:9);
+    skip_sessions = 10; %skip_sessions = (1:9);
 
     if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions)
         continue
@@ -35,8 +34,11 @@ for file = relevant_sessions(1):relevant_sessions(2)
 
     % select correct analysis window and
     if strcmp(stimuli_parameters.Par.Rec, 'SOM')
-        PreT  = 200; % amount of msec. to include before Srise;
-        PostT = 700; % amount of msec. to include after Sfall;
+        PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
+        PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
+    elseif strcmp(stimuli_parameters.Par.Rec, 'SxA')
+        PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4;
+        PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4);
     elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
         PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
         PostT = str2double(stimuli_parameters.Par.FRAPostTime);
@@ -49,8 +51,21 @@ for file = relevant_sessions(1):relevant_sessions(2)
     end
 
     % select correct number of TTLs based on stimuli_parameters.par file
-    NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
     SpkT = [];
+    NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
+
+    % account of double TTLs in SxA sessions
+    % if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+    %     for i = 1:size(stimuli_parameters.Stm, 1)
+    %         if strcmp(stimuli_parameters.Stm.MMType(i), 'SO') || strcmp(stimuli_parameters.Stm.MMType(i), 'OA') || strcmp(stimuli_parameters.Stm.MMType(i), 'OO')
+    %             NStim = NStim + 1;
+    %         elseif strcmp(stimuli_parameters.Stm.MMType(i), 'SA')
+    %             NStim = NStim + 2;
+    %         end
+    %     end
+    % else
+    %     NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
+    % end
 
     disp(['session ' num2str(stimuli_parameters.Par.Set)])
     disp(['Nr stim in session ' num2str(NStim)])
@@ -78,11 +93,8 @@ for file = relevant_sessions(1):relevant_sessions(2)
 
     disp(['stim counter: ' num2str(stim_counter)])
 
-    %save aligned spikes
-    %set = sprintf('%02d', str2double(stimuli_parameters.Par.Set));
-   % filename = ['M06_S' set '_' stimuli_parameters.Par.Rec '_AlignedSpikes'];
+    % save aligned spikes
     filename = sprintf('M%.2i_S%.2i_%s_AlignedSpikes', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-
     save(fullfile(OutPath, filename), "SpkT")
 
 end

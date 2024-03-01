@@ -9,10 +9,6 @@
 
 clearvars
 
-%recPath = 'D:\DATA\EphysRecordings\M1\M01_2023-07-07_14-54-04_S05\Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data\';
-%TTLPath = 'D:\DATA\EphysRecordings\M7\M07_2024-02-01_14-09-33\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'
-%messagesPath = 'D:\DATA\EphysRecordings\M7\M07_2024-02-01_14-09-33\Record Node 103\experiment1\recording1\events\MessageCenter\'; % session TTLs
-
 % set directories
 recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
@@ -26,7 +22,6 @@ rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recordi
 
 relevant_sessions = [1 11]; % behaviour files (if only 1 behavior file in rec: [1 1])
 Fs = 30000; % sampling freq
-
 
 %% sessions TTLs as extracted from OpenEphys message center
 
@@ -75,7 +70,7 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 
 % select which session to plot
 close all
-session = 8;
+session = 11;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];

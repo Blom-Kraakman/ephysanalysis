@@ -41,9 +41,12 @@ end
 
 % plot SOM vibrotactile data
 if strcmp(stimuli_parameters.Par.Rec, 'SOM')
-    %if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'DC Motor') || strcmp(stimuli_parameters.Par.Rec, 'SOM')
 
-    xrange = [-.2, +.7];
+    % define shared x-lim parameters
+    preT  = -0.2;
+    postT = 0.7;
+    xrange = [preT, postT];
+    binsize = 0.01;
 
     for cluster = 1:length(cids)
 
@@ -52,10 +55,14 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         %set(gcf,'position',[500,150,800,600])
 
         % define stimulus variable space
-        if max(stimuli_parameters.Stm.SomFreq) == 0
+        if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
             Var = stimuli_parameters.Stm.Amplitude;
-        else
+            yaxislabels = unique(stimuli_parameters.Stm.Amplitude);
+            yaxistext = 'Pressure (V)';
+        elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
             Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
+            yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
+            yaxistext = 'Vibrotactile stimulation (Hz)';
         end
 
        % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
@@ -64,12 +71,12 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         yticks(YTick{1});
         yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
         ylim(f,yrange);
-        yticklabels(unique(stimuli_parameters.Stm.SomFreq));
         xlim(f,xrange);
 
         % format axis
         xlabel('Time (s)')
-        ylabel('Vibrotactile stimulation (Hz)')
+        yticklabels(yaxislabels)
+        ylabel(yaxistext)
         %fig.FontSize = 11;
         title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
 
@@ -110,14 +117,62 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
 end
 
 % plot SxA
+if strcmp(stimuli_parameters.Par.Rec, 'SxA')
 
+    % define shared x-lim parameters
+    preT  = -0.2;
+    postT = 1.5;
+    xrange = [preT, postT];
+    binsize = 0.01;
+
+    for cluster = 1:length(cids)
+
+        figure
+        %fig = subplot(2,1,1); % rasterplot
+        set(gcf,'position',[500,150,900,700])
+
+        % make rasterplot
+
+        % define stimulus variable space
+        if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
+            Var = stimuli_parameters.Stm.Amplitude;
+            yaxislabels = unique(stimuli_parameters.Stm.Amplitude);
+            yaxistext = 'Pressure (V)';
+        elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
+            %Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude, stimuli_parameters.Stm.AudDur];
+            Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
+
+            yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
+            yaxistext = 'Vibrotactile stimulation (Hz)';
+        end
+
+        % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
+        % make rasterplot
+        [f, YTick, YTickLab, varargout] = plotraster(gca, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
+        yticks(YTick{1});
+        yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
+        ylim(f,yrange);
+        xlim(f,xrange);
+
+        % format axis
+        xlabel('Time (s)')
+        yticklabels(yaxislabels)
+        ylabel(yaxistext)
+        %fig.FontSize = 11;
+        title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+    end
+
+end
 
 % plot noise data
 if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
+    % define shared x-lim parameters
     preT  = -0.2;
     postT = 1.5;
     xrange = [preT, postT];
+    binsize = 0.01;
 
     for cluster = 1:length(cids)
 
@@ -151,7 +206,6 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
 
         % set range & figure
         fig = subplot(2,1,2);
-        binsize = 0.01;
 
         % make histogram / PSTH
         [N, edges] = histcounts(vertcat(aligned_spikes{AM_60_idx, cluster}), preT:binsize:postT);
