@@ -140,29 +140,6 @@ for i = 1:length(sessions_TTLs)
     stim_rise = [true; diff(stim_on) > 0];
     stim_fall = [false; diff(stim_on) < 0];
 
-    % idx = (Nr_sessions(:,1) == sessions_TTLs(i,1)); % get TTLnr corresponding to session
-    % TTLnr = Nr_sessions(idx, 3); %TTLnr = Nr_sessions(sessions_TTLs(i,1), 3);
-    % index = (abs(tTTL_states) == TTLnr);
-    %
-    % % SxA session TTLs
-    % if Nr_sessions(idx, 3) == 0
-    %     TTLnr = [2, 5];
-    %     index = ((abs(tTTL_states) == TTLnr(1)) | (abs(tTTL_states) == TTLnr(2)));
-    % end
-
-    %ttTTL_states = tTTL_states(index);
-    %ttTTL_samples = tTTL_samples(index);
-
-    % % session always starts with high/positive TTL number
-    % if ttTTL_states(1) < 0
-    %     ttTTL_samples(1) = [];
-    %     ttTTL_states(1) = [];
-    % end
-
-    % % group TTLs on rising or falling edge
-    % tSrise = ttTTL_samples(ttTTL_states >= 0);
-    % tSfall = ttTTL_samples(ttTTL_states <= 0);
-    
     % group TTLs on rising or falling edge
     tSrise = tTTL_samples(stim_rise);
     tSfall = tTTL_samples(stim_fall);
@@ -181,8 +158,6 @@ for i = 1:length(sessions_TTLs)
     % output variables
     Srise = [Srise; tSrise];
     Sfall = [Sfall; tSfall];
-    %TTLs_sample = [TTLs_sample, tTTL_samples];
-    %TTLs_state = [TTLs_state, tTTL_state];
 
 end
 end

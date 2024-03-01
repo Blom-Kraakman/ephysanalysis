@@ -13,7 +13,6 @@ elseif isempty(relevant_sessions)
     relevant_sessions = input('Enter first and last session number in this recording: ');
 end
 
-%Fs = 30000; % Sampling frequency (in Hz)
 Srise = double(Srise);
 Sfall = double(Sfall);
 stim_counter = 0;
@@ -45,27 +44,11 @@ for file = relevant_sessions(1):relevant_sessions(2)
     elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
         PreT = (str2double(stimuli_parameters.Par.AMPreTime) + (str2double(stimuli_parameters.Par.AMPostTime)/4));
         PostT = (str2double(stimuli_parameters.Par.AMStimTime) + (str2double(stimuli_parameters.Par.AMPostTime)/2));
-        %PreT = str2double(stimuli_parameters.Par.AMStimTime);
-        %PostT = str2double(stimuli_parameters.Par.AMPostTime);
-        % AMStimTime 200, AMPostTime 400, AMPreTime 100
     end
 
     % select correct number of TTLs based on stimuli_parameters.par file
     SpkT = [];
     NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
-
-    % account of double TTLs in SxA sessions
-    % if strcmp(stimuli_parameters.Par.Rec, 'SxA')
-    %     for i = 1:size(stimuli_parameters.Stm, 1)
-    %         if strcmp(stimuli_parameters.Stm.MMType(i), 'SO') || strcmp(stimuli_parameters.Stm.MMType(i), 'OA') || strcmp(stimuli_parameters.Stm.MMType(i), 'OO')
-    %             NStim = NStim + 1;
-    %         elseif strcmp(stimuli_parameters.Stm.MMType(i), 'SA')
-    %             NStim = NStim + 2;
-    %         end
-    %     end
-    % else
-    %     NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
-    % end
 
     disp(['session ' num2str(stimuli_parameters.Par.Set)])
     disp(['Nr stim in session ' num2str(NStim)])

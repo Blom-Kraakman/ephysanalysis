@@ -65,11 +65,11 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
             yaxistext = 'Vibrotactile stimulation (Hz)';
         end
 
-       % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
+        % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
         % make rasterplot
         [f, YTick, YTickLab, varargout] = plotraster(gca, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
         yticks(YTick{1});
-        yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
+        yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
         ylim(f,yrange);
         xlim(f,xrange);
 
@@ -86,9 +86,9 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         % preT  = -0.2;
         % postT = 0.7;
         % binsize = 0.5;
-        % 
+        %
         % fig = subplot(2,1,2);
-        % 
+        %
         % [N, edges] = histcounts(vertcat(aligned_spikes{SOM_idx, cluster}), preT:binsize:postT);
         % % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
         % plot(edges(1:end-1),((N/sum(SOM_idx == 1))/binsize),'Color', '#D95319','LineWidth',2.5)
@@ -103,7 +103,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         % ylabel('Spike rate (Hz)')
         % fig.FontSize = 11;
         % xlim(fig,xrange);
-        % 
+        %
         % sgtitle(['Cluster ' num2str(cids(cluster))])
 
         % save plot
@@ -132,7 +132,8 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
         set(gcf,'position',[500,150,900,700])
 
         % make rasterplot
-
+        raster_color = [0, 0, 0];
+        raster_yinc = [];%1,1,1];
         % define stimulus variable space
         if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
             Var = stimuli_parameters.Stm.Amplitude;
@@ -140,19 +141,26 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
             yaxistext = 'Pressure (V)';
         elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
             %Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude, stimuli_parameters.Stm.AudDur];
-            Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
-
-            yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
+            Var = [stimuli_parameters.Stm.MMType, stimuli_parameters.Stm.Amplitude, stimuli_parameters.Stm.SomFreq];
+            %Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.MMType];
+            raster_yinc = [1,10,10];
+            % yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
+            yaxislabels = unique(stimuli_parameters.Stm.MMType);
             yaxistext = 'Vibrotactile stimulation (Hz)';
+            % add delay to "SO","OO"
+            idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
+            for ii = idx'
+                aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + 0.25;
+            end
         end
 
         % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
         % make rasterplot
-        [f, YTick, YTickLab, varargout] = plotraster(gca, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
+        [f, YTick, YTickLab, varargout] = plotraster(gca, aligned_spikes(:, cluster), Var, raster_color, raster_yinc, 1);
         yticks(YTick{1});
-        yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
-        ylim(f,yrange);
+        yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];        ylim(f,yrange);
         xlim(f,xrange);
+        xline([0 0.25 0.75 1])
 
         % format axis
         xlabel('Time (s)')
@@ -185,7 +193,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
         Var = [stimuli_parameters.Stm.Intensity, stimuli_parameters.Stm.Mf];
         [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
         yticks(YTick{2});
-        yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
+        yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
         ylim(f,yrange);
         yticklabels(unique(stimuli_parameters.Stm.Mf));
         xlim(f,xrange);

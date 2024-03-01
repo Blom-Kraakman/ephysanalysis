@@ -70,7 +70,7 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 
 % select which session to plot
 close all
-session = 11;
+session = 5;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -79,6 +79,12 @@ stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
 aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+
+
+idx = ismember(["SO","OO"],stimuli_parameters.Stm.MMType);
+stimuli_parameters.Stm(idx,25) = {0};
+idx = ismember("SA",stimuli_parameters.Stm.MMType);
+stimuli_parameters.Stm(idx,25) = {1};
 
 plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
@@ -183,4 +189,10 @@ xlim([min(tt),max(tt)]);
 
 %% quantify reactive units
 % to do
+% 1. quantify responsive units: sig diff firing rate during stim period vs no
+% stim session
+% 2. cross correlating single trials (KDF as in previous script), corr
+% coeficient over control value to be sig
+% onset/offset responses quantify with window (0.1sec?) 
+% 3. firing in relation to phase stimulus (try cycle histogram)
 
