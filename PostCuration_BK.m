@@ -20,7 +20,9 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-relevant_sessions = [1 11]; % behaviour files (if only 1 behavior file in rec: [1 1])
+relevant_sessions = [1 11]; % M8
+% relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
+skip_sessions = 0;
 Fs = 30000; % sampling freq
 
 %% sessions TTLs as extracted from OpenEphys message center
@@ -38,17 +40,13 @@ filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par
 %IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
 
-% ! Attention ! Removes part of matrix, hardcoded
-[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples, Fs, OutPath);
+[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, skip_sessions, rec_samples, Fs, OutPath);
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
 % spike times in sec
-% good to have: TTL signaling start & end of stim presentation set
 
-% function saves aligned spikes cell array, change mouse name
-
-alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, Srise, Sfall, cids, Fs);
+alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions, Srise, Sfall, cids, Fs);
 
 %% FRA analysis
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
@@ -66,11 +64,14 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 % AMn: raster + PSTH
 % SOM: raster + PSTH
 
-%cids = load('D:\DATA\Processed\M7\M07_S01-17_InfoGoodUnits.mat'); 
+% load unit info
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos.id';
 
 % select which session to plot
-close all
-session = 5;
+%close all
+session = 4;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -80,29 +81,67 @@ stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 
-
-idx = ismember(["SO","OO"],stimuli_parameters.Stm.MMType);
-stimuli_parameters.Stm(idx,25) = {0};
-idx = ismember("SA",stimuli_parameters.Stm.MMType);
-stimuli_parameters.Stm(idx,25) = {1};
+if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+    idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
+    stimuli_parameters.Stm(idx,25) = {2};
+    idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
+    stimuli_parameters.Stm(idx,25) = {3}; 
+    idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
+    stimuli_parameters.Stm(idx,25) = {4}; 
+    idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
+    stimuli_parameters.Stm(idx,25) = {1};
+    % order: type, freq, amplitude
+end
 
 plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
-%% plotting SOM sessions with their controls
+%% plotting SOM sessions
 %saveplots = 0; %0 don't save, 1 save plots in OutPath
-%cids = load('D:\DATA\Processed\M04_S01-23_InfoGoodUnits.mat'); 
-%cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
+% currently plots raster + psth of each vibration freq seperatly
 
-sessions = [4 5]; % [exp ctrl]
+close all
+OutPath = 'D:\DATA\Processed\M8'; % output directory
 
-SOMplotting(sessions, cids, OutPath, BehaviorPath, 0);
+% load unit info
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos.id';
+
+sessions = 4; % [exp ctrl]
+%load correct files
+session = sessions(1); % select experimental session
+
+sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+stim_files = dir(fullfile(BehaviorPath, sessionFile));
+stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+
+% plot with matching control
+% session = sessions(2); % select control session
+% 
+% sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+% stim_files = dir(fullfile(BehaviorPath, sessionFile));
+% stimuli_parameters_ctrl = load([stim_files.folder '\' stim_files.name]);
+%
+% aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+% aligned_spikes_ctrl = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+% aligned_spikes_ctrl = aligned_spikes_ctrl.SpkT;
+% %format data to plot together
+% stimuli_parameters = vertcat(stimuli_parameters_som.Stm, stimuli_parameters_ctrl.Stm);
+% aligned_spikes = vertcat(aligned_spikes_som, aligned_spikes_ctrl);
+
+OutPath = 'D:\DATA\Processed\M8\test'; % output directory
+
+fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 1);
 %% FSL SOM analysis
 % function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)
 % input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
 % output: first spike latency SOM/AM trials
 
 % select which session to plot
-session = 1;
+session = 2;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -119,7 +158,12 @@ SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 
 %% plotting channel map
 % match unit position to channel map
-plot_in_channel_map(KSPath);
+
+% load unit info
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos;
+plot_in_channel_map(KSPath, cids);
 
 %% channel waveforms
 % extract and plot waveform traces

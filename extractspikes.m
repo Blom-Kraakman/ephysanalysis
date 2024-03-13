@@ -1,4 +1,4 @@
-function [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples, Fs, OutPath)
+function [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, skip_sessions, rec_samples, Fs, OutPath)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
 % and matched unit ids (vector), recording time stamps (vector)
@@ -66,11 +66,11 @@ for file = 1:length(Nr_sessions)
 end
 
 % remove unexecuted sessions
-sessions_TTLs([1,9,21],:) = [];
-Nr_sessions(10,:) = [];
+idx_remove = find(sum(sessions_TTLs(:,1) == skip_sessions, 2));
+sessions_TTLs(idx_remove,:) = [];
 
 %keep only TTLs recorded during specific session
-[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples, Nr_sessions);
+[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples);
 
 % get all spiketimes from each good unit
 spiketimes = cell(length(cids), 1);
@@ -94,7 +94,7 @@ fprintf('unit extraction done\n');
 
 end
 
-function [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples, Nr_sessions)
+function [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples)
 
 % define and initiate variables
 Srise = [];
@@ -108,15 +108,15 @@ for i = 1:length(sessions_TTLs)
     if sessions_TTLs(i,2) == 1
         session_start = sessions_TTLs(i,3); %start
         session_end = sessions_TTLs(i+1,3); %end
-    elseif (i == 1) && (sessions_TTLs(i,2) == 0) % missing start first session 
+    elseif (i == 1) && (sessions_TTLs(i,2) == 0) % missing start first session
         session_start = rec_samples(1); %start
         session_end = sessions_TTLs(i,3); %end
-        % elseif (i == 9) && (sessions_TTLs(i,2) == 0) % special case in M6
-        %     session_start = sessions_TTLs(i,3); %start
-        %     session_end = rec_samples(end);
+    elseif (i == 9) && (sessions_TTLs(i,2) == 0) % special case in M6
+        session_start = sessions_TTLs(i,3); %start
+        session_end = rec_samples(end);
         % elseif (i == 2) && (sessions_TTLs(i,2) == 0) % special case in M7
-        %     session_start = sessions_TTLs(i-1,3); %start
-        %     session_end = sessions_TTLs(i,3); %end
+        %         session_start = sessions_TTLs(i-1,3); %start
+        %         session_end = sessions_TTLs(i,3); %end
     else
         continue
     end
@@ -133,10 +133,17 @@ for i = 1:length(sessions_TTLs)
     disp(['end sample: ' num2str(session_end)])
     disp(['Session related samples: ' num2str(size(tTTL_states, 1))])
 
-    % SOMETHING GOING WRONG WITH FLICKER AT START
-    % keep only session specific TTLs
-    % gives 1 when either and both stim (2: aud, 16(2^4): som) are on/high
-    stim_on = bitand(tTTL_words, (2+16)) > 0; % numbers depend on session type?
+    %special case M7
+    % if sessions_TTLs(i, 1) == 14
+    %     idx = (abs(tTTL_states) == 2);
+    %     tTTL_states = tTTL_states(idx);
+    %     tTTL_words = tTTL_words(idx);
+    %     tTTL_samples = tTTL_samples(idx);
+    %     clear idx;
+    % end
+
+    % keep only session specific TTLs, gives 1 when either and both stim (2: aud, 16(2^4): som) are on/high
+    stim_on = bitand(tTTL_words, (2+16)) > 0; % numbers depend on session type
     stim_rise = [true; diff(stim_on) > 0];
     stim_fall = [false; diff(stim_on) < 0];
 
@@ -144,12 +151,12 @@ for i = 1:length(sessions_TTLs)
     tSrise = tTTL_samples(stim_rise);
     tSfall = tTTL_samples(stim_fall);
 
-    idx = (tSrise(1) == tTTL_samples(2));
+    idx = (tSrise(1) == tTTL_samples(3));
     tSrise(idx) = [];
     
     % remove artefacts where Srise == Sfall
     minDur = 30; % samples (= 1ms)
-    idx = find ((tSfall - tSrise) < minDur);
+    idx = find((tSfall - tSrise) < minDur);
     tSrise(idx) = [];
     tSfall(idx) = [];
 
@@ -158,6 +165,7 @@ for i = 1:length(sessions_TTLs)
     % output variables
     Srise = [Srise; tSrise];
     Sfall = [Sfall; tSfall];
+    %disp(['Srise: ' Srise])
 
 end
 end

@@ -71,22 +71,21 @@ for cluster = 1:length(cids)
         [N, edges] = histcounts(vertcat(aligned_spikes{SOM_Amp_low, cluster}), preT:binsize:postT);
         % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
         % plot(edges(1:end-1),((N/sum(SOM_on_idx == 1))/binsize),'Color', '#00636C','LineWidth',1.5)
-        plot(edges(1:end-1),((N/sum(SOM_Amp_low))/binsize),'Color', '#00636C','LineWidth',1)
+        plot(edges(1:end-1),N,'Color', '#00636C','LineWidth',1.5)
 
         hold on
         [N, edges] = histcounts(vertcat(aligned_spikes{SOM_Amp_high, cluster}), preT:binsize:postT);
-        plot(edges(1:end-1),((N/sum(SOM_Amp_high))/binsize),'Color', '#D95319','LineWidth',1)
+        % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
+        % plot(edges(1:end-1),((N/sum(SOM_on_idx == 1))/binsize),'Color', '#00636C','LineWidth',1.5)
+        plot(edges(1:end-1),((N/SOM_Amp,'Color', '#00636C','LineWidth',1.5)
         hold off
 
         %format axis
-        %legend('0.1V', '0.3V', 'Location','northwest')
+        legend('0.1V', '0.3V')
         xlabel('Time (s)')
         ylabel('Spike rate (Hz)')
         fig.FontSize = 11;
         xlim(fig,xrange);
-        %ylim(fig, [0, 300])
-        xline(xlinerange) % on/off set
-
 
         %sgtitle(['                    Fur stroke (unit ' num2str(cids(cluster)) ')'])
         %sgtitle([stimuli_parameters.Par.SomatosensoryLocation(1) 'unit' num2str(cids(cluster))])

@@ -21,7 +21,7 @@ index = (abs(TTL_states) ~= 2 & abs(TTL_states) ~= 5);
 TTL_states(index) = [];
 TTL_samples(index) = [];
 
-%%
+%% regular expressions
 expression = 'end s';
 startpoint = strfind(msgs(1), expression);
 
@@ -37,7 +37,7 @@ for filenr = 1:length(stim_files)
     close(file)
 end
 
-%%
+%% open multiple figures
 [figures, pathname,]=uigetfile('directory','*.fig','Multiselect','on');
 for x = 1:length(figures)
     Multi_Figs = [pathname,filesep,figures{x}];

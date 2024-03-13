@@ -1,9 +1,7 @@
-function fig = plot_in_channel_map(KSPath)
+function fig = plot_in_channel_map(KSPath, cpos)
 
 channel_map = readNPY([KSPath 'channel_map.npy']);
 channel_positions = readNPY([KSPath 'channel_positions.npy']);
-cids = load('D:\DATA\Processed\M4\M04_S01-23_InfoGoodUnits.mat'); 
-cpos = cids.cpos;
 
 xcoords = channel_positions(:,1);
 ycoords = channel_positions(:,2);

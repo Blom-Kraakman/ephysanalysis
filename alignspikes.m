@@ -1,4 +1,4 @@
-function [aligned_spikes] = alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, Srise, Sfall, cids, Fs)
+function [aligned_spikes] = alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions, Srise, Sfall, cids, Fs)
 % align spikes
 % INPUT - spiketimes (cell array, 1 cell: timestamp of spike for 1 unit),
 % TTLs (vector), stimulus parameters (struct)
@@ -25,7 +25,6 @@ stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 for file = relevant_sessions(1):relevant_sessions(2)
 
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
-    skip_sessions = 10; %skip_sessions = (1:9);
 
     if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions)
         continue
@@ -36,8 +35,14 @@ for file = relevant_sessions(1):relevant_sessions(2)
         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
         PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
     elseif strcmp(stimuli_parameters.Par.Rec, 'SxA')
-        PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4;
-        PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4);
+        % % add delay to "SO","OO"
+        % idx_Sound = find(ismember(stimuli_parameters.Stm.MMType,["SA","OA"]));
+        % idx_noSound = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
+        % for ii = idx_noSound'
+        %     aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + 0.25;
+        % end
+        PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
+        PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
     elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
         PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
         PostT = str2double(stimuli_parameters.Par.FRAPostTime);
