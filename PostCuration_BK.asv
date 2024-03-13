@@ -3,9 +3,7 @@
 % post processing data steps:
 %   get spike times from all good clusters
 %   get event timings (from ephys events)
-%   quatify which cluster responds to which event
-%       response = fire (spiketime) in event window
-%   quantify firing rates? changes expected after events vs spontaneous
+%   plot single unit responses & single units in channel map
 
 clearvars
 
@@ -16,11 +14,12 @@ TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
 KSPath = 'D:\DATA\EphysRecordingsSorted\M08\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M6'; % output directory
+OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-relevant_sessions = [1 9]; % behaviour files (if only 1 behavior file in rec: [1 1])
+relevant_sessions = [1 11]; % M8
+% relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
 skip_sessions = 0;
 Fs = 30000; % sampling freq
 
@@ -39,15 +38,11 @@ filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par
 %IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
 
-% ! Attention ! Removes part of matrix, hardcoded
 [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, skip_sessions, rec_samples, Fs, OutPath);
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
 % spike times in sec
-% good to have: TTL signaling start & end of stim presentation set
-
-% function saves aligned spikes cell array, change mouse name
 
 alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions, Srise, Sfall, cids, Fs);
 
@@ -73,7 +68,7 @@ cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
 % select which session to plot
-close all
+%close all
 session = 4;
 
 % load corresponsing files
@@ -98,10 +93,12 @@ end
 
 plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
-%% plotting SOM sessions with their controls
+%% plotting SOM sessions
 %saveplots = 0; %0 don't save, 1 save plots in OutPath
+% currently plots raster + psth of each vibration freq seperatly
 
 close all
+OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
@@ -119,6 +116,7 @@ stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 
+% plot with matching control
 % session = sessions(2); % select control session
 % 
 % sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -128,13 +126,13 @@ aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name
 % aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 % aligned_spikes_ctrl = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 % aligned_spikes_ctrl = aligned_spikes_ctrl.SpkT;
-
 % %format data to plot together
 % stimuli_parameters = vertcat(stimuli_parameters_som.Stm, stimuli_parameters_ctrl.Stm);
 % aligned_spikes = vertcat(aligned_spikes_som, aligned_spikes_ctrl);
 
+OutPath = 'D:\DATA\Processed\M8\test'; % output directory
 
-fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 0);
+fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 1);
 %% FSL SOM analysis
 % function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)
 % input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
@@ -158,7 +156,12 @@ SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 
 %% plotting channel map
 % match unit position to channel map
-plot_in_channel_map(KSPath);
+
+% load unit info
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos;
+plot_in_channel_map(KSPath, cids);
 
 %% channel waveforms
 % extract and plot waveform traces

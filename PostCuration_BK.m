@@ -3,9 +3,7 @@
 % post processing data steps:
 %   get spike times from all good clusters
 %   get event timings (from ephys events)
-%   quatify which cluster responds to which event
-%       response = fire (spiketime) in event window
-%   quantify firing rates? changes expected after events vs spontaneous
+%   plot single unit responses & single units in channel map
 
 clearvars
 
@@ -230,13 +228,3 @@ som_waveform = [zeros(1,PrePostSamp), som_waveform, zeros(1,PrePostSamp)];
 % plotting the waveform
 plot(tt(1:length(som_waveform)),som_waveform+Offset);
 xlim([min(tt),max(tt)]);
-
-%% quantify reactive units
-% to do
-% 1. quantify responsive units: sig diff firing rate during stim period vs no
-% stim session
-% 2. cross correlating single trials (KDF as in previous script), corr
-% coeficient over control value to be sig
-% onset/offset responses quantify with window (0.1sec?) 
-% 3. firing in relation to phase stimulus (try cycle histogram)
-
