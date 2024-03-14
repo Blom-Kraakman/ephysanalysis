@@ -69,7 +69,7 @@ cids = cpos.cpos.id';
 
 % select which session to plot
 %close all
-session = 4;
+session = 2;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];

@@ -319,10 +319,10 @@ for i = 1:size(YTickLim,1)
     yline(fig,YTickLim(i,2)+3,':k');
 end
 
-% box
-x = -0.2; w=1;
-for i = 1:size(YTickLim,1)
-    %r(i) = rectangle(fig,'Position',[x,YTickLim(i,1)-0.5,w,YTickLim(i,2)-YTickLim(i,1)+1],...
-     %   'FaceColor',[0,0,0,0],'EdgeColor','none');
-end
+% % box
+% x = -0.2; w=1;
+% for i = 1:size(YTickLim,1)
+%     %r(i) = rectangle(fig,'Position',[x,YTickLim(i,1)-0.5,w,YTickLim(i,2)-YTickLim(i,1)+1],...
+%      %   'FaceColor',[0,0,0,0],'EdgeColor','none');
+% end
 end
