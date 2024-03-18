@@ -4,13 +4,13 @@ function [SOM] = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids)
 
 % stimulus parameters
 if strcmp(stimuli_parameters.Par.Rec, 'SOM')
-    x = stimuli_parameters.Stm.Amplitude;
+    amp = stimuli_parameters.Stm.Amplitude;
 elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
-    x = [stimuli_parameters.Stm.Intensity];
-    x((x ~= 15) & (x ~= 30) & (x ~= 45) & (x ~= 60)) = 0;
+    amp = [stimuli_parameters.Stm.Intensity];
+    amp((amp ~= 15) & (amp ~= 30) & (amp ~= 45) & (amp ~= 60)) = 0;
 end
 
-UAmp = unique(x);
+UAmp = unique(amp);
 NAmp = length(UAmp);
 NClu = length(cids); % cluster info
 
@@ -27,7 +27,7 @@ for cluster = 1:NClu
 
     % Spike count analysis
     for amplitude = 1:NAmp
-            sel = x == UAmp(amplitude);
+            sel = amp == UAmp(amplitude);
             NTrials(amplitude,cluster) = sum(sel);
 
             if (NTrials(amplitude,cluster) == 0); continue; end
