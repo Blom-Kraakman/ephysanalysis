@@ -289,18 +289,14 @@ freq = 3;
         yrange = [min(YTick{end}) - 50, max(YTick{end}) + 50];
 
         % get analogue signal
-        PreT = 0.2; PostT = 1.5; %s
+        PreT = 0.2; PostT = 1; %s
         PreT_samp = -round(PreT*Fs);
         PostT_samp = round(PostT*Fs);
-        ttSrise = double(tSrise(index));
-        ttSfall = tSfall(index);
-        [trialon,~] = find(analog_samples == ttSrise');
-        [trialoff,~] = find(analog_samples == ttSfall');
-
+        ttSrise = tSrise(index);
+        %ttSfall = tSfall(index);
         tt = (PreT_samp:PostT_samp) ./ Fs;
-        motorSignal = double(analog_trace(trialon + (PreT_samp:PostT_samp)));
-        hold(f,'on');
-        plot(f,tt,motorSignal','k');
+        motorSignal = analog_trace(ttSrise + (PreT_samp:PostT_samp));
+
     %end
 % end
 

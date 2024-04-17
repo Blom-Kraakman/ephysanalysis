@@ -83,7 +83,7 @@ for file = relevant_sessions(1):relevant_sessions(2)
 
     % save aligned spikes
     filename = sprintf('M%.2i_S%.2i_%s_AlignedSpikes', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-    save(fullfile(OutPath, filename), "SpkT")
+    save(fullfile(OutPath, filename), "SpkT","Srise","Sfall")
 
 end
 

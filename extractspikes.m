@@ -1,4 +1,4 @@
-function [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, skip_sessions, rec_samples, Fs, OutPath)
+function [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, skip_sessions, rec_samples, sessions_TTLs, Fs, OutPath)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
 % and matched unit ids (vector), recording time stamps (vector)
@@ -28,41 +28,12 @@ fprintf('Found %i good units for analysis\n', length(cids));
 % load files
 spike_times = readNPY([KSPath 'spike_times.npy']); % spike_times contains spike time indexing, not time/samplenr itself
 spike_clusters = readNPY([KSPath 'spike_clusters.npy']); % matched cluster ids
-TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs
-TTL_states = readNPY([TTLPath 'states.npy']);
-TTL_words = readNPY([TTLPath 'full_words.npy']);
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 
-% remove camera TTLs
-index = (abs(TTL_states) == 8);
-TTL_states(index) = [];
-TTL_samples(index) = [];
-TTL_words(index) = [];
-
-% recording sessions table
-sessions_TTLs = getSessionTTLs(messagesPath, rec_samples, Fs);
-
-% specify TTL nr to be used
+% get behaviour hile
 Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
 for file = 1:length(Nr_sessions)
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
-
-    Nr_sessions(file,1) = str2double(stimuli_parameters.Par.Set);
-    Nr_sessions(file,2) = stimuli_parameters.Par.Ntrl;
-
-    % notate TTL nr (TTLS: 5 = SOM, 2 = AUD, 8 = CAM)
-    if strcmp(stimuli_parameters.Par.Rec, 'FRA')
-        Nr_sessions(file,3) = 2;
-    elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
-        Nr_sessions(file,3) = 2;
-    elseif strcmp(stimuli_parameters.Par.Rec, 'SOM')
-        Nr_sessions(file,3) = 5;
-    elseif strcmp(stimuli_parameters.Par.Rec, 'SxA')
-        Nr_sessions(file,3) = 0;
-    else
-        error('Did not recognize session type.')
-    end
-
 end
 
 % remove unexecuted sessions
@@ -70,7 +41,7 @@ idx_remove = find(sum(sessions_TTLs(:,1) == skip_sessions, 2));
 sessions_TTLs(idx_remove,:) = [];
 
 %keep only TTLs recorded during specific session
-[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples);
+[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTLPath, rec_samples);
 
 % get all spiketimes from each good unit
 spiketimes = cell(length(cids), 1);
@@ -94,13 +65,24 @@ fprintf('unit extraction done\n');
 
 end
 
-function [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTL_samples, TTL_states, TTL_words, rec_samples)
+function [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTLPath, rec_samples)
+
+% load data
+TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs
+TTL_states = readNPY([TTLPath 'states.npy']);
+TTL_words = readNPY([TTLPath 'full_words.npy']);
+
+% remove camera TTLs
+index = (abs(TTL_states) == 8);
+TTL_states(index) = [];
+TTL_samples(index) = [];
+TTL_words(index) = [];
 
 % define and initiate variables
 Srise = [];
 Sfall = [];
 
-for i = 1:length(sessions_TTLs)
+for i = 1:size(sessions_TTLs, 1)
 
     disp(['iteration ' num2str(i)])
 
@@ -165,7 +147,6 @@ for i = 1:length(sessions_TTLs)
     % output variables
     Srise = [Srise; tSrise];
     Sfall = [Sfall; tSfall];
-    %disp(['Srise: ' Srise])
 
 end
 end

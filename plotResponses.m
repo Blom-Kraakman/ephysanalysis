@@ -248,7 +248,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
     xrange = [preT, postT];
     binsize = 0.01;
     start_aud = 0;
-    start_som = 250;
+    start_som = 0.25;
     end_som = 0.75;
     end_aud = 1;
 

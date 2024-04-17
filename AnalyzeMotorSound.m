@@ -1,12 +1,12 @@
 clearvars
 % load behavioural stimuli
-filename = 'M7_S04_SOM';
+filename = 'M0_S01_SOM';
 %load([filename,'.mat']);
-load(['D:\DATA\Behavioral Stimuli\M7\' filename,'.mat'],'Stm','Aud', 'Par');
+load(['D:\DATA\Behavioral Stimuli\M0\' filename,'.mat'],'Stm','Aud', 'Par');
 
 %% load microphone data
 filename = [filename '_Sound'];
-load(['D:\DATA\Behavioral Stimuli\M8\Sound recording\' filename,'.mat'], 'Aud', 'Fs');
+load(['D:\DATA\Behavioral Stimuli\M0\' filename,'.mat'], 'Aud', 'Fs');
 %load([filename,'.mat'],'Aud','Stm','Par');
 
 %% Format Aud

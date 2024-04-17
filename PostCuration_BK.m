@@ -8,37 +8,56 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\';
+recordingFolder = 'D:\DATA\EphysRecordings\M9\M09_2024-04-16_12-57-23\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M08\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M8'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M09\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M9\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M9'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-relevant_sessions = [1 11]; % M8
+relevant_sessions = [2 3]; % M9
+skip_sessions = 2;
+
+%relevant_sessions = [1 11]; % M8
 % relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
-skip_sessions = 0;
+%skip_sessions = 10; % M8
 Fs = 30000; % sampling freq
 
-%% sessions TTLs as extracted from OpenEphys message center
+%% sessions TTLs
+% extracted from OpenEphys message center
 
 [sessions_TTLs, sessions_TTLs_details] = getSessionTTLs(messagesPath, rec_samples, Fs);
 
 %% save session TTLs
-set = sprintf('%02d-%02d', relevant_sessions(1), relevant_sessions(2));
-filename = ['M06_S' set '_OE_TTLs'];
-save(fullfile(OutPath, filename), "sessions_TTLs")
-%filename = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
 filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
-
+save(fullfile(OutPath, filename), "sessions_TTLs")
 %% Kilosort: post-curation unit extraction
 %IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
 
-[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, skip_sessions, rec_samples, Fs, OutPath);
+[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, skip_sessions, rec_samples, sessions_TTLs, Fs, OutPath);
+%% remove double spikes from originating in Phy
+% make into function
+% get all spiketimes from each good unit
+spiketimes2 = cell(length(cids), 1);
+
+for cluster = 1:length(cids)
+    Tspkt = spiketimes{cluster};
+    ISI = zeros(length(Tspkt),1);
+
+    %find minimal time between two spikes
+    for spike = 1:(length(Tspkt)-1)
+        ISI(spike) = min(abs(Tspkt(spike) - Tspkt(spike+1)));
+    end
+
+    % select spikes following next one with more than 0.2ms (6 samples)
+    index = ISI>=6;
+    spiketimes2{cluster} = Tspkt(index);
+    disp(size(spiketimes{cluster}, 1) - size(spiketimes2{cluster}, 1))
+end
 
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
@@ -63,13 +82,13 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 % SOM: raster + PSTH
 
 % load unit info
-cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
-cpos = load([OutPath '\' cpos_file]);
-cids = cpos.cpos.id';
+%cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+%cpos = load([OutPath '\' cpos_file]);
+cids = cpos.id';
 
 % select which session to plot
 %close all
-session = 2;
+session = 3;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -161,30 +180,7 @@ SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
 cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos;
-plot_in_channel_map(KSPath, cids);
-
-%% channel waveforms
-% extract and plot waveform traces
-%addpath('C:\Users\TDT\Documents\GitHub\ephys_analysis');
-%cids = [90 111 124 126 151 159 169 171 182 188 218 232 256 261 264 265 268 278];
-cids = load([OutPath, '\M04_S01-23_InfoGoodUnits.mat']); 
-cpos = cids.cpos;
-
-for k=1:size(cpos, 1)
-    close all
-    %F = myfig(1,'fig');
-    F = figure;
-    F.Position = [2405,214,838,890];
-    F = ChannelWaveForms(F, KSPath, cpos.id(k), cpos.channel(k), 200);
-    F.Renderer = 'painter';
-    F.PaperUnits = 'inches';
-    F.PaperSize = F.Position(3:4)./96;
-    %saveas(F,[UserPath 'Processed\' DirName '\Units\' DirName '-U' num2str(cids(k)) '.pdf']);
-    %     saveas(F,[UserPath 'Processed\' Mouse '\Units\' Mouse '-U' num2str(cids(k)) '.png']);
-end
-
-%% plot spikes of whole session
-% to do
+plot_in_channel_map(KSPath, cpos);
 
 %% plot vibrotac stimulus signal
 % include also feedback signal
