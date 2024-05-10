@@ -20,7 +20,7 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 Fs = 30000; % sampling freq
 
-% select which session to analyse
+%% select which session to analyse
 session = 4;
 
 % load unit info

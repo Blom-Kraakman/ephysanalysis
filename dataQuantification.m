@@ -5,7 +5,7 @@
 %       response = fire (spiketime) in event window
 %   quantify firing rates? changes expected after events vs spontaneous
 
-%clearvars
+clearvars
 
 % set directories
 recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\';
@@ -20,7 +20,7 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 Fs = 30000; % sampling freq
 
-% select which session to analyse
+%% get data from session to analyse
 session = 4;
 
 % load unit info
@@ -53,7 +53,7 @@ PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/4)/1000; % baseline 
 PostT = 0.05; % post stim period
 
 % calculate firing rate (Hz) in time window
-[baselineRate, stimulusRate] = firingrate(aligned_spikes.SpkT, PreT, PostT);
+[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT);
 
 %% plot summary fig - vibrotactile sessions
 % boxplot, per unit
@@ -172,50 +172,156 @@ figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_paramet
 saveas(gcf, fullfile(OutPath, [figname '.jpg']));
 saveas(gcf, fullfile(OutPath, figname));
 
+%% get data from session to analyse
+session = 2;
+
+% load unit info
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos.id';
+
+% load corresponsing files
+sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+stim_files = dir(fullfile(BehaviorPath, sessionFile));
+stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+if isfield(aligned_spikes,"Srise")
+    disp("Srise/Sfall loaded from data file.")
+    Srise = aligned_spikes.Srise;
+    Sfall = aligned_spikes.Sfall;
+end
+aligned_spikes = aligned_spikes.SpkT;
+
+% load sessions details
+TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
+sessions_TTLs = load([OutPath '\' TTLs_file]);
+
    
 %% quantify reactive units
 % 1. quantify responsive units: sig diff firing rate between stim period vs baseline
 
 % onset stimuli
 PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/5)/1000; % baseline period
-PostT = 0.05; % post stim period
+PostT = 0.1; % post stim period
 
-uAmp = unique(stimuli_parameters.Stm.Amplitude);
+
+if strcmp(stimuli_parameters.Par.Rec, 'AMn')
+    uAmp = unique(stimuli_parameters.Stm.Mf);
+    uFreq = [];
+    control = stimuli_parameters.Stm.Mf == 0;
+elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') %if SOM
+    uAmp = unique(stimuli_parameters.Stm.Amplitude);
+    uFreq = unique(stimuli_parameters.Stm.SomFreq);
+else
+    uAmp = unique(stimuli_parameters.Stm.Amplitude);
+    uFreq = unique(stimuli_parameters.Stm.SomFreq);
+    control = stimuli_parameters.Stm.Amplitude == 0;
+end
+
 nAmp = length(uAmp);
-uFreq = unique(stimuli_parameters.Stm.SomFreq);
 nFreq = length(uFreq);
+
 nClusters = length(cids);
 
+results.session = stimuli_parameters.Par.Set;
+results.type = stimuli_parameters.Par.Rec;
 results.cids = cids;
-results.conditions = uAmp;
-results.pvalue = nan(nAmp, nClusters);
-results.signrank = nan(nAmp, nClusters);
-results.hvalue = nan(nAmp, nClusters);
+results.amp_conditions = uAmp;
+results.freq_conditions = uFreq;
+results.pvalue = nan(nAmp, nFreq, nClusters);
+results.signrank = nan(nAmp, nFreq, nClusters);
+results.hvalue = nan(nAmp, nFreq, nClusters);
 results.responsive = [];
 
 % stats test difference baseline vs stimulus period
 for cluster = 1:nClusters
 
     % calculate baseline firing rate
-    [baselineRate, stimulusRate] = firingrate(aligned_spikes.SpkT, PreT, PostT); % get firing rates (Hz) in time window
-   
-    %signrank(baselineRate(:,cluster), stimulusRate(:,cluster), 'alpha', 0.01); % overall different from baseline?
-    control = stimuli_parameters.Stm.Amplitude == 0;
+    [baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT); % get firing rates (Hz) in time window
 
-    for condition = 1:nAmp
-        index = stimuli_parameters.Stm.Amplitude == uAmp(condition);
-        [p,h,stats] = signrank(stimulusRate(control,cluster), stimulusRate(index,cluster), 'alpha', 0.01); % different from control trials?
-        results.pvalue(condition, cluster) = p;
-        results.signrank(condition, cluster) = stats.signedrank;
-        results.hvalue(condition, cluster) = h;
+    %signrank(baselineRate(:,cluster), stimulusRate(:,cluster), 'alpha', 0.01); % overall different from baseline?
+    for freq = 1:nFreq
+        for condition = 1:nAmp
+
+            if strcmp(stimuli_parameters.Par.Rec, 'AMn')
+                index = stimuli_parameters.Stm.Mf == uAmp(condition);
+            elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
+                index = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
+                control = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == 0);
+            else
+                index = stimuli_parameters.Stm.Amplitude == uAmp(condition);
+            end
+            [p,h,stats] = signrank(stimulusRate(control,cluster), stimulusRate(index,cluster), 'alpha', 0.01); % different from control trials?
+            results.pvalue(condition, freq, cluster) = p;
+            results.signrank(condition, freq, cluster) = stats.signedrank;
+            results.hvalue(condition, freq, cluster) = h;
+        end
     end
 
     % unit responsive if sig diff for at least one condition
-    if max(results.hvalue(:, cluster)) == 1
+    if max(max(results.hvalue(:, :, cluster))) == 1
         results.responsive = [results.responsive, results.cids(cluster)];
     end
 
 end
+
+%responsive units contains all
+responsive_units(str2double(stimuli_parameters.Par.Set)) = results;
+
+%% make pie chart quatifying responsive units
+% groups: sound (noise) only, vibrotac any freq only, step only, sound +
+% vibrotac,sound + step, vibrotac + step, sound + vibrotac + step
+
+%% quantify reactive units & modulation measure
+% compare firing rate unimodal to multimodal stimulus presentation
+session = 5;
+
+% load unit info
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos.id';
+
+% load corresponsing files
+sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+stim_files = dir(fullfile(BehaviorPath, sessionFile));
+stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+if isfield(aligned_spikes,"Srise")
+    disp("Srise/Sfall loaded from data file.")
+    Srise = aligned_spikes.Srise;
+    Sfall = aligned_spikes.Sfall;
+end
+aligned_spikes = aligned_spikes.SpkT;
+
+% load sessions details
+TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
+sessions_TTLs = load([OutPath '\' TTLs_file]);
+%% 
+
+% analysis window
+PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/5)/1000; % baseline period
+PostT = 0.1; % post stim period
+
+nClusters = length(cids);
+
+% calculate stimulus induced change in firing rate
+[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT); % get firing rates (Hz) in time window
+dstimulusRate = stimulusRate - baselineRate;
+
+conditions = {"SA", "SO", "OA", "OO"};
+dfiring = nan(length(conditions), size(dstimulusRate, 2));
+
+for i = 1:length(conditions)
+    index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
+    dfiring(i, :) = median(dstimulusRate(index, :));
+end
+
+figure;
+scatter(dfiring(1, :), dfiring(2,:))
 
 %% quantify reactive units
 % 2. cross correlating single trials (KDF as in previous script), corr
@@ -328,7 +434,7 @@ freq = 7;
     %end
 end
 
-%% plot analog signal per condition
+%% plot analog motor signal per condition
 for freq = 1:length(all_freqs)
 index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3);
 
@@ -392,8 +498,6 @@ end
 
 
 % match matrix with firing rate
-
-
 
 %% calculate baseline firing rate
 function [baseFR, expFR] = firingrate(SpkT, PreT, PostT)

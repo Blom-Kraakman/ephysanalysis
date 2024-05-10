@@ -8,18 +8,18 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M9\M09_2024-04-16_12-57-23\Record Node 103\experiment1\recording1\';
+recordingFolder = 'D:\DATA\EphysRecordings\M9\M09_2024-04-23_12-46-03\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M09\'; % kilosort ephys data
+KSPath = 'D:\DATA\EphysRecordingsSorted\M09_2\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M9\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M9'; % output directory
+OutPath = 'D:\DATA\Processed\M9_2'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-relevant_sessions = [2 3]; % M9
-skip_sessions = 2;
+relevant_sessions = [4 11]; % M9
+skip_sessions = 0;
 
 %relevant_sessions = [1 11]; % M8
 % relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
@@ -69,11 +69,11 @@ alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions,
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
 close all
 % select correct input files
-aligned_spikes = load([OutPath, '\M08_S08_FRA_AlignedSpikes']);
-stimuli_parameters = load([BehaviorPath 'M8_S08_FRA.mat']);
+aligned_spikes = load([OutPath, '\M09_S05_FRA_AlignedSpikes']);
+stimuli_parameters = load([BehaviorPath 'M9_S05_FRA.mat']);
 
 % function saves figures, change mouse name
-FSL = 1;
+FSL = 0;
 FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 
 %% plotting single sessions
@@ -84,11 +84,11 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 % load unit info
 %cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
 %cpos = load([OutPath '\' cpos_file]);
-cids = cpos.id';
+%cids = cpos.id';
 
 % select which session to plot
 %close all
-session = 3;
+session = 10;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];

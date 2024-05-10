@@ -1,22 +1,28 @@
 clearvars
 % load behavioural stimuli
-filename = 'M0_S01_SOM';
+filename = 'M9_S03_SxA';
 %load([filename,'.mat']);
-load(['D:\DATA\Behavioral Stimuli\M0\' filename,'.mat'],'Stm','Aud', 'Par');
+load(['D:\DATA\Behavioral Stimuli\M9\' filename,'.mat'],'Stm','Aud', 'Par');
 
 %% load microphone data
 filename = [filename '_Sound'];
-load(['D:\DATA\Behavioral Stimuli\M0\' filename,'.mat'], 'Aud', 'Fs');
+load(['D:\DATA\Behavioral Stimuli\M9\Sound recording\' filename,'.mat'], 'Aud', 'Fs');
 %load([filename,'.mat'],'Aud','Stm','Par');
 
-%% Format Aud
+%% Format Aud, if necessary
+
+%Select correct trials from Aud
+AudTemp = Aud;
+Aud = AudTemp(Stm.AudDur==0);
+
+%% Format Aud (cell array --> matrix)
 AudTemp = [];
 for i = 1:size(Aud,2)
     AudTemp(i,:) = Aud{i};
 end
 Aud = AudTemp;
-%%
 
+%%
 nSamp = size(Aud,2);
 sound = Aud(1,:);
 %
@@ -40,6 +46,7 @@ toc;
 
 [nF,nT,~] = size(ps_all);
 
+% adapt to select no sound only trials (for SxA sessions)
 UStim = unique(Stm(:,{'SomFreq','Amplitude'}),'rows');
 nUStim = size(UStim,1);
 
