@@ -21,7 +21,7 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 Fs = 30000; % sampling freq
 
 %% get data from session to analyse
-session = 4;
+session = 5;
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
@@ -244,12 +244,12 @@ for cluster = 1:nClusters
     %signrank(baselineRate(:,cluster), stimulusRate(:,cluster), 'alpha', 0.01); % overall different from baseline?
     for freq = 1:nFreq
         for condition = 1:nAmp
-
             if strcmp(stimuli_parameters.Par.Rec, 'AMn')
                 index = stimuli_parameters.Stm.Mf == uAmp(condition);
             elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
                 index = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
-                control = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == 0);
+                %control = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == 0);
+                control = (stimuli_parameters.Stm.Amplitude == 0) & (stimuli_parameters.Stm.SomFreq == 0);
             else
                 index = stimuli_parameters.Stm.Amplitude == uAmp(condition);
             end
@@ -261,7 +261,7 @@ for cluster = 1:nClusters
     end
 
     % unit responsive if sig diff for at least one condition
-    if max(max(results.hvalue(:, :, cluster))) == 1
+    if (max(max(results.hvalue(2:nAmp, 2:Freq, cluster))) == 1) && (results.hvalue(1, 1, cluster) == 0) 
         results.responsive = [results.responsive, results.cids(cluster)];
     end
 
@@ -270,9 +270,10 @@ end
 %responsive units contains all
 responsive_units(str2double(stimuli_parameters.Par.Set)) = results;
 
-%% make pie chart quatifying responsive units
+%% make chart quatifying responsive units
 % groups: sound (noise) only, vibrotac any freq only, step only, sound +
-% vibrotac,sound + step, vibrotac + step, sound + vibrotac + step
+% vibrotac, sound + step, vibrotac + step, sound + vibrotac + step
+
 
 %% quantify reactive units & modulation measure
 % compare firing rate unimodal to multimodal stimulus presentation
@@ -300,11 +301,11 @@ aligned_spikes = aligned_spikes.SpkT;
 % load sessions details
 TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
 sessions_TTLs = load([OutPath '\' TTLs_file]);
-%% 
+%% firing rate changes
 
 % analysis window
 PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/5)/1000; % baseline period
-PostT = 0.1; % post stim period
+PostT = 0.5; % post stim period
 
 nClusters = length(cids);
 
@@ -321,7 +322,10 @@ for i = 1:length(conditions)
 end
 
 figure;
-scatter(dfiring(1, :), dfiring(2,:))
+scatter(dfiring(4, :), dfiring(1,:)) % 1: SA, 2: SO
+xlabel(['Firing changes during' conditions(4)])
+ylabel(['Firing changes during' conditions(1)])
+title(['Post stim window: ' num2str(PostT) 'ms'])
 
 %% quantify reactive units
 % 2. cross correlating single trials (KDF as in previous script), corr
