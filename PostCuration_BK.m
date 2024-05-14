@@ -8,22 +8,23 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M9\M09_2024-04-23_12-46-03\Record Node 103\experiment1\recording1\';
+recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M09_2\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M9\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M9_2'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M08\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
-relevant_sessions = [4 11]; % M9
-skip_sessions = 0;
+%relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
+% relevant_sessions = [4 11]; % M9
+% skip_sessions = 0;
 
-%relevant_sessions = [1 11]; % M8
-% relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
-%skip_sessions = 10; % M8
+relevant_sessions = [1 11]; % M8
+skip_sessions = 10; % M8
+
 Fs = 30000; % sampling freq
 
 %% sessions TTLs
@@ -31,6 +32,8 @@ Fs = 30000; % sampling freq
 
 [sessions_TTLs, sessions_TTLs_details] = getSessionTTLs(messagesPath, rec_samples, Fs);
 
+%% M9 things
+sessions_TTLs(8,:) = [];
 %% save session TTLs
 filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
 save(fullfile(OutPath, filename), "sessions_TTLs")
@@ -59,6 +62,7 @@ for cluster = 1:length(cids)
     disp(size(spiketimes{cluster}, 1) - size(spiketimes2{cluster}, 1))
 end
 
+spiketimes = spiketimes2;
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
 % spike times in sec
@@ -88,7 +92,7 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 
 % select which session to plot
 %close all
-session = 10;
+session = 5;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];

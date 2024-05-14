@@ -41,7 +41,7 @@ for i = 1:size(sessions_TTLs, 1)
     tTTL_states = TTL_states(idx);
     tTTL_words = TTL_words(idx);
     tTTL_samples = TTL_samples(idx);
-    clear idx;
+    %clear idx;
 
     disp(['session: ' num2str(sessions_TTLs(i,1))])
     disp(['start sample: ' num2str(session_start)])
@@ -66,6 +66,7 @@ for i = 1:size(sessions_TTLs, 1)
     tSrise = tTTL_samples(stim_rise);
     tSfall = tTTL_samples(stim_fall);
 
+    % remove artefacts
     idx = (tSrise(1) == tTTL_samples(3));
     tSrise(idx) = [];
     
@@ -80,6 +81,8 @@ for i = 1:size(sessions_TTLs, 1)
     % output variables
     Srise = [Srise; tSrise];
     Sfall = [Sfall; tSfall];
+    %Srise.aud = [Srise.aud; tSrise];
+    %Sfall.aud = [Sfall.aud; tSfall];
 
 end
 end

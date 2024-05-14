@@ -35,12 +35,6 @@ for file = relevant_sessions(1):relevant_sessions(2)
         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
         PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
     elseif strcmp(stimuli_parameters.Par.Rec, 'SxA')
-        % % add delay to "SO","OO"
-        % idx_Sound = find(ismember(stimuli_parameters.Stm.MMType,["SA","OA"]));
-        % idx_noSound = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
-        % for ii = idx_noSound'
-        %     aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + 0.25;
-        % end
         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
         PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
     elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
@@ -71,6 +65,15 @@ for file = relevant_sessions(1):relevant_sessions(2)
             sel = (tS > - PreT/1e3) & (tS < PostT/1e3); % select relevant spikes (including pre and post rec)
             tSpkT{(stim)} = tS(sel); % store spike times in cell array
         end
+
+        % if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+        %     % add delay to "SO","OO"
+        %     idx_Sound = find(ismember(stimuli_parameters.Stm.MMType,["SA","OA"]));
+        %     idx_noSound = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
+        %     for ii = idx_noSound'
+        %         aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} - 0.25;
+        %     end
+        % end
 
         SpkT = [SpkT, tSpkT]; % stimuli x units per session
 

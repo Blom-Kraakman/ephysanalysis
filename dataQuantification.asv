@@ -21,7 +21,7 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 Fs = 30000; % sampling freq
 
 %% get data from session to analyse
-session = 5;
+session = 3;
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
@@ -46,178 +46,32 @@ aligned_spikes = aligned_spikes.SpkT;
 TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
 sessions_TTLs = load([OutPath '\' TTLs_file]);
 
-%% calculate firing rates pre and post simulus onset
+% define stimulus onset, pre and post simulus onset
 
 % onset stimuli
 PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/4)/1000; % baseline period
-PostT = 0.05; % post stim period
+PostT = 0.05; % post stim period % 0.25 for sxa
+
+if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+            % add delay to "SO"
+            StimOn = stimuli_parameters.Stm.SomAudSOA./1000;
+            StimOn(isnan(stimuli_parameters.Stm.SomAudSOA)) = 0;
+else
+        StimOn = zeros(size(stimuli_parameters.Stm, 1), 1);
+end
 
 % calculate firing rate (Hz) in time window
-[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT);
-
-%% plot summary fig - vibrotactile sessions
-% boxplot, per unit
-
-close all
-amp = 0.3; 
-
-uFreq = unique(stimuli_parameters.Stm.SomFreq);
-nFreq = length(uFreq);
-nClusters = length(cids);
-condition = nan(nClusters, nFreq);
-figure
-
-for cluster = 1:nClusters
-    for freq = 1:nFreq
-        condition(cluster, freq) = median(stimulusRate([stimuli_parameters.Stm.SomFreq] == uFreq(freq) & [stimuli_parameters.Stm.Amplitude] == amp, cluster))';
-    end
-
-    plot(uFreq, mean(condition(cluster, :) - condition(cluster, 1), 1), ':o')
-    hold on
-
-end
-
-xticks(uFreq)
-xticklabels(uFreq(1:nFreq));
-xlabel(['Vibrotactile stimulus (Hz), ' num2str(amp) ' (V)'])
-ylabel('Normalized firing rate (Hz)')
-
-title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
-
-save figure
-figname = sprintf('M%.2i_S%.2i_%s_mean', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-saveas(gcf, fullfile(OutPath, figname));
-
-% plot summary fig: boxplot, all units
-close all
-condition = nan(nClusters, nFreq);
-figure
-
-% select data
-for freq = 1:nFreq
-    condition(:, freq) = median(stimulusRate([stimuli_parameters.Stm.SomFreq] == uFreq(freq) & [stimuli_parameters.Stm.Amplitude] == amp, :))';
-end
-
-% plot
-figure
-boxplot(condition)
-
-xticklabels(uFreq(1:nFreq));
-xlabel(['Vibrotactile stimulus (Hz), ' num2str(amp) ' (V)'])
-ylabel('Normalized firing rate (Hz)')
-title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
-
-% save figure
-figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-saveas(gcf, fullfile(OutPath, figname));
-
-
-%% plot summary fig - pressure sessions
-% boxplot, per  units
-close all
-
-% parameters
-uAmp = unique(stimuli_parameters.Stm.Amplitude);
-nAmp = length(uAmp);
-nClusters = length(cids);
-condition = nan(nClusters, nAmp);
-
-figure
-for cluster = 1:nClusters
-
-    % select data
-    for amplitude = 1:nAmp
-        condition(cluster, amplitude) = median(stimulusRate([stimuli_parameters.Stm.Amplitude] == uAmp(amplitude), cluster))';
-    end
-
-    % plot
-    plot(uAmp, mean(condition(cluster, :) - condition(cluster, 1), 1), ':o');
-    hold on
-
-end
-
-xticks(uAmp)
-xticklabels(uAmp(1:nAmp));
-xlabel('Pressure (V)')
-ylabel('Normalized firing rate (Hz)')
-title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
-
-%save figure
-figname = sprintf('M%.2i_S%.2i_%s_mean', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-saveas(gcf, fullfile(OutPath, figname));
-
-% plot summary fig: boxplot, all units
-close all
-condition = nan(nClusters, nAmp);
-
-% select data
-for amplitude = 1:nAmp
-    condition(:, amplitude) = median(stimulusRate([stimuli_parameters.Stm.Amplitude] == uAmp(amplitude), :))';
-end
-
-% plot
-figure
-boxplot(condition)
-
-xticklabels(uAmp(1:nAmp));
-xlabel('Pressure (V)')
-ylabel('Normalized firing rate (Hz)')
-title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
-
-%save figure
-figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-saveas(gcf, fullfile(OutPath, figname));
-
-%% get data from session to analyse
-session = 2;
-
-% load unit info
-cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
-cpos = load([OutPath '\' cpos_file]);
-cids = cpos.cpos.id';
-
-% load corresponsing files
-sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
-stim_files = dir(fullfile(BehaviorPath, sessionFile));
-stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-
-aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
-aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
-if isfield(aligned_spikes,"Srise")
-    disp("Srise/Sfall loaded from data file.")
-    Srise = aligned_spikes.Srise;
-    Sfall = aligned_spikes.Sfall;
-end
-aligned_spikes = aligned_spikes.SpkT;
-
-% load sessions details
-TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
-sessions_TTLs = load([OutPath '\' TTLs_file]);
-
+[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, StimOn);
    
 %% quantify reactive units
 % 1. quantify responsive units: sig diff firing rate between stim period vs baseline
 
-% onset stimuli
-PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/5)/1000; % baseline period
-PostT = 0.1; % post stim period
-
-
 if strcmp(stimuli_parameters.Par.Rec, 'AMn')
-    uAmp = unique(stimuli_parameters.Stm.Mf);
-    uFreq = [];
-    control = stimuli_parameters.Stm.Mf == 0;
-elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') %if SOM
-    uAmp = unique(stimuli_parameters.Stm.Amplitude);
-    uFreq = unique(stimuli_parameters.Stm.SomFreq);
+    uFreq = unique(stimuli_parameters.Stm.Mf);
+    uAmp = unique(stimuli_parameters.Stm.Intensity);
 else
     uAmp = unique(stimuli_parameters.Stm.Amplitude);
     uFreq = unique(stimuli_parameters.Stm.SomFreq);
-    control = stimuli_parameters.Stm.Amplitude == 0;
 end
 
 nAmp = length(uAmp);
@@ -228,8 +82,8 @@ nClusters = length(cids);
 results.session = stimuli_parameters.Par.Set;
 results.type = stimuli_parameters.Par.Rec;
 results.cids = cids;
-results.amp_conditions = uAmp;
-results.freq_conditions = uFreq;
+results.ampitudes = uAmp;
+results.frequencies = uFreq;
 results.pvalue = nan(nAmp, nFreq, nClusters);
 results.signrank = nan(nAmp, nFreq, nClusters);
 results.hvalue = nan(nAmp, nFreq, nClusters);
@@ -238,22 +92,38 @@ results.responsive = [];
 % stats test difference baseline vs stimulus period
 for cluster = 1:nClusters
 
-    % calculate baseline firing rate
-    [baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT); % get firing rates (Hz) in time window
-
-    %signrank(baselineRate(:,cluster), stimulusRate(:,cluster), 'alpha', 0.01); % overall different from baseline?
+    signrank(baselineRate(:,cluster), stimulusRate(:,cluster), 'alpha', 0.01); % overall different from baseline?
     for freq = 1:nFreq
         for condition = 1:nAmp
-            if strcmp(stimuli_parameters.Par.Rec, 'AMn')
-                index = stimuli_parameters.Stm.Mf == uAmp(condition);
-            elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
+
+            % session specific parameters
+            if strcmp(stimuli_parameters.Par.Rec, 'AMn') % noise & AM
+                index = stimuli_parameters.Stm.Mf == uFreq(condition);
+                baseline = baselineRate(index,cluster);
+                stim_evoked = stimulusRate(index,cluster);
+            elseif strcmp(stimuli_parameters.Par.Rec, 'SOM')
+                if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') %vibrotac
+                control = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == 0);
                 index = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
-                %control = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == 0);
-                control = (stimuli_parameters.Stm.Amplitude == 0) & (stimuli_parameters.Stm.SomFreq == 0);
-            else
-                index = stimuli_parameters.Stm.Amplitude == uAmp(condition);
+                baseline = stimulusRate(control,cluster);
+                stim_evoked = stimulusRate(index,cluster);
+                elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') % pressure
+                    control = stimuli_parameters.Stm.Amplitude == 0;
+                    index = stimuli_parameters.Stm.Amplitude == uAmp(condition);
+                    baseline = stimulusRate(control,cluster);
+                    stim_evoked = stimulusRate(index,cluster);
+                end
+            elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % multimodal
+                control = strcmp(stimuli_parameters.Stm.MMType, 'OO');
+                %control = (stimuli_parameters.Stm.Amplitude == 0) & (stimuli_parameters.Stm.SomFreq == 0);
+                index = (strcmp(stimuli_parameters.Stm.MMType, 'SA')) & (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
+                baseline = stimulusRate(control,cluster);
+                stim_evoked = stimulusRate(index,cluster);
             end
-            [p,h,stats] = signrank(stimulusRate(control,cluster), stimulusRate(index,cluster), 'alpha', 0.01); % different from control trials?
+
+            %[p,h,stats] = signrank(stimulusRate(control,cluster), stimulusRate(index,cluster), 'alpha', 0.01); % different from control trials?
+            % stat test
+            [p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % different from control trials?
             results.pvalue(condition, freq, cluster) = p;
             results.signrank(condition, freq, cluster) = stats.signedrank;
             results.hvalue(condition, freq, cluster) = h;
@@ -261,56 +131,27 @@ for cluster = 1:nClusters
     end
 
     % unit responsive if sig diff for at least one condition
-    if (max(max(results.hvalue(2:nAmp, 2:Freq, cluster))) == 1) && (results.hvalue(1, 1, cluster) == 0) 
+    if (strcmp(stimuli_parameters.Par.Rec, 'SxA')) && (max(max(results.hvalue(2:nAmp, 2:nFreq, cluster))) == 1) % && (results.hvalue(1, 1, cluster) == 0)
         results.responsive = [results.responsive, results.cids(cluster)];
+    elseif (strcmp(stimuli_parameters.Par.Rec, 'AMn')) && max(results.hvalue(:, :, cluster)) % && (results.hvalue(1, 1, cluster) == 0))
+        results.responsive = [results.responsive, results.cids(cluster)];
+    elseif (strcmp(stimuli_parameters.Par.Rec, 'SOM'))
+        if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && max(results.hvalue(:, :, cluster))
+            results.responsive = [results.responsive, results.cids(cluster)];
+        elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') && max(max(results.hvalue(:, :, cluster)))
+            results.responsive = [results.responsive, results.cids(cluster)];
+        end
     end
-
 end
 
 %responsive units contains all
 responsive_units(str2double(stimuli_parameters.Par.Set)) = results;
 
-%% make chart quatifying responsive units
-% groups: sound (noise) only, vibrotac any freq only, step only, sound +
-% vibrotac, sound + step, vibrotac + step, sound + vibrotac + step
-
 
 %% quantify reactive units & modulation measure
 % compare firing rate unimodal to multimodal stimulus presentation
-session = 5;
-
-% load unit info
-cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
-cpos = load([OutPath '\' cpos_file]);
-cids = cpos.cpos.id';
-
-% load corresponsing files
-sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
-stim_files = dir(fullfile(BehaviorPath, sessionFile));
-stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-
-aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
-aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
-if isfield(aligned_spikes,"Srise")
-    disp("Srise/Sfall loaded from data file.")
-    Srise = aligned_spikes.Srise;
-    Sfall = aligned_spikes.Sfall;
-end
-aligned_spikes = aligned_spikes.SpkT;
-
-% load sessions details
-TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
-sessions_TTLs = load([OutPath '\' TTLs_file]);
-%% firing rate changes
-
-% analysis window
-PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/5)/1000; % baseline period
-PostT = 0.1; % post stim period
-
-nClusters = length(cids);
 
 % calculate stimulus induced change in firing rate
-[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT); % get firing rates (Hz) in time window
 dstimulusRate = stimulusRate - baselineRate;
 
 conditions = {"SA", "SO", "OA", "OO"};
@@ -318,14 +159,48 @@ dfiring = nan(length(conditions), size(dstimulusRate, 2));
 
 for i = 1:length(conditions)
     index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
-    dfiring(i, :) = median(dstimulusRate(index, :));
+    dfiring(i, :) = abs(median(dstimulusRate(index, :)));
 end
 
 figure;
-scatter(dfiring(4, :), dfiring(1,:)) % 1: SA, 2: SO
+scatter(dfiring(2, :), dfiring(1,:)) % 1: SA, 2: SO
 xlabel(['Firing changes during' conditions(2)])
-ylabel(['Firing changes during' conditions(4)])
+ylabel(['Firing changes during' conditions(1)])
 title(['Post stim window: ' num2str(PostT) 'ms'])
+
+%% pressure tuning curve
+
+% calculate stimulus induced change in firing rate
+dstimulusRate = stimulusRate - baselineRate;
+
+uAmp = unique(stimuli_parameters.Stm.Amplitude);
+nAmp = length(uAmp);
+
+nClusters = length(cids);
+figure;
+hold on
+
+for cluster = 1:nClusters
+    for amp = 1:nAmp
+        index = stimuli_parameters.Stm.Amplitude == uAmp(amp);
+        toPlot(amp, cluster) = mean(dstimulusRate(index, cluster));
+    end
+    toPlot(2:5, cluster) = toPlot(2:5, cluster) - toPlot(1, cluster);
+    responsive = ismember(responsive_units(3).responsive, cids(cluster));
+
+    if max(responsive)
+        plot(toPlot(:, cluster), 'r');
+    else
+        plot(toPlot(:, cluster), 'k');
+    end
+
+    ylabel('df Firing rate (Hz)')
+    xlabel('stimulus strength (V)')
+    xticks(1:nAmp)
+    xticklabels(uAmp)
+    %legend(num2str(cids(cluster)))
+end
+
 
 %% quantify reactive units
 % 2. cross correlating single trials (KDF as in previous script), corr
@@ -503,9 +378,127 @@ end
 
 % match matrix with firing rate
 
-%% calculate baseline firing rate
-function [baseFR, expFR] = firingrate(SpkT, PreT, PostT)
+%% plot summary fig - vibrotactile sessions
+% boxplot, per unit
 
+close all
+amp = 0.3; 
+
+uFreq = unique(stimuli_parameters.Stm.SomFreq);
+nFreq = length(uFreq);
+nClusters = length(cids);
+condition = nan(nClusters, nFreq);
+figure
+
+for cluster = 1:nClusters
+    for freq = 1:nFreq
+        condition(cluster, freq) = median(stimulusRate([stimuli_parameters.Stm.SomFreq] == uFreq(freq) & [stimuli_parameters.Stm.Amplitude] == amp, cluster))';
+    end
+
+    plot(uFreq, mean(condition(cluster, :) - condition(cluster, 1), 1), ':o')
+    hold on
+
+end
+
+xticks(uFreq)
+xticklabels(uFreq(1:nFreq));
+xlabel(['Vibrotactile stimulus (Hz), ' num2str(amp) ' (V)'])
+ylabel('Normalized firing rate (Hz)')
+
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+save figure
+figname = sprintf('M%.2i_S%.2i_%s_mean', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+% plot summary fig: boxplot, all units
+close all
+condition = nan(nClusters, nFreq);
+figure
+
+% select data
+for freq = 1:nFreq
+    condition(:, freq) = median(stimulusRate([stimuli_parameters.Stm.SomFreq] == uFreq(freq) & [stimuli_parameters.Stm.Amplitude] == amp, :))';
+end
+
+% plot
+figure
+boxplot(condition)
+
+xticklabels(uFreq(1:nFreq));
+xlabel(['Vibrotactile stimulus (Hz), ' num2str(amp) ' (V)'])
+ylabel('Normalized firing rate (Hz)')
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+% save figure
+figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+
+%% plot summary fig - pressure sessions
+% boxplot, per  units
+close all
+
+% parameters
+uAmp = unique(stimuli_parameters.Stm.Amplitude);
+nAmp = length(uAmp);
+nClusters = length(cids);
+condition = nan(nClusters, nAmp);
+
+figure
+for cluster = 1:nClusters
+
+    % select data
+    for amplitude = 1:nAmp
+        condition(cluster, amplitude) = median(stimulusRate([stimuli_parameters.Stm.Amplitude] == uAmp(amplitude), cluster))';
+    end
+
+    % plot
+    plot(uAmp, mean(condition(cluster, :) - condition(cluster, 1), 1), ':o');
+    hold on
+
+end
+
+xticks(uAmp)
+xticklabels(uAmp(1:nAmp));
+xlabel('Pressure (V)')
+ylabel('Normalized firing rate (Hz)')
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+%save figure
+figname = sprintf('M%.2i_S%.2i_%s_mean', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+% plot summary fig: boxplot, all units
+close all
+condition = nan(nClusters, nAmp);
+
+% select data
+for amplitude = 1:nAmp
+    condition(:, amplitude) = median(stimulusRate([stimuli_parameters.Stm.Amplitude] == uAmp(amplitude), :))';
+end
+
+% plot
+figure
+boxplot(condition)
+
+xticklabels(uAmp(1:nAmp));
+xlabel('Pressure (V)')
+ylabel('Normalized firing rate (Hz)')
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+%save figure
+figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+%% calculate baseline firing rate
+function [baseFR, expFR] = firingrate(SpkT, PreT, PostT, StimOn)
+
+% SpkT: cell array with spike times aligned to stimulus onset
 nClust = size(SpkT,2);
 nTrials = size(SpkT,1);
 baseFR = nan(nTrials, nClust);
@@ -518,8 +511,8 @@ for cluster = 1:size(SpkT,2)
         S = SpkT{trial, cluster};
         
         % count spikes in time windows
-        baseSpikes = sum(S <= 0);
-        expSpikes = sum(S > 0 & S <= PostT);
+        baseSpikes = sum(S >= -PreT & S <= 0); % preT - 0
+        expSpikes = sum(S > StimOn(trial) & S <= (StimOn(trial) + PostT)); % StimOn moment (0 for aud, 0.25 for som) - postT
 
         % convert to firing rate (Hz)
         baseFR(trial, cluster) = baseSpikes/abs(PreT);

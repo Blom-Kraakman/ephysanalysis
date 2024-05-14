@@ -46,7 +46,7 @@ aligned_spikes = aligned_spikes.SpkT;
 TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
 sessions_TTLs = load([OutPath '\' TTLs_file]);
 
-% Kilosort: post-curation unit extraction
+%% Kilosort: post-curation unit extraction
 % needed to get Srise...
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 relevant_sessions = [1 11]; % M8
