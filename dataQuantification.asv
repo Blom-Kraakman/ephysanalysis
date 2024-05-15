@@ -21,7 +21,7 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 Fs = 30000; % sampling freq
 
 %% get data from session to analyse
-session = 3;
+session = 5;
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
@@ -50,7 +50,7 @@ sessions_TTLs = load([OutPath '\' TTLs_file]);
 
 % onset stimuli
 PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/4)/1000; % baseline period
-PostT = 0.05; % post stim period % 0.25 for sxa
+PostT = 0.25; % post stim period % 0.25 for sxa
 
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')
             % add delay to "SO"
@@ -116,7 +116,7 @@ for cluster = 1:nClusters
             elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % multimodal
                 control = strcmp(stimuli_parameters.Stm.MMType, 'OO');
                 %control = (stimuli_parameters.Stm.Amplitude == 0) & (stimuli_parameters.Stm.SomFreq == 0);
-                index = (strcmp(stimuli_parameters.Stm.MMType, 'SA')) & (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
+                index = (strcmp(stimuli_parameters.Stm.MMType, 'SO')) & (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
                 baseline = stimulusRate(control,cluster);
                 stim_evoked = stimulusRate(index,cluster);
             end
@@ -146,27 +146,91 @@ end
 
 %responsive units contains all
 responsive_units(str2double(stimuli_parameters.Par.Set)) = results;
+resp_cids = find(ismember(responsive_units(session).cids, responsive_units(session).responsive)); % position of responsive units in cids
 
+%% quantify response strength per condition
 
-%% quantify reactive units & modulation measure
-% compare firing rate unimodal to multimodal stimulus presentation
+conditions = {"OO", "OA", "SO", "SA"};
+
+for i = 1:length(conditions)
+    index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
+    firing_mean(i, :) = mean(stimulusRate(index, resp_cids));
+    firing_sd(i,:) = std(stimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
+end
+
+%plot bar graph
+data = mean(firing_mean, 2);
+errors = mean(firing_sd, 2);
+
+figure;
+bar(mean(firing_mean, 2)) % avg FR of all responsive units
+hold on
+errorbar(1:length(data), data, errors, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
+%yline(data(4))
+%scatter(1:length(data), firing_mean, 10, 'k', 'filled');
+xlabel('conditions')
+xticklabels(["OO", "OA", "SO", "SA"])
+ylabel('mean stimulus evoked firing rate (Hz)')
+title(PostT)
+
+hold off
+
+% normalized to control trials
+data = data - data(1);
+figure;
+bar(data) % avg FR of all responsive units
+xlabel('conditions')
+xticklabels(["OO", "OA", "SO", "SA"])
+ylabel('mean stimulus evoked firing rate (Hz)')
+
+%% compare firing rate unimodal to multimodal stimulus presentation
+% makes scatter plot of firing rates per responsive unit between two conditions
 
 % calculate stimulus induced change in firing rate
 dstimulusRate = stimulusRate - baselineRate;
 
-conditions = {"SA", "SO", "OA", "OO"};
+conditions = {"OO", "OA", "SO", "SA"};
 dfiring = nan(length(conditions), size(dstimulusRate, 2));
+
+% for i = 1:length(conditions)
+%     index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
+%     dfiring(i, :) = mean(dstimulusRate(index, :));
+% end
 
 for i = 1:length(conditions)
     index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
-    dfiring(i, :) = abs(median(dstimulusRate(index, :)));
+    dfiring_mean(i, :) = mean(dstimulusRate(index, resp_cids));
+    dfiring_sd(i,:) = std(dstimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
 end
 
+%plot
 figure;
-scatter(dfiring(2, :), dfiring(1,:)) % 1: SA, 2: SO
+scatter(dfiring_mean(2, :), dfiring_mean(3,:)) % 1: SA, 2: SO
 xlabel(['Firing changes during' conditions(2)])
-ylabel(['Firing changes during' conditions(1)])
+ylabel(['Firing changes during' conditions(3)])
 title(['Post stim window: ' num2str(PostT) 'ms'])
+
+% which/how many cells prefer what?
+somPref = [];
+audPref = [];
+noPref = [];
+for unit = 1:responsive_length(dfiring_mean)
+
+        index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
+    dfiring = dstimulusRate(index, resp_cids);
+
+    if abs(dfiring_mean(2,unit)) > abs(dfiring_mean(3,unit))
+        audPref = [audPref; responsive_units(session).responsive(unit)];
+    elseif abs(dfiring_mean(2,unit)) < abs(dfiring_mean(3,unit))
+        somPref = [somPref; responsive_units(session).responsive(unit)];
+    elseif dfiring_mean(2,unit) == dfiring_mean(3,unit)
+        noPref = [noPref; responsive_units(session).responsive(unit)];
+    end
+end
+%%
+figure;
+
+bar([length(audPref) length(somPref)])
 
 %% pressure tuning curve
 
@@ -177,19 +241,21 @@ uAmp = unique(stimuli_parameters.Stm.Amplitude);
 nAmp = length(uAmp);
 
 nClusters = length(cids);
+
 figure;
 hold on
 
 for cluster = 1:nClusters
+
     for amp = 1:nAmp
         index = stimuli_parameters.Stm.Amplitude == uAmp(amp);
         toPlot(amp, cluster) = mean(dstimulusRate(index, cluster));
     end
     toPlot(2:5, cluster) = toPlot(2:5, cluster) - toPlot(1, cluster);
-    responsive = ismember(responsive_units(3).responsive, cids(cluster));
 
-    if max(responsive)
+    if any(ismember(resp_cids, cluster))
         plot(toPlot(:, cluster), 'r');
+        %resp_cells = [resp_cells; mean(toPlot(:, cluster))];
     else
         plot(toPlot(:, cluster), 'k');
     end
@@ -198,9 +264,33 @@ for cluster = 1:nClusters
     xlabel('stimulus strength (V)')
     xticks(1:nAmp)
     xticklabels(uAmp)
-    %legend(num2str(cids(cluster)))
 end
 
+%% pressure tuning curve mean of responsive units
+% calculate stimulus induced change in firing rate
+dstimulusRate = stimulusRate - baselineRate;
+
+uAmp = unique(stimuli_parameters.Stm.Amplitude);
+nAmp = length(uAmp);
+
+nClusters = length(cids);
+
+figure;
+hold on
+
+for amp = 1:nAmp
+    index = stimuli_parameters.Stm.Amplitude == uAmp(amp);
+    dfiring_mean(amp, :) = mean(stimulusRate(index, resp_cids));
+    dfiring_sd(amp,:) = std(stimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
+end
+
+plot(dfiring_mean, 'r')
+plot(mean(dfiring_mean, 2), 'k', 'LineWidth', 1.25)
+xticks(1:nAmp)
+xticklabels(uAmp)
+
+ylabel('df Firing rate (Hz)')
+xlabel('stimulus strength (V)')
 
 %% quantify reactive units
 % 2. cross correlating single trials (KDF as in previous script), corr
