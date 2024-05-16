@@ -34,6 +34,7 @@ Fs = 30000; % sampling freq
 
 %% M9 things
 sessions_TTLs(8,:) = [];
+
 %% save session TTLs
 filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
 save(fullfile(OutPath, filename), "sessions_TTLs")

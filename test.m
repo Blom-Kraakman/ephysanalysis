@@ -263,8 +263,126 @@ sessions_TTLs(2,1)
 Srise = TTL_samples((TTL_states == 2) | (TTL_states == 5)); % Srise = column vector of length NStim where the spikes should be aligned
 Sfall = TTL_samples((TTL_states == -2) | (TTL_states == -5)); % Sfall = column vector of length nStm indicating end of stimulus
 
+%% plot summary fig - vibrotactile sessions
+% boxplot, per unit
 
-%% Extract spikes M1
+close all
+amp = 0.3; 
+
+uFreq = unique(stimuli_parameters.Stm.SomFreq);
+nFreq = length(uFreq);
+nClusters = length(cids);
+condition = nan(nClusters, nFreq);
+figure
+
+for cluster = 1:nClusters
+    for freq = 1:nFreq
+        condition(cluster, freq) = median(stimulusRate([stimuli_parameters.Stm.SomFreq] == uFreq(freq) & [stimuli_parameters.Stm.Amplitude] == amp, cluster))';
+    end
+
+    plot(uFreq, mean(condition(cluster, :) - condition(cluster, 1), 1), ':o')
+    hold on
+
+end
+
+xticks(uFreq)
+xticklabels(uFreq(1:nFreq));
+xlabel(['Vibrotactile stimulus (Hz), ' num2str(amp) ' (V)'])
+ylabel('Normalized firing rate (Hz)')
+
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+save figure
+figname = sprintf('M%.2i_S%.2i_%s_mean', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+% plot summary fig: boxplot, all units
+close all
+condition = nan(nClusters, nFreq);
+figure
+
+% select data
+for freq = 1:nFreq
+    condition(:, freq) = median(stimulusRate([stimuli_parameters.Stm.SomFreq] == uFreq(freq) & [stimuli_parameters.Stm.Amplitude] == amp, :))';
+end
+
+% plot
+figure
+boxplot(condition)
+
+xticklabels(uFreq(1:nFreq));
+xlabel(['Vibrotactile stimulus (Hz), ' num2str(amp) ' (V)'])
+ylabel('Normalized firing rate (Hz)')
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+% save figure
+figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+
+%% plot summary fig - pressure sessions
+% boxplot, per  units
+close all
+
+% parameters
+uAmp = unique(stimuli_parameters.Stm.Amplitude);
+nAmp = length(uAmp);
+nClusters = length(cids);
+condition = nan(nClusters, nAmp);
+
+figure
+for cluster = 1:nClusters
+
+    % select data
+    for amplitude = 1:nAmp
+        condition(cluster, amplitude) = median(stimulusRate([stimuli_parameters.Stm.Amplitude] == uAmp(amplitude), cluster))';
+    end
+
+    % plot
+    plot(uAmp, mean(condition(cluster, :) - condition(cluster, 1), 1), ':o');
+    hold on
+
+end
+
+xticks(uAmp)
+xticklabels(uAmp(1:nAmp));
+xlabel('Pressure (V)')
+ylabel('Normalized firing rate (Hz)')
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+%save figure
+figname = sprintf('M%.2i_S%.2i_%s_mean', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+% plot summary fig: boxplot, all units
+close all
+condition = nan(nClusters, nAmp);
+
+% select data
+for amplitude = 1:nAmp
+    condition(:, amplitude) = median(stimulusRate([stimuli_parameters.Stm.Amplitude] == uAmp(amplitude), :))';
+end
+
+% plot
+figure
+boxplot(condition)
+
+xticklabels(uAmp(1:nAmp));
+xlabel('Pressure (V)')
+ylabel('Normalized firing rate (Hz)')
+title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+%save figure
+figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+saveas(gcf, fullfile(OutPath, figname));
+
+%% -------------------- Local functions -------------------------- %%
+
+% Extract spikes M1
 function [spiketimes, cids, cpos, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, messagesPath, relevant_sessions, rec_samples, Fs)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
@@ -420,6 +538,8 @@ end
 fprintf('unit extraction done\n');
 
 end
+
+
 
 %% plot SOM piezo data
 % if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'Piezo')

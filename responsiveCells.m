@@ -16,7 +16,6 @@ end
 
 nAmp = length(uAmp);
 nFreq = length(uFreq);
-
 nClusters = length(cids);
 
 % initiate struct
