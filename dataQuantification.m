@@ -6,7 +6,7 @@
 %   2. quatify which cluster responds to which event
 %       responsive unit = sig different firing after stim vs baseline
 %   3. quantify response strength, make various plots
-%   4. TO DO: combine data from multiple animals
+%   4. combine data from multiple animals
 
 clearvars
 
@@ -26,7 +26,7 @@ Fs = 30000; % sampling freq
 
 [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, StimOn] = loadData(OutPath, session, BehaviorPath);
 
-%% firing rates
+%% 1. calculate firing rates
 
 % define pre and post simulus onset
 PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/4)/1000; % baseline period
@@ -45,41 +45,78 @@ end
 
 % calculate stimulus induced change in firing rate
 dstimulusRate = stimulusRate - baselineRate;
-   
-%% quantify reactive units
+%% 2. quantify reactive units
 % ! edit exp condition for SxA sessions
 % ! edit AMn indexing if needed (needed in earlier data sets)
 
-[responsive_units, resp_cids] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, session);
+[responsive_units, resp_cids] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids);
 
-%% combine datasets across mice
+%% 3. calculate mean stimulus induced change in firing
 
-OutPath = 'D:\DATA\Processed'; % output directory
+% select correct amplitude and frequency parameters
+if strcmp(stimuli_parameters.Par.Rec, "AMn") % noise session
+    uAmp = unique(stimuli_parameters.Stm.Intensity); 
+    uFreq = unique(stimuli_parameters.Stm.Mf);
+else %SxA and SOM sessions
+    uAmp = unique(stimuli_parameters.Stm.Amplitude);
+    uFreq = unique(stimuli_parameters.Stm.SomFreq);
+end
+
+nAmp = length(uAmp);
+nFreq = length(uFreq);
+
+% select multiple stimuli types in one session
+if strcmp(stimuli_parameters.Par.Rec, "SxA") %dual modal session
+    conditions = {"OO", "OA", "SO", "SA"};
+else % unimodal sessions
+    conditions = 1;
+end
+% initialize output variables
+firing_mean = nan(length(conditions), nFreq, nAmp, length(resp_cids));
+firing_se = nan(length(conditions), nFreq, nAmp, length(resp_cids));
+
+% mean dfiring rate per stimulus combination for all responsive units
+for condition = 1:length(conditions)
+    for freq = 1:nFreq
+        for amp = 1:nAmp
+            index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & condition;
+            firing_mean(condition, freq, amp, :) = mean(dstimulusRate(index, resp_cids));
+            firing_se(condition, freq, amp, :) = mean(dstimulusRate(index, resp_cids));
+        end
+    end
+end
+
+%% 3.5 Save if needed
+filename = sprintf('M%.2i_S%.2i_%s_ResponseProperties', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+save(fullfile(OutPath, filename), "responsive_units", "baselineRate", "stimulusRate", "firing_mean", "firing_se")
+
+%% 4. combine datasets across mice
+
+% animals to include
+animal = [4 6 7];
+
+%define session per animal
+session = 2;
+%session_options = {"AMn", "SOM", "SxA", "FRA"};
+%session = char(session_options{1});
 
 % get data from session to analyse
-% define session per animal
-animal = [4 6 7];
-uAmp = [0 15 30 45 60];
-data_all = [];
-
-% calculate dfiring mean across conditions per session per animal
-
-
-% Save if needed
-% filename = sprintf('M%.2i_S%.2i_%s_NoiseThresholding', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-% save(fullfile(OutPath, filename), "dfiring_mean", "dfiring_se")
-
-% load corresponsing files
 for file = 1:length(animal)
-    sessionFile = ['M0' num2str(animal(file), '%d') '_*.mat'];
+    OutPath = ['D:\DATA\Processed\M' num2str(animal(file), '%d') '\'];
+    sessionFile = ['M' num2str(animal(file), '%.2d') '_S' num2str(session, '%.2d') '_*_ResponseProperties.mat']; % select based on stimulus type '_*.mat'
     stim_files = dir(fullfile(OutPath, sessionFile));
     files = load([stim_files.folder '\' stim_files.name]);
-
+    
+    % concatinate data from all units
     data_all = [data_all; files.dfiring_mean'];
 end
 
+%% plot for multiple animals
+uAmp = [0 15 30 45 60];
+
 data = mean(data_all);
 errors = std(data_all) / sqrt(size(data_all, 1));
+
 figure;
 hold on
 plot(data, 'LineWidth', 1.25)
@@ -89,8 +126,6 @@ xticklabels(uAmp)
 
 ylabel('df Firing rate (Hz)')
 xlabel('Broadband noise intensity (dB SPL)')
-
-
 
 %% quantify response strength per condition
 
@@ -103,6 +138,8 @@ for i = 1:length(conditions)
     firing_mean(i, :) = mean(stimulusRate(index, resp_cids));
     firing_se(i,:) = std(stimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
 end
+
+%firing_mean(condition, freq, amp, :)
 
 %plot bar graph
 data = mean(firing_mean, 2);
@@ -283,28 +320,6 @@ xticklabels(uAmp)
 
 ylabel('df Firing rate (Hz)')
 xlabel('Broadband noise intensity (dB SPL)')
-%% save if needed
-filename = sprintf('M%.2i_S%.2i_%s_NoiseThresholding', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-save(fullfile(OutPath, filename), "dfiring_mean", "dfiring_se")
-
-%% combine datasets across mice
-
-OutPath = 'D:\DATA\Processed'; % output directory
-
-% get data from session to analyse
-% define session per animal
-animal = [4 6 7];
-uAmp = [0 15 30 45 60];
-data_all = [];
-
-% load corresponsing files
-for file = 1:length(animal)
-    sessionFile = ['M0' num2str(animal(file), '%d') '_*.mat'];
-    stim_files = dir(fullfile(OutPath, sessionFile));
-    files = load([stim_files.folder '\' stim_files.name]);
-
-    data_all = [data_all; files.dfiring_mean'];
-end
 
 data = mean(data_all);
 errors = std(data_all) / sqrt(size(data_all, 1));
@@ -323,11 +338,6 @@ xlabel('Broadband noise intensity (dB SPL)')
 
 conditions = {"OO", "OA", "SO", "SA"};
 dfiring = nan(length(conditions), size(dstimulusRate, 2));
-
-% for i = 1:length(conditions)
-%     index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
-%     dfiring(i, :) = mean(dstimulusRate(index, :));
-% end
 
 for i = 1:length(conditions)
     index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});

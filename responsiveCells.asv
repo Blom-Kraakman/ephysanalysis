@@ -6,13 +6,13 @@ function [results, resp_cids] = responsiveCells(stimuli_parameters, baselineRate
 % OUTPUT: struct containing id of responsive units
 
 % set parameters
-if strcmp(stimuli_parameters.Par.Rec, 'AMn') % noise and AM
+if strcmp(stimuli_parameters.Par.Rec, 'AMn')
+    uFreq = unique(stimuli_parameters.Stm.Mf);
     tAmp = stimuli_parameters.Stm.Intensity;
     uAmp = unique(tAmp);
-    uFreq = unique(stimuli_parameters.Stm.Mf);
 else
     tAmp = stimuli_parameters.Stm.Amplitude;
-    uAmp = unique(tAmp);
+    uAmp = unique(tAmp); 
     uFreq = unique(stimuli_parameters.Stm.SomFreq);
 end
 
@@ -41,8 +41,7 @@ for cluster = 1:nClusters
             % session specific parameters
             if strcmp(stimuli_parameters.Par.Rec, 'AMn') && max(stimuli_parameters.Stm.Mf) == 0 % noise
                 index = tAmp == uAmp(condition);
-                control = strcmp(tAmp, '-Inf');
-                baseline = stimulusRate(control,cluster);
+                baseline = baselineRate(index,cluster);
                 stim_evoked = stimulusRate(index,cluster);
             elseif strcmp(stimuli_parameters.Par.Rec, 'AMn') && max(stimuli_parameters.Stm.Mf) ~= 0 % AM
                 index = tAmp == uFreq(condition);
@@ -50,10 +49,10 @@ for cluster = 1:nClusters
                 stim_evoked = stimulusRate(index,cluster);
             elseif strcmp(stimuli_parameters.Par.Rec, 'SOM')
                 if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') %vibrotac
-                    control = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == 0);
-                    index = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
-                    baseline = stimulusRate(control,cluster);
-                    stim_evoked = stimulusRate(index,cluster);
+                control = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == 0);
+                index = (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
+                baseline = stimulusRate(control,cluster);
+                stim_evoked = stimulusRate(index,cluster);
                 elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') % pressure
                     control = stimuli_parameters.Stm.Amplitude == 0;
                     index = stimuli_parameters.Stm.Amplitude == uAmp(condition);
@@ -68,8 +67,9 @@ for cluster = 1:nClusters
                 stim_evoked = stimulusRate(index,cluster);
             end
 
+            %[p,h,stats] = signrank(stimulusRate(control,cluster), stimulusRate(index,cluster), 'alpha', 0.01); % different from control trials?
             % stat test
-            [p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % different from control trials
+            [p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % different from control trials?
             results.pvalue(condition, freq, cluster) = p;
             results.signrank(condition, freq, cluster) = stats.signedrank;
             results.hvalue(condition, freq, cluster) = h;
