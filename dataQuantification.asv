@@ -18,15 +18,15 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 Fs = 30000; % sampling freq
 
-[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, ~] = loadData(OutPath, session, BehaviorPath);
+[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, StimOn] = loadData(OutPath, session, BehaviorPath);
 
 % 1. calculate firing rates
 
 % define pre and post simulus onset
 if strcmp(stimuli_parameters.Par.Rec, "SxA")
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
-    PostT = 0.25;
-    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
+    PostT = 0.05;
+    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/4)/1000; % baseline period
     StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + 0.250;
 elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, "Square")
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/4)/1000; % baseline period
@@ -43,14 +43,13 @@ end
 
 % calculate stimulus induced change in firing rate
 dstimulusRate = stimulusRate - baselineRate;
-
 % 2. quantify reactive units
 % ! edit exp condition for SxA sessions
 % ! edit AMn indexing if needed (needed in earlier data sets)
 
 [responsive_units, resp_cids] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids);
 
-% 3. calculate mean stimulus induced change in firing
+%% 3. calculate mean stimulus induced change in firing
 
 % select correct amplitude and frequency parameters
 if strcmp(stimuli_parameters.Par.Rec, "AMn") % noise session
@@ -84,7 +83,6 @@ for condition = 1:length(conditions)
             end
 
             firing_mean(freq, amp, condition, :) = mean(dstimulusRate(index, resp_cids));
-
         end
     end
 end
@@ -139,6 +137,7 @@ xlabel('Broadband noise intensity (dB SPL)')
 %plot bar graph
 data = squeeze(mean(mean(firing_mean, 1, "omitnan"), 2, "omitnan"));
 errors = std(data(:, :), 0, 2) / sqrt(size(data, 2));
+%firing_se(amp,:) = std(stimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
 
 figure;
 bar(mean(data,2)) % avg FR of all responsive units

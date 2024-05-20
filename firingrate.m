@@ -14,7 +14,7 @@ for cluster = 1:size(SpkT,2)
         
         % count spikes in time windows
         baseSpikes = sum(S >= -PreT & S <= 0); % preT - 0
-        expSpikes = sum(S > StimOn(trial) & S <= (StimOn(trial) + PostT)); % StimOn moment (0 for aud, 0.25 for som) - postT
+        expSpikes = sum(S > StimOn(trial) & S <= (StimOn(trial) + PostT)); % StimOn moment - postT
 
         % convert to firing rate (Hz)
         baseFR(trial, cluster) = baseSpikes/abs(PreT);
