@@ -6,7 +6,7 @@ function [results, resp_cids] = responsiveCells(stimuli_parameters, baselineRate
 % OUTPUT: struct containing id of responsive units
 
 % set parameters
-if strcmp(stimuli_parameters.Par.Rec, 'AMn') % noise and AM
+if strcmp(stimuli_parameters.Par.Rec, 'AMn') % noise % AM
     tAmp = stimuli_parameters.Stm.Intensity;
     uAmp = unique(tAmp);
     uFreq = unique(stimuli_parameters.Stm.Mf);
@@ -45,7 +45,7 @@ for cluster = 1:nClusters
                 baseline = stimulusRate(control,cluster);
                 stim_evoked = stimulusRate(index,cluster);
             elseif strcmp(stimuli_parameters.Par.Rec, 'AMn') && max(stimuli_parameters.Stm.Mf) ~= 0 % AM
-                index = tAmp == uFreq(condition);
+                index = stimuli_parameters.Stm.Mf == uFreq(condition);
                 baseline = baselineRate(index,cluster);
                 stim_evoked = stimulusRate(index,cluster);
             elseif strcmp(stimuli_parameters.Par.Rec, 'SOM')

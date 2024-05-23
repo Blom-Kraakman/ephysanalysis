@@ -18,24 +18,24 @@ OutPath = 'D:\DATA\Processed\M8'; % output directory
 
 Fs = 30000; % sampling freq
 
-[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, ~] = loadData(OutPath, session, BehaviorPath);
+[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, StimOn] = loadData(OutPath, session, BehaviorPath);
 
 % 1. calculate firing rates
 
 % define pre and post simulus onset
 if strcmp(stimuli_parameters.Par.Rec, "SxA")
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
-    PostT = 0.25;
+    PostT = 0.5; % whole vibrotac + dual mdoe period
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + 0.250;
 elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, "Square")
-    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/4)/1000; % baseline period
+    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = 0.05; % best way to capture onset stimulus
 elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
     PostT = 0.2; % limited by previous recordings
-    PreT = (str2double(stimuli_parameters.Par.AMISI)/4)/1000; % baseline period
+    PreT = (str2double(stimuli_parameters.Par.AMISI)/3)/1000; % baseline period
 else
-    disp("No post stimulus time frame defined")
+    error("No analysis window defined")
 end
 
 % calculate firing rate (Hz) in time window
@@ -79,6 +79,8 @@ for condition = 1:length(conditions)
         for amp = 1:nAmp
             if strcmp(stimuli_parameters.Par.Rec, "SxA")
                 index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
+            elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
+                index = stimuli_parameters.Stm.Intensity == uAmp(amp) & stimuli_parameters.Stm.Mf == uFreq(freq);
             else
                 index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq);
             end
@@ -89,9 +91,9 @@ for condition = 1:length(conditions)
     end
 end
 
-%% 3.5 Save if needed
+% 3.5 Save if needed
 filename = sprintf('M%.2i_S%.2i_%s_ResponseProperties', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-save(fullfile(OutPath, filename), "responsive_units", "baselineRate", "stimulusRate", "firing_mean", "firing_se")
+save(fullfile(OutPath, filename), "responsive_units", "baselineRate", "stimulusRate", "firing_mean", "PreT", "PostT", "conditions")
 
 %% 4. combine datasets across mice
 
@@ -332,50 +334,45 @@ xlabel('Broadband noise intensity (dB SPL)')
 %% compare firing rate unimodal to multimodal stimulus presentation
 % makes scatter plot of firing rates per responsive unit between two conditions
 
-conditions = {"OO", "OA", "SO", "SA"};
-dfiring = nan(length(conditions), size(dstimulusRate, 2));
-
-for i = 1:length(conditions)
-    index = strcmp(stimuli_parameters.Stm.MMType, conditions{i});
-    dfiring_mean(i, :) = mean(dstimulusRate(index, resp_cids));
-    dfiring_se(i,:) = std(dstimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
-end
-
-%plot
-figure;
-scatter(dfiring_mean(2, :), dfiring_mean(3,:)) % 1: SA, 2: SO
-xlabel(['Firing changes during' conditions(2)])
-ylabel(['Firing changes during' conditions(3)])
-title(['Post stim window: ' num2str(PostT) 'ms'])
+% data format:
+%   firing_mean(freq, amp, condition, resp_cids)
+%   conditions = {"OO", "OA", "SO", "SA"};
 
 % which/how many cells prefer what?
 somPref = [];
 audPref = [];
 noPref = [];
 
-index = strcmp(stimuli_parameters.Stm.MMType, "OA");
-dfiring_OA = dstimulusRate(index, resp_cids);
-index = strcmp(stimuli_parameters.Stm.MMType, "SO"); % to do: select best freq. use 3rd dimention matrix as condition index
-dfiring_SO = dstimulusRate(index, resp_cids);
+aud_trials = squeeze(firing_mean(1,1,2,:));
+som_trials = squeeze(mean(firing_mean(2:9,3,3,:), 1));
+for unit = 1:length(responsive_units.responsive)
 
-for unit = 1:length(responsive_units(session).responsive) %length(dfiring_mean)
-
-    %[p,h,stats] = signrank(stimulusRate(control,cluster), stimulusRate(index,cluster), 'alpha', 0.01); % different from control trials?
     % stat test
-    [p,h,stats] = signrank(dfiring_OA(:, unit), dfiring_SO(:, unit), 'alpha', 0.01); % different from control trials?
+    [p,h,stats] = signrank(aud_trials, som_trials, 'alpha', 0.01); % different from control trials?
 
     if h
-        if abs(dfiring_mean(2,unit)) > abs(dfiring_mean(3,unit))
-            audPref = [audPref; responsive_units(session).responsive(unit)];
-        elseif abs(dfiring_mean(2,unit)) < abs(dfiring_mean(3,unit))
-            somPref = [somPref; responsive_units(session).responsive(unit)];
-        elseif dfiring_mean(2,unit) == dfiring_mean(3,unit)
-            noPref = [noPref; responsive_units(session).responsive(unit)];
+        if abs(aud_trials(unit)) > abs(som_trials(unit))
+            audPref = [audPref; responsive_units.responsive(unit)];
+        elseif abs(aud_trials(unit)) < abs(som_trials(unit))
+            somPref = [somPref; responsive_units.responsive(unit)];
+        elseif abs(aud_trials(unit)) == abs(som_trials(unit))
+            noPref = [noPref; responsive_units.responsive(unit)];
         end
     else
-        noPref = [noPref; responsive_units(session).responsive(unit)];
+        noPref = [noPref; responsive_units.responsive(unit)];
     end
 end
+
+%plot bar graph
+data = squeeze(mean(mean(firing_mean, 1, "omitnan"), 2, "omitnan"));
+errors = std(data(:, :), 0, 2) / sqrt(size(data, 2));
+
+%plot
+figure;
+scatter(data(4, :), data(3,:)) % 4: SA, 3: SO
+xlabel(['Firing changes during' conditions(2)])
+ylabel(['Firing changes during' conditions(3)])
+title(['Post stim window: ' num2str(PostT) 'ms'])
 
 
 %% best modality per unit
