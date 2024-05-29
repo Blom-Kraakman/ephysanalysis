@@ -1,11 +1,11 @@
-function [sessions_TTLs, sessions_TTLs_details] = getSessionTTLs(messagesPath, rec_samples, Fs)
+function [sessions_TTLs, sessions_TTLs_details] = getSessionTTLs(messagesPath, ~, ~)
 % sessions_TTLs_details contains cell array: text from message center,
 % start(1)/end(0) code, corresponding sample nr, time since start recording
 % sessions_TTLs contains array with: event nr, start(1)/end(0) code, corresponding sample nr
 
 % open files
-message_text = [messagesPath 'text.npy']; % session TTLs
-message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs
+message_text = [messagesPath 'text.npy']; % session TTLs text
+message_samples = readNPY([messagesPath 'sample_numbers.npy']); % session TTLs sample
 
 % open text messages
 msgs = getMessageText(message_text);
@@ -32,8 +32,9 @@ sessions_TTLs(:,3) = message_samples(1:length(sessions_TTLs)); % sample nr
 ttl_samples = [num2cell(message_samples(1:size(msgs, 1)))]; % sample nr
 sessions_TTLs_details = [msgs, ttl_samples];
 
-ttls_norm = num2cell((message_samples - rec_samples(1))/Fs);
-sessions_TTLs_details = [sessions_TTLs_details, ttls_norm]; % time since recording onset
+%ttls_norm = num2cell((message_samples - rec_samples(1))/Fs);
+%sessions_TTLs_details = [sessions_TTLs_details, ttls_norm]; % time since recording onset
+ 
 
     function msgs = getMessageText(message_text)
         % open messages file

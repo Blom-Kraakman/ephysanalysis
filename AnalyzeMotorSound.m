@@ -1,25 +1,31 @@
 clearvars
 % load behavioural stimuli
-filename = 'M9_S03_SxA';
+filename = 'M11_S08_SxA';
 %load([filename,'.mat']);
-load(['D:\DATA\Behavioral Stimuli\M9\' filename,'.mat'],'Stm','Aud', 'Par');
+load(['D:\DATA\Behavioral Stimuli\M11\' filename,'.mat'],'Stm', 'Par');
 
-%% load microphone data
+StmTemp = Stm;
+
+% load microphone data
 filename = [filename '_Sound'];
-load(['D:\DATA\Behavioral Stimuli\M9\Sound recording\' filename,'.mat'], 'Aud', 'Fs');
+load(['D:\DATA\Behavioral Stimuli\M11\Sound recording\' filename,'.mat'], 'Aud', 'Fs');
 %load([filename,'.mat'],'Aud','Stm','Par');
 
-%% Format Aud, if necessary
+%% select trials in SxA
 
 %Select correct trials from Aud
 AudTemp = Aud;
 Aud = AudTemp(Stm.AudDur==0);
+
+% select non aud stim only tirals
+StmTemp = Stm(Stm.AudDur==0, :);
 
 %% Format Aud (cell array --> matrix)
 AudTemp = [];
 for i = 1:size(Aud,2)
     AudTemp(i,:) = Aud{i};
 end
+
 Aud = AudTemp;
 
 %%
@@ -47,16 +53,16 @@ toc;
 [nF,nT,~] = size(ps_all);
 
 % adapt to select no sound only trials (for SxA sessions)
-UStim = unique(Stm(:,{'SomFreq','Amplitude'}),'rows');
+UStim = unique(StmTemp(:,{'SomFreq','Amplitude'}),'rows');
 nUStim = size(UStim,1);
 
 ps_mean = nan(nF,nT,nUStim);
 for ii = 1:nUStim
-    idx = Stm.SomFreq == UStim.SomFreq(ii) & Stm.Amplitude == UStim.Amplitude(ii);
+    idx = StmTemp.SomFreq == UStim.SomFreq(ii) & StmTemp.Amplitude == UStim.Amplitude(ii);
     ps_mean(:,:,ii) = mean(ps_all(:,:,idx),3);
 end
 
-%% Calculate instantaneous power
+% Calculate instantaneous power
 
 fIdx = f > 10;
 fLow = f > 500 & f <= 2000;
@@ -79,10 +85,10 @@ instPower_high = reshape(sum(ps_mean(fHigh,:,:)),[nT,nUStim]);
 instPower_high_dB = 10*log10(instPower_high);
 instPower_high_dBSPL = dbv2spl(instPower_high_dB);
 
-%% plot average
+% plot average
 figure('Position',[10,10,1000,800]);
 clim = [-110,-60];
-freqRange = [0,40];%kHz
+freqRange = [0,10];%kHz
 dBRange_pow = [-Inf,Inf];
 dBRange_pow = [-2,60];
 tRange = [0,0.6];
@@ -115,12 +121,12 @@ axPos = ax.Position;
 hL = legend(ax1,{'all (>10Hz)','low (500-2000Hz)','mid (2-10kHz)','high (>10kHz)'});
 hL.Position(1:2) = axPos(1:2); % move legend to position of extra axes
 
-sgtitle(['Ramp: ',num2str(Stm.Ramp(1)),'ms','   ',...
-         'Actuator: ',Stm.Actuator(1,:),    '   ', ...
-         'Waveform: ',Stm.Waveform(1,:)])
+sgtitle(['Ramp: ',num2str(StmTemp.SomRamp(1)),'ms','   ',...
+         'Actuator: ',StmTemp.Actuator(1,:),    '   ', ...
+         'Waveform: ',StmTemp.Waveform(1,:)])
 
 saveas(gcf,[filename,'_spectogram.png'])
-%% plot individual
+% plot individual
 figure('Position',[10,10,1400,900]);
 stimToPlot = [1,4:4:numTrials];
 nToPlot = length(stimToPlot)+1;
@@ -138,7 +144,7 @@ for ii = 1:nToPlot
     if ii < nToPlot
     idx = stimToPlot(ii);
     imagesc(t,f./1000,squeeze(10*log10(ps_all(:,:,idx))),clim)
-    title([num2str(Stm.Rep(idx),'Rep: %d ')])
+    title([num2str(StmTemp.Rep(idx),'Rep: %d ')])
     else
     imagesc(t,f./1000,squeeze(10*log10(ps_mean(:,:,1))),clim)
     title(['mean'])
@@ -149,9 +155,9 @@ for ii = 1:nToPlot
     xlabel(ax1,'Time (s)')
 end
 
-sgtitle(['Ramp: ',num2str(Stm.Ramp(1)),'ms','   ',...
-         'Actuator: ',Stm.Actuator(1,:),    '   ', ...
-         'Waveform: ',Stm.Waveform(1,:)])
+sgtitle(['Ramp: ',num2str(StmTemp.SomRamp(1)),'ms','   ',...
+         'Actuator: ',StmTemp.Actuator(1,:),    '   ', ...
+         'Waveform: ',StmTemp.Waveform(1,:)])
 saveas(gcf,[filename,'_spectogram_trials.png'])
 
 %% local functions

@@ -26,9 +26,9 @@ for i = 1:size(sessions_TTLs, 1)
     elseif (i == 1) && (sessions_TTLs(i,2) == 0) % missing start first session
         session_start = rec_samples(1); %start
         session_end = sessions_TTLs(i,3); %end
-    elseif (i == 9) && (sessions_TTLs(i,2) == 0) % special case in M6
-        session_start = sessions_TTLs(i,3); %start
-        session_end = rec_samples(end);
+    % elseif (i == 9) && (sessions_TTLs(i,2) == 0) % special case in M6
+    %     session_start = sessions_TTLs(i,3); %start
+    %     session_end = rec_samples(end);
         % elseif (i == 2) && (sessions_TTLs(i,2) == 0) % special case in M7
         %         session_start = sessions_TTLs(i-1,3); %start
         %         session_end = sessions_TTLs(i,3); %end
@@ -46,6 +46,7 @@ for i = 1:size(sessions_TTLs, 1)
     disp(['session: ' num2str(sessions_TTLs(i,1))])
     disp(['start sample: ' num2str(session_start)])
     disp(['end sample: ' num2str(session_end)])
+    %disp(['session period (samples): num2str(session_start) '-' num2str(session_end)])
     disp(['Session related samples: ' num2str(size(tTTL_states, 1))])
 
     %special case M7
@@ -81,8 +82,6 @@ for i = 1:size(sessions_TTLs, 1)
     % output variables
     Srise = [Srise; tSrise];
     Sfall = [Sfall; tSfall];
-    %Srise.aud = [Srise.aud; tSrise];
-    %Sfall.aud = [Sfall.aud; tSfall];
 
 end
 end

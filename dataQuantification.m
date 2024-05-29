@@ -11,10 +11,10 @@
 clearvars
 
 %  set directories
-session = 5;
+session = 10;
 
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M8'; % output directory
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M9\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M9_2'; % output directory
 
 Fs = 30000; % sampling freq
 
@@ -27,7 +27,7 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA")
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
     PostT = 0.5; % whole vibrotac + dual mdoe period
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
-    StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + 0.250;
+    %StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + 0.250;
 elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, "Square")
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = 0.05; % best way to capture onset stimulus
@@ -113,10 +113,13 @@ for file = 1:length(animal)
     files = load([stim_files.folder '\' stim_files.name]);
     
     % concatinate data from all units
-    data_all = [data_all; files.dfiring_mean'];
+    data_all = [data_all; files.dfiring_mean]; % for m4 6 7?
+
+    % concatinate data from all units
+    data_all = [data_all; files.dfiring_mean]; % for m8 9 10 11
 end
 
-%% plot for multiple animals
+%% plot noise for multiple animals
 uAmp = [0 15 30 45 60];
 
 data = mean(data_all);
@@ -133,6 +136,7 @@ ylabel('df Firing rate (Hz)')
 xlabel('Broadband noise intensity (dB SPL)')
 
 %% quantify response strength per condition
+% work with 4D data format? y 
 
 % data format:
 %   firing_mean(freq, amp, condition, :)
@@ -164,65 +168,34 @@ xlabel('conditions')
 xticklabels(["OO", "OA", "SO", "SA"])
 ylabel('mean stimulus evoked firing rate (spikes/s)')
 
+%% load session data
+
+%  set directories
+session = 3;
+
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M10'; % output directory
+
+Fs = 30000; % sampling freq
+
+[~, stimuli_parameters, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
 %% pressure tuning curve
+% work with 4D data format? 
 
 uAmp = unique(stimuli_parameters.Stm.Amplitude);
 nAmp = length(uAmp);
 nClusters = length(cids);
 dfiring = nan(nAmp, nClusters);
 
-figure;
-hold on
-
-for cluster = 1:nClusters
-
-    for amp = 1:nAmp
-        index = stimuli_parameters.Stm.Amplitude == uAmp(amp);
-        dfiring(amp, cluster) = mean(dstimulusRate(index, cluster));
-    end
-    
-    % normalize to control
-    dfiring(2:5, cluster) = dfiring(2:5, cluster) - dfiring(1, cluster);
-
-    % plot responsive units in distinct colour
-    if any(ismember(resp_cids, cluster))
-        plot(dfiring(:, cluster), 'r');
-    else
-        plot(dfiring(:, cluster), 'k');
-    end
-
-    ylabel('df Firing rate (spikes/s)')
-    xlabel('stimulus strength (V)')
-    xticks(1:nAmp)
-    xticklabels(uAmp)
-end
-hold off
-
-% pressure tuning curve mean of only responsive units
-firing_mean = nan(length(conditions), length(resp_cids));
-firing_se= nan(length(conditions), length(resp_cids));
-
-for amp = 1:nAmp
-    index = stimuli_parameters.Stm.Amplitude == uAmp(amp);
-    firing_mean(amp, :) = mean(stimulusRate(index, resp_cids));
-    firing_se(amp,:) = std(stimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
-end
-
-% plot indivudual traces along average
-% plot(dfiring_mean, 'r')
-% plot(mean(dfiring_mean, 2), 'k', 'LineWidth', 1.25)
-% xticks(1:nAmp)
-% xticklabels(uAmp)
-% 
-% ylabel('df Firing rate (Hz)')
-% xlabel('stimulus strength (V)')
+data = squeeze(firing_mean);
+FRpressure_mean = mean(data, 2);
+FRpressure_se = std(data, [],2) / sqrt(length(responsive_units.responsive));
 
 figure;
 hold on
-data = mean(dfiring_mean, 2); %mean(firing_mean, 2);
-errors = mean(dfiring_se, 2); %mean(firing_sd, 2);
-plot(data, 'LineWidth', 1.25)
-errorbar(1:length(data), data, errors, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
+plot(FRpressure_mean, 'LineWidth', 1.25)
+errorbar(1:length(FRpressure_mean), FRpressure_mean, FRpressure_se, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 xticks(1:nAmp)
 xticklabels(uAmp)
 
@@ -230,70 +203,32 @@ ylabel('df Firing rate (spikes/s)')
 xlabel('stimulus strength (V)')
 
 %% vibrotac tuning curves
+% of only responsive units
+% work with 4D data format?
 
 uAmp = unique(stimuli_parameters.Stm.Amplitude);
 nAmp = length(uAmp);
 uFreq = unique(stimuli_parameters.Stm.SomFreq);
 nFreq = length(uFreq);
 
-nClusters = length(cids);
+% select correct condition from SxA session
+condition = 3; % ["OO", "OA", "SO", "SA"]
+
+data = firing_mean(:, :, condition, :);
+FRvibrotac_mean = mean(data, 4, "omitnan");
+FRvibrotac_se = std(data, [],4) / sqrt(length(responsive_units.responsive));
 
 figure;
 hold on
 
-for cluster = 1:nClusters
+plot(FRvibrotac_mean, 'LineWidth', 1.25)
+errorbar(1:length(FRvibrotac_mean), FRvibrotac_mean, FRvibrotac_se, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 
-    for freq = 1:nFreq
-        for amp = 1:nAmp
-            index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq);
-            dfiring(freq, amp, cluster) = mean(dstimulusRate(index, cluster));
-        end
-    end
-
-    % normalize to control condition
-    dfiring(2:nFreq, 2:nAmp, cluster) = dfiring(2:nFreq, 2:nAmp, cluster) - dfiring(1, 1, cluster);
-
-    % plot responsive units in distinct colour
-    if any(ismember(resp_cids, cluster))
-        plot(dfiring(2:nFreq, 2:nAmp, cluster), 'r');
-    else
-        plot(dfiring(2:nFreq, 2:nAmp, cluster), 'k');
-    end
-end
-
+%plot(FRvibrotac_mean(2:nFreq, 2:nAmp));
 ylabel('df Firing rate (spikes/s)')
 xlabel('Vibrotactile frequency (Hz)')
-xticklabels(uFreq(2:nFreq))
-hold off
-
-% vibrotac tuning curve mean of only responsive units
-% works for SxA and SOM sessions
-dfiring_mean = nan(nFreq, nAmp, resp_cids);
-dfiring_se = nan(nFreq, nAmp, resp_cids);
-
-for freq = 1:nFreq
-    for amp = 1:nAmp
-        index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq);
-        dfiring_mean(freq, amp, :) = mean(stimulusRate(index, resp_cids));
-        dfiring_se(freq, amp, :) = std(stimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
-    end
-end
-
-% normalize to control condition
-dfiring_mean(2:nFreq, 2:nAmp, :) = dfiring_mean(2:nFreq, 2:nAmp, :) - dfiring_mean(1, 1, :);
-
-figure;
-hold on
-data = mean(dfiring_mean(2:nFreq, 2:nAmp, :), 3); %mean(firing_mean, 2);
-errors = mean(dfiring_se(2:nFreq, 2:nAmp, :), 3); %mean(firing_sd, 2);
-plot(data, 'LineWidth', 1.25)
-errorbar(1:length(data), data, errors, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
-
-xticklabels(uFreq(2:nFreq))
 legend(num2str(uAmp(2:end)))
-ylabel('df Firing rate (spikes/s)')
-xlabel('Vibrotactile frequency (Hz)')
-
+xticklabels(uFreq(2:nFreq))
 
 %% noise intensity level tuning curve
 uAmp = unique(stimuli_parameters.Stm.Intensity);

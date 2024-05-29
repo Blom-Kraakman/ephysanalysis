@@ -6,7 +6,7 @@ function [results, resp_cids] = responsiveCells(stimuli_parameters, baselineRate
 % OUTPUT: struct containing id of responsive units
 
 % set parameters
-if strcmp(stimuli_parameters.Par.Rec, 'AMn') % noise % AM
+if strcmp(stimuli_parameters.Par.Rec, 'AMn') % noise AM
     tAmp = stimuli_parameters.Stm.Intensity;
     uAmp = unique(tAmp);
     uFreq = unique(stimuli_parameters.Stm.Mf);
@@ -27,7 +27,8 @@ results.cids = cids;
 results.ampitudes = uAmp;
 results.frequencies = uFreq;
 results.pvalue = nan(nAmp, nFreq, nClusters);
-results.signrank = nan(nAmp, nFreq, nClusters);
+results.zval = nan(nAmp, nFreq, nClusters);
+results.ranksum = nan(nAmp, nFreq, nClusters);
 results.hvalue = nan(nAmp, nFreq, nClusters);
 results.responsive = [];
 
@@ -63,32 +64,46 @@ for cluster = 1:nClusters
             elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % multimodal
                 control = strcmp(stimuli_parameters.Stm.MMType, 'OO');
                 %control = (stimuli_parameters.Stm.Amplitude == 0) & (stimuli_parameters.Stm.SomFreq == 0);
-                index = (strcmp(stimuli_parameters.Stm.MMType, 'SO')) & (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
+                index = ~(strcmp(stimuli_parameters.Stm.MMType, 'OO')) & (stimuli_parameters.Stm.Amplitude == uAmp(condition)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
                 baseline = stimulusRate(control,cluster);
                 stim_evoked = stimulusRate(index,cluster);
             end
 
+            if isempty(stim_evoked)
+                continue
+            end
+
             % stat test
-            [p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % different from control trials
+            [p,h,stats] = ranksum(baseline, stim_evoked, 'alpha', 0.01); % nonpaired version: experimental diff from control
+            %[p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % exp trial diff from baseline
             results.pvalue(condition, freq, cluster) = p;
-            results.signrank(condition, freq, cluster) = stats.signedrank;
+            results.zval(condition, freq, cluster) = stats.zval;
+            results.ranksum(condition, freq, cluster) = stats.ranksum;
             results.hvalue(condition, freq, cluster) = h;
         end
     end
 
-    % unit responsive if sig diff for at least one condition
-    if (strcmp(stimuli_parameters.Par.Rec, 'SxA')) && (max(max(results.hvalue(2:nAmp, 2:nFreq, cluster))) == 1) % && (results.hvalue(1, 1, cluster) == 0)
-        results.responsive = [results.responsive, results.cids(cluster)];
-    elseif (strcmp(stimuli_parameters.Par.Rec, 'AMn')) && max(results.hvalue(:, :, cluster)) % && (results.hvalue(1, 1, cluster) == 0))
-        results.responsive = [results.responsive, results.cids(cluster)];
-    elseif (strcmp(stimuli_parameters.Par.Rec, 'SOM'))
-        if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && max(results.hvalue(:, :, cluster))
-            results.responsive = [results.responsive, results.cids(cluster)];
-        elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') && max(max(results.hvalue(:, :, cluster)))
-            results.responsive = [results.responsive, results.cids(cluster)];
-        end
-    end
+    % % unit responsive if sig diff for at least one condition
+    % if (strcmp(stimuli_parameters.Par.Rec, 'SxA')) && (max(max(results.hvalue(2:nAmp, 2:nFreq, cluster))) == 1) % && (results.hvalue(1, 1, cluster) == 0)
+    %     results.responsive = [results.responsive, results.cids(cluster)];
+    % elseif (strcmp(stimuli_parameters.Par.Rec, 'AMn')) && max(results.hvalue(:, :, cluster)) % && (results.hvalue(1, 1, cluster) == 0))
+    %     results.responsive = [results.responsive, results.cids(cluster)];
+    % elseif (strcmp(stimuli_parameters.Par.Rec, 'SOM'))
+    %     if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && max(results.hvalue(:, :, cluster))
+    %         results.responsive = [results.responsive, results.cids(cluster)];
+    %     elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') && max(max(results.hvalue(:, :, cluster)))
+    %         results.responsive = [results.responsive, results.cids(cluster)];
+    %     end
+    % end
 end
+
+% unit responsive if sig diff for at least one condition
+if (strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')) && (strcmp(stimuli_parameters.Par.Rec, 'SOM'))
+    index = squeeze(max(results.hvalue)) == 1;
+else
+    index = squeeze(max(max(results.hvalue))) == 1;
+end
+results.responsive = results.cids(index);
 
 %responsive units contains all
 resp_cids = find(ismember(results.cids, results.responsive)); % position of responsive units in cids

@@ -30,7 +30,7 @@ spike_times = readNPY([KSPath 'spike_times.npy']); % spike_times contains spike 
 spike_clusters = readNPY([KSPath 'spike_clusters.npy']); % matched cluster ids
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 
-% get behaviour hile
+% get behaviour file
 Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
 for file = 1:length(Nr_sessions)
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);

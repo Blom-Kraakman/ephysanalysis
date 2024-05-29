@@ -8,36 +8,50 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\';
+recordingFolder = 'D:\DATA\EphysRecordings\M11\M11_2024-05-22_12-34-22\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M08\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M8'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M11\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M11\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M11'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
 %relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
 % relevant_sessions = [4 11]; % M9
-% skip_sessions = 0;
+ skip_sessions = 0;
+%relevant_sessions = [1 11]; % M8
+%skip_sessions = 10; % M8
 
-relevant_sessions = [1 11]; % M8
-skip_sessions = 10; % M8
+relevant_sessions = [1 10]; %M11 and M10
+%skip_sessions = 2;
 
 Fs = 30000; % sampling freq
 
 %% sessions TTLs
 % extracted from OpenEphys message center
 
-[sessions_TTLs, sessions_TTLs_details] = getSessionTTLs(messagesPath, rec_samples, Fs);
+%[sessions_TTLs, ~] = getSessionTTLs(messagesPath);
+%sessions_TTLs(isnan(sessions_TTLs(:,1)), :) = []; % necessary in M11. Further on not anymore
 
-%% M9 things
-sessions_TTLs(8,:) = [];
 
-%% save session TTLs
-filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
-save(fullfile(OutPath, filename), "sessions_TTLs")
+%% sessions TTLs
+% save session TTLs if needed, else load correct file
+
+TTLs_file = dir([OutPath '\*_OE_TTLs.mat']);
+
+if isempty(TTLs_file)
+    [sessions_TTLs, ~] = getSessionTTLs(messagesPath);
+    filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
+    save(fullfile(OutPath, filename), "sessions_TTLs")
+    disp('sessions TTLs saved')
+else
+    TTLs = load([OutPath '\' TTLs_file.name]); 
+    sessions_TTLs = TTLs.sessions_TTLs;
+    disp('sessions TTLs loaded from saved file')
+end
+
 %% Kilosort: post-curation unit extraction
 %IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
@@ -74,8 +88,8 @@ alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions,
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
 close all
 % select correct input files
-aligned_spikes = load([OutPath, '\M09_S05_FRA_AlignedSpikes']);
-stimuli_parameters = load([BehaviorPath 'M9_S05_FRA.mat']);
+aligned_spikes = load([OutPath, '\M11_S10_FRA_AlignedSpikes']);
+stimuli_parameters = load([BehaviorPath 'M11_S10_FRA.mat']);
 
 % function saves figures, change mouse name
 FSL = 0;
@@ -87,13 +101,13 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 % SOM: raster + PSTH
 
 % load unit info
-%cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
-%cpos = load([OutPath '\' cpos_file]);
-%cids = cpos.id';
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos.id';
 
 % select which session to plot
 %close all
-session = 5;
+session = 9;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
