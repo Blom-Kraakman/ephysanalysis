@@ -7,6 +7,8 @@ function [responsive] = responsiveCells(stimuli_parameters, baselineRate, stimul
 
 if ~exist('condition', 'var')
     condition = [];
+else
+    condition = condition;
 end
 
 % set parameters
@@ -24,6 +26,12 @@ nAmp = length(uAmp);
 nFreq = length(uFreq);
 nClusters = length(cids);
 
+% initiate struct
+%results.session = stimuli_parameters.Par.Set;
+%results.type = stimuli_parameters.Par.Rec;
+%results.cids = cids;
+%results.ampitudes = uAmp;
+%results.frequencies = uFreq;
 pval = nan(nAmp, nFreq, nClusters);
 zval = nan(nAmp, nFreq, nClusters);
 hval = nan(nAmp, nFreq, nClusters);
@@ -91,5 +99,6 @@ end
 
 % responsive units
 responsive = cids(index);
+
 
 end

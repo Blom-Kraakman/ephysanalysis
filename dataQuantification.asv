@@ -369,22 +369,22 @@ nFreq = length(uFreq);
 condition = 3; % ["OO", "OA", "SO", "SA"]
 
 %data = firing_mean(:, :, condition, :);
-units_idx = unitResponses.SO;
-data = data_all(:, :, condition, units_idx);
+unitResponsive.SO
+data = data_all(:, :, condition, :);
 FRvibrotac_mean = mean(data, 4, "omitnan");
 FRvibrotac_se = std(data, [],4) / sqrt(size(data_all, 4));
 
 figure;
 hold on
 
-plot(uFreq, FRvibrotac_mean, 'LineWidth', 1.25)
-errorbar(uFreq, FRvibrotac_mean, FRvibrotac_se, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
+plot(FRvibrotac_mean, 'LineWidth', 1.25)
+errorbar(1:length(FRvibrotac_mean), FRvibrotac_mean, FRvibrotac_se, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 
 %plot(FRvibrotac_mean(2:nFreq, 2:nAmp));
 ylabel('df Firing rate (spikes/s)')
 xlabel('Vibrotactile frequency (Hz)')
 legend(num2str(uAmp(2:end)))
-xticks(uFreq)
+xticklabels(uFreq(2:nFreq))
 
 %% noise intensity level tuning curve
 uAmp = unique(stimuli_parameters.Stm.Intensity);
