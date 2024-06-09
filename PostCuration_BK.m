@@ -20,7 +20,7 @@ rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recordi
 
 %relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
 relevant_sessions = [4 11]; % M9
- skip_sessions = 0;
+skip_sessions = 0;
 %relevant_sessions = [1 11]; % M8
 %skip_sessions = 10; % M8
 
@@ -101,7 +101,7 @@ cids = cpos.cpos.id';
 
 % select which session to plot
 %close all
-session = 6;
+session = 2;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -125,19 +125,103 @@ end
 
 plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
+
+%% plot single unit
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M10'; % output directory
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+cids = cpos.cpos.id';
+
+cluster = 1; % specify cluster position
+session = 2;
+
+% load corresponsing files
+sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+stim_files = dir(fullfile(BehaviorPath, sessionFile));
+stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+
+aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+aligned_spikes = aligned_spikes.SpkT;
+
+if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+    idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
+    stimuli_parameters.Stm(idx,25) = {2};
+    idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
+    stimuli_parameters.Stm(idx,25) = {3}; 
+    idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
+    stimuli_parameters.Stm(idx,25) = {4}; 
+    idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
+    stimuli_parameters.Stm(idx,25) = {1};
+    % order: type, freq, amplitude
+end
+
+% add spacing where needed
+idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
+for ii = idx'
+    aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + 0.25;
+end
+
+% define shared x-lim parameters
+preT  = -0.2;
+postT = 1.5;
+xrange = [preT, postT];
+binsize = 0.01;
+start_aud = 0;
+start_som = 0.25;
+end_som = 0.75;
+end_aud = 1;
+
+xlinerange = [start_aud start_som end_som end_aud];
+
+fig = figure;
+ax = gca;
+
+index = stimuli_parameters.Stm.Amplitude == 0.3 & stimuli_parameters.Stm.Var25 == 2;
+
+SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
+SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
+StimType = stimuli_parameters.Stm.Var25(index);
+Var = [StimType, SOM_Hz, SOM_Amp];
+%Var =  [stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
+raster_yinc = [5,10,10];
+raster_color = [0, 0, 0];
+
+[f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(:, cluster), Var, raster_color, raster_yinc, 1);
+
+yticks(YTick{1});
+yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
+ylim(f,yrange);
+xlim(f,xrange);
+xline(xlinerange) % on/off set
+
+for i = 1:size(YTickLim,1) % delimit groups
+    yline(ax,YTickLim(i,1)-3,':k');
+    yline(ax,YTickLim(i,2)+3,':k');
+end
+
+xlabel('Time (s)')
+all_freqs = unique(stimuli_parameters.Stm.SomFreq);
+yaxislabels = all_freqs(2:9);    
+%yaxislabels = {'Control', 'Vibrotactile only', 'Vibrotactile & noise' 'Noise only'};
+
+yticklabels(yaxislabels)
+
+
 %% plotting SOM sessions
 %saveplots = 0; %0 don't save, 1 save plots in OutPath
 % currently plots raster + psth of each vibration freq seperatly
 
 close all
-OutPath = 'D:\DATA\Processed\M8'; % output directory
+OutPath = 'D:\DATA\Processed\M10'; % output directory
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
 cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
-sessions = 4; % [exp ctrl]
+sessions = 2; % [exp ctrl]
 %load correct files
 session = sessions(1); % select experimental session
 
@@ -164,7 +248,7 @@ aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name
 
 OutPath = 'D:\DATA\Processed\M8\test'; % output directory
 
-fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 1);
+fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 0);
 %% FSL SOM analysis
 % function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)
 % input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes

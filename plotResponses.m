@@ -271,9 +271,8 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
             yaxislabels = unique(stimuli_parameters.Stm.Amplitude);
             yaxistext = 'Pressure (V)';
         elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') || strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'BiSine')
-            %Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude, stimuli_parameters.Stm.AudDur];
+            % Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude ~=0.1,stimuli_parameters.Stm.Var25];
             Var = [stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
-            %Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.MMType];
             raster_yinc = [5,10,10];
             % yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
             yaxislabels = {'Control', 'Vibrotactile only', 'Vibrotactile + noise' 'Noise only'};
