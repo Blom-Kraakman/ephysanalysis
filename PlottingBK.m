@@ -1,4 +1,4 @@
-%% plot data: rater & PSTH
+%% plot data: raster & PSTH
 % select correct behaviour file
 % check for:
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
@@ -82,21 +82,6 @@ for file = relevant_sessions(1):relevant_sessions(2)
             xlabel('Time (s)')
             ylabel('Stimulus off / on')
             fig.FontSize = 11;
-
-            % make histogram / PSTH
-            fig = subplot(2,1,2);
-            [N, edges] = histcounts(vertcat(aligned_spikes{SOM_idx, cluster}), preT:binsize:postT);
-            histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
-            hold on
-            [N,edges] = histcounts(vertcat(aligned_spikes{ctrl_idx, cluster}), preT:binsize:postT);
-            histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 0))/binsize), 'FaceColor', '#0072BD')
-
-            %format axis
-            legend('stimulus', 'control')
-            xlabel('Time (s)')
-            ylabel('Spike rate (Hz)')
-            fig.FontSize = 11;
-            xlim(fig,xrange);
 
             sgtitle(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
             % % save plot

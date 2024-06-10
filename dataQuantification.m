@@ -300,17 +300,40 @@ all = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitRespon
 
 % select and format data
 sound_vibro_idx = max(all, sound_vibrotac);
-data = data_all(:,:,:,sound_vibro_idx);
-data = squeeze(mean(mean(data, 1, "omitnan"), 2, "omitnan"));
+%data = (mean(data, 1, "omitnan"));
+%data = squeeze(mean(mean(data, 1, "omitnan"), 2, "omitnan"));
+
+% make data matrix to plot
+data_OO = squeeze(data_all(1,1,1,sound_vibro_idx));
+data_OA = squeeze(data_all(1,1,2,sound_vibro_idx));
+%data_SO = squeeze(data_all(3,3,3,sound_vibro_idx)); % 20Hz, 0.3V
+%data_SA = squeeze(data_all(3,3,4,sound_vibro_idx));
+
+[maxValue, maxValueIdx] = max(max(data_all(:,:,3,sound_vibro_idx),[],2));
+maxValueIdx = squeeze(maxValueIdx);
+sound_vibro_units = find(sound_vibro_idx);
+data_SO = zeros(length(maxValueIdx),1);
+data_SA = zeros(length(maxValueIdx),1);
+for i = 1:length(maxValueIdx)
+    data_SO(i,1) = squeeze(data_all(maxValueIdx(i),3,3,sound_vibro_units(i))); % max Hz, 0.3V
+    data_SA(i,1) = squeeze(data_all(maxValueIdx(i),3,4,sound_vibro_units(i)));
+end
+
+data = [data_OO'; data_OA'; data_SO'; data_SA']; % 20Hz, 0.3V
 data(5,:) = data(2,:) + data(3,:);
 %data = log(data);
 %errors = std(data(:, :), 0, 2); % / sqrt(size(data, 2));
 
 %plot bar graph
 figure;
+set(gcf,'position',[500,150,900,700])
 hold on
 fig = bar(mean(data,2)); % avg FR of all responsive units
-swarmchart(1:5, data, 20, 'k', 'filled');
+x = repmat((1:5)',1,length(maxValueIdx));
+for i = 1:5
+    swarmchart(x(i,:), data(i,:), 20, 'k', 'filled','XJitterWidth',0.4);
+end
+
 %plot(categorical(conditions),data, '.k', 'MarkerSize', 15)
 %plot(1:4,data,'o', 'Color', [0.5 0.5 0.5])
 %errorbar(1:size(data), mean(data,2), errors, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
@@ -325,7 +348,7 @@ fig.CData = [0 0 0; 0.808 0.529 0.666; 0.247 0.635 0.831; 0.580 0.455 0.651; 0.5
 set(gca,'fontsize',18)
 %xlabel('conditions')
 xticks(1:5)
-xticklabels(["control", "sound", "vibrotactile", "sound * vibrotactile", "sound + vibrotactile"])
+xticklabels(["control", "sound", "vibrotactile", "multimodal", "sound + vibrotactile"])
 ylabel('\Delta Firing rate (spikes/s)')
 %title(PostT)
 
@@ -339,25 +362,68 @@ sound_vibrotac = table2array(((unitResponses.OA == 1 | unitResponses(:,7) == 1) 
 %sound_vibrotac = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SO & ~unitResponses.SOM |(unitResponses.SA & ~unitResponses.SOM & ~unitResponses.OA & ~unitResponses(:,7) & ~unitResponses.SO));
 all = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SO);
 %all = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SOM & unitResponses.SO);
+%non = table2array(~unitResponses.SOM & ~unitResponses.OA & ~unitResponses(:,7) & ~unitResponses.SA & ~unitResponses.SO);
+non = table2array(~unitResponses.OA & ~unitResponses(:,7) & ~unitResponses.SA & ~unitResponses.SO);
 
 % select and format data
 sound_vibro_idx = max(all, sound_vibrotac);
-data = data_all(:,:,:,sound_vibro_idx);
+%data = data_all(:,:,:,sound_vibro_idx);
 %aud_data = abs(squeeze(data(1,1,2,:)));
 %som_data = abs(squeeze(mean(data(2:7,3,3,:), 1)));
+data = data_all(:,:,:,~non);
 data = squeeze(mean(mean(data, 1, "omitnan"), 2, "omitnan"));
-data(5,:) = abs(data(2,:)) + abs(data(3,:));
+%data(5,:) = abs(data(2,:)) + abs(data(3,:));
 
 pref_index = (data(2,:) - data(3,:)) ./ (data(2,:) + data(3,:));
-pref_index(isnan(pref_index)) = 0;
+
+pref_index(isnan(pref_index)) = [];
+pref_index(pref_index > 80) = [];
 mean(pref_index)
 std(pref_index)
+
+
+[N, edges] = histcounts(pref_index, -6:0.5:2);
+%[N, edges] = histcounts(modulation_index);
+figure;
+for i = 1:(length(edges)-1)
+    binCenters(:,i) = mean(edges(:,i:i+1));
+    i = i+1;
+end
+
+bar(binCenters, N, 1, 'FaceColor', [0.5 0.5 0.5])
+xline(0, 'k')
+xlabel('Modality preference')
+ylabel('# units')
+set(gca,'fontsize',18)
+clear binCenters
 
 modulation_index = data(4,:) - (data(2,:) + data(3,:));
 modulation_index(isnan(modulation_index)) = 0;
 
 mean(modulation_index)
 std(modulation_index)
+
+% plot(sort(modulation_index))
+%yline(0)
+%xlabel('unit');
+%ylabel('modualtion index')
+
+[N, edges] = histcounts(modulation_index, -3:0.5:6);
+%[N, edges] = histcounts(modulation_index);
+figure;
+for j = 1:(length(edges)-1)
+    binCenters(:,j) = mean(edges(:,j:j+1));
+    j = j+1;
+end
+
+bar(binCenters, N, 1, 'FaceColor', [0.5 0.5 0.5])
+xline(0, 'k')
+xlabel('Modulation strength')
+ylabel('# units')
+set(gca,'fontsize',18)
+
+clear binCenters
+
 %% compare firing rate unimodal to multimodal stimulus presentation
 % makes scatter plot of firing rates per responsive unit between two conditions
 % data format:

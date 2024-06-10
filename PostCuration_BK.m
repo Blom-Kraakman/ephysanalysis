@@ -133,8 +133,8 @@ cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
 cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
-cluster = 1; % specify cluster position
-session = 2;
+cluster = 20; % specify cluster position M10:441=20  M8 331=17
+session = 2; % m10 2; m8 5
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -147,9 +147,9 @@ aligned_spikes = aligned_spikes.SpkT;
 
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')
     idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
-    stimuli_parameters.Stm(idx,25) = {2};
+    stimuli_parameters.Stm(idx,25) = {3};
     idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
-    stimuli_parameters.Stm(idx,25) = {3}; 
+    stimuli_parameters.Stm(idx,25) = {2}; 
     idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
     stimuli_parameters.Stm(idx,25) = {4}; 
     idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
@@ -165,7 +165,7 @@ end
 
 % define shared x-lim parameters
 preT  = -0.2;
-postT = 1.5;
+postT = 1.2;
 xrange = [preT, postT];
 binsize = 0.01;
 start_aud = 0;
@@ -175,20 +175,21 @@ end_aud = 1;
 
 xlinerange = [start_aud start_som end_som end_aud];
 
-fig = figure;
+%fig = figure; % rasterplot
+fig = subplot(2,1,1); % rasterplot
 ax = gca;
 
-index = stimuli_parameters.Stm.Amplitude == 0.3 & stimuli_parameters.Stm.Var25 == 2;
+index = (stimuli_parameters.Stm.Amplitude ~= 0.1) & (stimuli_parameters.Stm.SomFreq ~= 600);
 
 SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
 SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
 StimType = stimuli_parameters.Stm.Var25(index);
-Var = [StimType, SOM_Hz, SOM_Amp];
+Var = [SOM_Hz, StimType];
 %Var =  [stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
 raster_yinc = [5,10,10];
 raster_color = [0, 0, 0];
 
-[f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(:, cluster), Var, raster_color, raster_yinc, 1);
+[f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(index, cluster), Var, raster_color, raster_yinc, 1);
 
 yticks(YTick{1});
 yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
@@ -201,12 +202,53 @@ for i = 1:size(YTickLim,1) % delimit groups
     yline(ax,YTickLim(i,2)+3,':k');
 end
 
-xlabel('Time (s)')
+%xlabel('Time (s)')
 all_freqs = unique(stimuli_parameters.Stm.SomFreq);
-yaxislabels = all_freqs(2:9);    
-%yaxislabels = {'Control', 'Vibrotactile only', 'Vibrotactile & noise' 'Noise only'};
-
+yaxislabels = {'Control',all_freqs(2:8)};
 yticklabels(yaxislabels)
+ylabel('Vibrotactile frequency (Hz)')
+ax.FontSize = 16;
+
+
+% make histogram / PSTH
+
+binsize = 0.02;
+
+fig = subplot(2,1,2); 
+hold on
+% select groups for hist
+OO = stimuli_parameters.Stm.Var25 == 1;
+OA = stimuli_parameters.Stm.Var25 == 4;
+SO = (stimuli_parameters.Stm.Amplitude ~= 0.1) & (stimuli_parameters.Stm.SomFreq ~= 600) & stimuli_parameters.Stm.Var25 == 3;
+SA = (stimuli_parameters.Stm.Amplitude ~= 0.1) & (stimuli_parameters.Stm.SomFreq ~= 600) & stimuli_parameters.Stm.Var25 == 2;
+
+[N, edges] = histcounts(vertcat(aligned_spikes{OO, cluster}), preT:binsize:postT); % OO
+%histogram('BinEdges', edges, 'BinCounts', ((N/sum(OO))/binsize)) % spike/s
+%plot(edges(1:end-1), ((N/sum(OO))/binsize), 'Color', '#D95319', 'LineWidth',1.5) % spike/s
+plot(edges(1:end-1), ((N/sum(OO))/binsize), 'k','LineWidth',2) % spike/s
+
+[N, edges] = histcounts(vertcat(aligned_spikes{OA, cluster}), preT:binsize:postT); % OA
+%histogram('BinEdges', edges, 'BinCounts', ((N/sum(OA))/binsize)) % spike/s
+plot(edges(1:end-1), ((N/sum(OA))/binsize), 'Color', "#CE87AA",'LineWidth',2) % spike/s
+
+[N, edges] = histcounts(vertcat(aligned_spikes{SO, cluster}), preT:binsize:postT); % SO
+%histogram('BinEdges', edges, 'BinCounts', ((N/sum(SO))/binsize)) % spike/s
+plot(edges(1:end-1), ((N/sum(SO))/binsize), 'Color', "#8BC9E8",'LineWidth',2) % spike/s
+
+[N, edges] = histcounts(vertcat(aligned_spikes{SA, cluster}), preT:binsize:postT); % SA
+%histogram('BinEdges', edges, 'BinCounts', ((N/sum(SA))/binsize)) % spike/s
+plot(edges(1:end-1), ((N/sum(SA))/binsize), 'Color', "#9474A6",'LineWidth',2) % spike/s
+
+%format axis
+xlabel('Time (s)')
+ylabel('Spike rate (spikes/s)')
+xline(xlinerange) % on/off set
+%legend('control', 'sound only', 'vibrotactile only', 'multimodal', 'Location', 'northeastoutside')
+
+ax2 = gca;
+ax2.FontSize = 16;
+xlim(ax2,xrange);
+ylim(ax2, [0 130])
 
 
 %% plotting SOM sessions
@@ -245,8 +287,6 @@ aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name
 % %format data to plot together
 % stimuli_parameters = vertcat(stimuli_parameters_som.Stm, stimuli_parameters_ctrl.Stm);
 % aligned_spikes = vertcat(aligned_spikes_som, aligned_spikes_ctrl);
-
-OutPath = 'D:\DATA\Processed\M8\test'; % output directory
 
 fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 0);
 %% FSL SOM analysis
