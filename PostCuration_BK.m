@@ -8,13 +8,13 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M9\M09_2024-04-23_12-46-03\Record Node 103\experiment1\recording1\';
+recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\';
 recPath = [recordingFolder 'continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'events\MessageCenter\'];
 KSPath = 'D:\DATA\EphysRecordingsSorted\M09_2\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M9\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M9_2'; % output directory
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M10'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
@@ -209,9 +209,7 @@ yticklabels(yaxislabels)
 ylabel('Vibrotactile frequency (Hz)')
 ax.FontSize = 16;
 
-
 % make histogram / PSTH
-
 binsize = 0.02;
 
 fig = subplot(2,1,2); 
@@ -289,26 +287,6 @@ aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name
 % aligned_spikes = vertcat(aligned_spikes_som, aligned_spikes_ctrl);
 
 fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 0);
-%% FSL SOM analysis
-% function SOM = SOManalysis(stimuli_parameters, aligned_spikes, cids)
-% input: stimuli_parameters.Par, stimuli_parameters.Stm, aligned_spikes
-% output: first spike latency SOM/AM trials
-
-% select which session to plot
-session = 2;
-
-% load corresponsing files
-sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
-stim_files = dir(fullfile(BehaviorPath, sessionFile));
-stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-
-aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
-aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
-aligned_spikes = aligned_spikes.SpkT;
-
-
-%% maybe try swarmchart
-SOM = FSL_SOM_AMn(stimuli_parameters, aligned_spikes, cids);
 
 %% plotting channel map
 % match unit position to channel map
