@@ -20,12 +20,20 @@ NInt = length(UInt);
 winStart = 0;
 winEnd   = 0.115;
 
-% % initiation variables
+% initiation variables
 FRAScntSD = nan(NInt, NFreq, NSets, NClu); % spike count
 FRAScnt = nan(NInt, NFreq, NSets, NClu); % spike count
 FRASR = nan(NInt, NFreq, NSets, NClu); % spike count
 NTrials = nan(NInt, NFreq, NSets, NClu); % number of trials
 MedFSL = nan(NInt, NFreq, NSets, NClu); % median first spike latency
+
+FACA        = nan(NInt,NFreq,NSets,NClu);
+% sig         = nan(NInt,NFreq,NSets,NClu);
+pval        = nan(NInt,NFreq,NSets,NClu);
+%AvgNeighCorr= nan(NInt,NFreq,NSets,NClu);
+%MaxNeighCorr= nan(NInt,NFreq,NSets,NClu);
+avgKSD      = cell(NInt,NFreq,NSets,NClu);
+KSDtt       = cell(NSets,1);
 
 for cluster = 1:NClu
     disp(['Analysing cluster ' num2str(cluster) ' of ' num2str(NClu)]);
@@ -74,6 +82,47 @@ for cluster = 1:NClu
 
         end % intensity loop
     end % frequency loop
+
+    % % correlation based analysis
+    % % calculate spike density
+    % bw = 10e-3;
+    % tempStm = stimuli_parameters.Stm;
+    % tempSpkT = tempSpiketimes;
+    % [KSD,KSDtt] = genKSD(tempSpkT,tempStm,bw);
+    % 
+    % % Calculating Correlation Coefficients
+    % rho = corrKSD(KSD);
+    % 
+    % % Averaging Spike Density & sampling FACA
+    % for i = 1:NInt
+    %     Int = UInt(i);
+    %     for f = 1:NFreq
+    %         Freq = UFreq(f);
+    %         idx = find([stimuli_parameters.Stm.Freq] == Freq &  [stimuli_parameters.Stm.Intensity] == Int);
+    %         if isempty(idx); continue; end
+    %         % Averaging Spike Density
+    %         avgKSD{i,f,1,cluster} =  mean(KSD(:,idx),2); %avgKSD{i,f,s,c} =  mean(KSD(:,idx),2);
+    %         % Sampling FACA
+    %         FACA(i,f,1,cluster) =  mean(rho(idx,idx),'all','omitnan'); %FACA(i,f,s,c) =  mean(rho(idx,idx),'all','omitnan');
+    %     end
+    % end
+    % 
+    % setUFreq    = unique([tempStm.Freq]);
+    % fIdx        = ismember(UFreq,setUFreq);
+    % setUInt     = unique([tempStm.Intensity]);
+    % iIdx        = ismember(UInt,setUInt);
+    % 
+    % % Sampling NeighbourCorrelation
+    % %diagWeight = 0.5;
+    % %[AvgNeighCorr(iIdx,fIdx,s,c),MaxNeighCorr(iIdx,fIdx,s,c)] = neighCorr(rho,tempStm,diagWeight);
+    % 
+    % % Sampling Average Correlation Coefficient
+    % [M_Bootstrap] = corrBootstrap(rho,max(NTrials(iIdx,fIdx,1,cluster),[],'all'));
+    % 
+    % % Looking up p-values
+    % [pval(iIdx,fIdx,1,cluster),~] = ...
+    %     sigLookup(FACA(iIdx,fIdx,1,cluster),NTrials(iIdx,fIdx,1,cluster),M_Bootstrap);
+
     clearvars('tempSpiketimes');
 
 end % cluster loop
@@ -262,4 +311,62 @@ if FSL == 1
         %if (length(spiketimes{clustNum}) < 500); close(gcf); end
     end
 end
+
+%% local functions
+
+%     function [KSD,xx] = genKSD(tempSpk,tempStm,bw)
+% 
+%         NStim = length(tempSpk);
+%         tStep = 0.5e-3; %s
+%         minT = -min([tempStm.PreT]) * 1e-3; % ms -> s
+%         maxT = min([tempStm.StimT]+[tempStm.PostT]) * 1e-3; % ms -> s
+%         xx = minT+bw*2:tStep:maxT-bw*2;
+%         KSD = nan(length(xx),NStim);
+%         for ss = 1:NStim
+%             if isempty(tempSpk{ss})
+%                 KSD(:,ss) = 0; continue
+%             end
+%             [KSD(:,ss),~] = ksdensity(tempSpk{ss},xx,'Bandwidth',bw);
+%             KSD(:,ss) = numel(tempSpk{ss}) * KSD(:,ss); % normalize to spike density, i.e. cumsum * dT = Nspikes
+%         end
+%     end
+% 
+%     function [rho] = corrKSD(KSD)
+%         NStim           = size(KSD,2);
+%         rho             = corr(KSD);
+%         rho(isnan(rho)) = 0;
+%         rho             = rho+diag(nan(NStim,1));
+%     end
+% 
+% function [M_Bootstrap] = corrBootstrap(rho,maxRep)
+%     NStim = size(rho,1);
+%     NSamp = 50000;
+%     if (max(rho,[],'all') == 0); M_Bootstrap = zeros(NSamp,maxRep); return;end
+%     M_Bootstrap = nan(NSamp,maxRep);
+%     % look up
+%     for samp = 1:NSamp
+%         permList = randperm(NStim,maxRep);
+%         for sampSize = 1:maxRep
+%             M_Bootstrap(samp,sampSize) = mean(rho(permList(1:sampSize),permList(1:sampSize)),'all','omitnan');
+%         end
+%     end
+%     M_Bootstrap = sort(M_Bootstrap);
+% end
+% 
+% function [pval,sig] = sigLookup(FACA,NTrials,M_Bootstrap,alpha)
+%     if nargin < 4
+%         alpha = 0.01;
+%     end
+%     pval = nan(size(FACA));
+%     UNTrials = unique(NTrials);
+%     UNTrials = UNTrials(UNTrials>1);
+%     for nn = 1:length(UNTrials)
+%         sel =  NTrials(:) == UNTrials(nn) ;
+%         pval(sel) = FRABSLookup(FACA(sel), M_Bootstrap, UNTrials(nn));
+%     end
+%     sig = double(pval < alpha/2 | pval > 1-alpha/2); % two tail
+%     sig(isnan(FACA)) = nan;
+% end
+
+
 end

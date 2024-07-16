@@ -1,4 +1,4 @@
-function [responsive, hval, pval] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, condition)
+function [responsive] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, condition)
 
 % quantify responsive units
 % sig diff firing rate between stim period vs baseline
@@ -26,9 +26,9 @@ nAmp = length(uAmp);
 nFreq = length(uFreq);
 nClusters = length(cids);
 
-pval = nan(nFreq, nAmp, nClusters);
-zval = nan(nFreq, nAmp, nClusters);
-hval = nan(nFreq, nAmp, nClusters);
+pval = nan(nAmp, nFreq, nClusters);
+zval = nan(nAmp, nFreq, nClusters);
+hval = nan(nAmp, nFreq, nClusters);
 
 % stats test difference baseline vs stimulus period
 for cluster = 1:nClusters
@@ -80,9 +80,9 @@ for cluster = 1:nClusters
             %[p,h,stats] = ranksum(baseline, stim_evoked, 'alpha', 0.05/(nAmp*nFreq)); % stricter alpha correction
             [p,h,stats] = ranksum(baseline, stim_evoked, 'alpha', 0.01); % nonpaired version: experimental diff from control
             %[p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % exp trial diff from baseline
-            pval(freq, amp,cluster) = p;
-            zval(freq, amp, cluster) = stats.zval;
-            hval(freq, amp,cluster) = h;
+            pval(amp, freq, cluster) = p;
+            zval(amp, freq, cluster) = stats.zval;
+            hval(amp, freq, cluster) = h;
         end
     end
 
