@@ -2,7 +2,7 @@
 clearvars
 
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M14\'; % stimuli parameters
-session = 2;
+session = 5;
 
 % load behaviour file
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -18,8 +18,6 @@ Stm = stimuli_parameters.Stm;
 Par = stimuli_parameters.Par;
 Aud = sound_parameters.Aud;
 Fs = sound_parameters.Fs;
-
-filename = erase(stim_file.name,'.mat');
 
 clear stimuli_parameters sound_parameters sound_file
 
@@ -141,6 +139,7 @@ sgtitle(['Ramp: ',num2str(StmTemp.SomRamp(1)),'ms','   ',...
          'Actuator: ',StmTemp.Actuator(1,:),    '   ', ...
          'Waveform: ',StmTemp.Waveform(1,:)])
 
+filename = erase(stim_file.name,'.mat');
 saveas(gcf,[filename,'_spectogram.png'])
 % plot individual
 figure('Position',[10,10,1400,900]);

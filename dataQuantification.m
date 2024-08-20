@@ -229,7 +229,7 @@ save(fullfile(OutPath, filename), "unitResponses")
 
 %% 4.2 Bandwith FRA analysis
 
-deltaInt = [0,10,20,30,40];
+% initiate variables
 spontRate = StimResponseFiring.firing_mean(1, 1, 1, cluster);
 excBand = NaN(length(deltaInt), 2, length(cids));
 inhBand = NaN(length(deltaInt), 2, length(cids));
@@ -237,16 +237,19 @@ excBW_oct = NaN(length(deltaInt),length(cids));
 inhBW_oct = NaN(length(deltaInt),length(cids));
 excQ = NaN(length(deltaInt),length(cids));
 inhQ = NaN(length(deltaInt),length(cids));
+CF = NaN(length(cids),1);
 BestFreq = NaN(length(cids),1);
 BestFreqAmp = NaN(length(cids),1);
 
+% parameters
+deltaInt = [0,10,20,30,40];
 uAmp = unique(stimuli_parameters.Stm.Intensity);
 uFreq = unique(stimuli_parameters.Stm.Freq);
 
 for cluster = 1:length(cids)
 
     % find minimum threshold
-    [row, col] = find(StimResponseFiring.hvalue(:,:,cluster)); % select from sig responses
+    [row, col] = find(StimResponseFiring.hvalue(:,:,cluster)==1); % select from sig responses
     if isempty(col)
         minThr = NaN;
     else
@@ -254,7 +257,7 @@ for cluster = 1:length(cids)
     end
 
     %find CF
-    CF = mean(uFreq(row(col == min(col))));
+    CF(cluster) = mean(uFreq(row(col == min(col))));
 
     % find BF
     [~,maxIdx] = max(StimResponseFiring.firing_mean(:, :, 1, cluster),[],'all','linear'); % find max firing rate change
@@ -268,8 +271,8 @@ for cluster = 1:length(cids)
     for dInt = 1:length(deltaInt)
         idx = find(uAmp == minThr + deltaInt(dInt)); % min threshold + delta
 
-        excBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) >= spontRate) & StimResponseFiring.hvalue(idx,:,cluster);
-        inhBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) <= spontRate) & StimResponseFiring.hvalue(idx,:,cluster);
+        excBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) >= spontRate) & (StimResponseFiring.hvalue(idx,:,cluster)==1);
+        inhBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) <= spontRate) & (StimResponseFiring.hvalue(idx,:,cluster)==1);
 
         if(sum(excBandIdx)>0) % excitatory band
             band_start = find(excBandIdx,1,'first');
@@ -278,7 +281,7 @@ for cluster = 1:length(cids)
             excBand(dInt,2, cluster) = sqrt(uFreq(band_end) * uFreq(band_end + 1)) ;
 
             excBW_oct(dInt, cluster) = log2(excBand(dInt,2,cluster) / excBand(dInt,1,cluster));
-            excQ(dInt, cluster) = CF / (excBand(dInt,2, cluster) - excBand(dInt,1, cluster));
+            excQ(dInt, cluster) = CF(cluster) / (excBand(dInt,2, cluster) - excBand(dInt,1, cluster));
         end
 
         if(sum(inhBandIdx)>0) % inhibitory band
@@ -288,7 +291,7 @@ for cluster = 1:length(cids)
             inhBand(dInt, 2, cluster) = sqrt(uFreq(band_end) * uFreq(band_end + 1)) ;
 
             inhBW_oct(dInt, cluster) = log2(inhBand(dInt, 2, cluster) / inhBand(dInt, 1, cluster));
-            inhQ(dInt, cluster) = CF / (inhBand(dInt, 2, cluster) - inhBand(dInt, 1, cluster));
+            inhQ(dInt, cluster) = CF(cluster) / (inhBand(dInt, 2, cluster) - inhBand(dInt, 1, cluster));
         end
     end
 end

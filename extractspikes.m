@@ -1,4 +1,4 @@
-function [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, skip_sessions, rec_samples, sessions_TTLs, Fs, OutPath)
+function [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, sessions_TTLs, Fs, OutPath)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
 % and matched unit ids (vector), recording time stamps (vector)
@@ -35,10 +35,6 @@ Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
 for file = 1:length(Nr_sessions)
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
 end
-
-% remove unexecuted sessions
-idx_remove = find(sum(sessions_TTLs(:,1) == skip_sessions, 2));
-sessions_TTLs(idx_remove,:) = [];
 
 %keep only TTLs recorded during specific session
 [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTLPath, rec_samples);

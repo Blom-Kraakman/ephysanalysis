@@ -1,4 +1,4 @@
-function [sessions_TTLs, sessions_TTLs_details] = getSessionTTLs(messagesPath, ~, ~)
+function sessions_TTLs = getSessionTTLs(messagesPath, rec_samples, Fs, skip_sessions)
 % sessions_TTLs_details contains cell array: text from message center,
 % start(1)/end(0) code, corresponding sample nr, time since start recording
 % sessions_TTLs contains array with: event nr, start(1)/end(0) code, corresponding sample nr
@@ -27,14 +27,12 @@ for i = 1:size(msgs, 1)
 
 end
 sessions_TTLs(:,3) = message_samples(1:length(sessions_TTLs)); % sample nr
+ttls_norm = (message_samples - rec_samples(1))/Fs;
+sessions_TTLs(:,4) = ttls_norm;
 
-% add sample nr of corresponding message
-ttl_samples = [num2cell(message_samples(1:size(msgs, 1)))]; % sample nr
-sessions_TTLs_details = [msgs, ttl_samples];
-
-%ttls_norm = num2cell((message_samples - rec_samples(1))/Fs);
-%sessions_TTLs_details = [sessions_TTLs_details, ttls_norm]; % time since recording onset
- 
+% keep only sessions in recording stretch
+idx_remove = find(sum(sessions_TTLs(:,1) == skip_sessions, 2));
+sessions_TTLs(idx_remove, :) = [];
 
     function msgs = getMessageText(message_text)
         % open messages file

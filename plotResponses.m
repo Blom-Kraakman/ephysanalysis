@@ -153,7 +153,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
     end
 end
 
-% plot SOM vibrotactile data
+% plot SOM data
 if strcmp(stimuli_parameters.Par.Rec, 'SOM')
 
     % define shared x-lim parameters
@@ -243,14 +243,20 @@ end
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')
 
     % define shared x-lim parameters
-    preT  = -0.2;
-    postT = 1.5;
+    preT  =  max(-str2double(stimuli_parameters.Par.SomatosensoryISI)/2000, -0.2);
+    postT = min((max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
+            + str2double(stimuli_parameters.Par.SomatosensoryISI)/2)/1000, 1.5);
     xrange = [preT, postT];
     binsize = 0.01;
     start_aud = 0;
-    start_som = 0.25;
-    end_som = 0.75;
-    end_aud = 1;
+    start_som = max(stimuli_parameters.Stm.SomAudSOA)/1000;
+    end_som = max(stimuli_parameters.Stm.SomAudSOA)/1000 + str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
+    end_aud = str2double(stimuli_parameters.Par.AuditoryStimTime)/1000;
+
+    % start_aud = 0;
+    % start_som = 0.25;
+    % end_som = 0.75;
+    % end_aud = 1;
 
     xlinerange = [start_aud start_som end_som end_aud];
 
@@ -267,9 +273,16 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
         raster_yinc = [];%1,1,1];
         % define stimulus variable space
         if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
-            Var = stimuli_parameters.Stm.Amplitude;
-            yaxislabels = unique(stimuli_parameters.Stm.Amplitude);
+            Var = [stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.AudIntensity, stimuli_parameters.Stm.Amplitude];
+            yaxislabels = {'Control', 'Pressure only', 'Pressure + noise' 'Noise only'};
             yaxistext = 'Pressure (V)';
+            raster_yinc = [10,20,20];
+
+            % add delay to "SO","OO" if needed
+            idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
+            for ii = idx'
+                aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + start_som;
+            end
         elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') || strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'BiSine')
             % Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude ~=0.1,stimuli_parameters.Stm.Var25];
             Var = [stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
@@ -277,10 +290,11 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
             % yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
             yaxislabels = {'Control', 'Vibrotactile only', 'Vibrotactile + noise' 'Noise only'};
             %yaxistext = 'Vibrotactile stimulation (Hz)';
-            % add delay to "SO","OO"
+
+            % add delay to "SO","OO" if needed
             idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
             for ii = idx'
-                aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + 0.25;
+                aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + start_som;
             end
         end
 
