@@ -728,17 +728,15 @@ ax.XScale = 'log';
 %% SxA pressure heatmap
 
 %for each cluster
-cluster = 1;
 
-figure
-imagesc(StimResponseFiring.firing_mean(:,:,3,cluster))
-cb = colorbar(gca, 'eastoutside');
-cb.Label.String = 'delta Spike rate (spikes/sec)';
 
-set(gca,'Xscale', 'lin', 'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1),'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
-xlabel(h,'Stimulus frequency (kHz)')
+imagesc(StimResponseFiring.firing_mean(:,:,3,1))
+colorbar
 
-sgtitle(['unit ' num2str(cids(cluster))]) % whole figure title
+set(gca,'Xscale', 'lin', 'YDir', 'normal',...
+            'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1), 'XTickLabelRotation',45,...
+            'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
+        xlabel(h,'Stimulus frequency (kHz)')
 
 %% ISI histogram
 

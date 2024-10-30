@@ -8,19 +8,19 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M14\M14_2024-08-16_13-28-19\';
+recordingFolder = 'D:\DATA\EphysRecordings\M16\M16_2024-09-17_13-20-35\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M14\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M14\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M14'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M16\ICX\rec2\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M16\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M16\ICX\rec2'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [1 5];
+relevant_sessions = [6 12];
 skip_sessions = 0;
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13 
 %relevant_sessions = [10 13]; %M13 ICX 1:6; ICC 10:13
@@ -39,6 +39,7 @@ TTLs_file = dir([OutPath '\*_OE_TTLs.mat']);
 
 if isempty(TTLs_file)
     sessions_TTLs = getSessionTTLs(messagesPath, rec_samples, Fs, skip_sessions);
+
     filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
     save(fullfile(OutPath, filename), "sessions_TTLs")
     disp('sessions TTLs saved')
@@ -52,8 +53,9 @@ end
 % IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
 
+% to add: load if previously saved
 [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, sessions_TTLs, Fs, OutPath);
-%% remove double spikes from originating in Phy
+%% remove double spikes from originating in Phy - No longer needed
 % make into function
 % get all spiketimes from each good unit
 spiketimes2 = cell(length(cids), 1);
@@ -92,8 +94,8 @@ cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
 % select correct input files
-aligned_spikes = load([OutPath, '\M14_S04_FRA_AlignedSpikes']);
-stimuli_parameters = load([BehaviorPath 'M14_S04_FRA.mat']);
+aligned_spikes = load([OutPath, '\M16_S11_FRA_AlignedSpikes']);
+stimuli_parameters = load([BehaviorPath 'M16_S11_FRA.mat']);
 
 % function saves figures, change mouse name
 FSL = 0;
@@ -110,8 +112,7 @@ cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
 % select which session to plot
-close all
-session = 2;
+session = 12;
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
