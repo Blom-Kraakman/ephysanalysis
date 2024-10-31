@@ -38,8 +38,8 @@ unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster'};
 if strcmp(stimuli_parameters.Par.Rec, "SxA")
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
     %PostT = 0.5; % whole vibrotac + dual mode period
-    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime);
-    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3); % baseline period
+    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
+    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     SomAudLag = str2double(stimuli_parameters.Par.SomAudSOA)/1000;
     if SomAudLag ~= 0
         StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + SomAudLag;
@@ -724,23 +724,21 @@ ax.XScale = 'log';
 
 %% SxA pressure heatmap
 
-data = squeeze(sum(StimResponseFiring.firing_mean, 3, 'omitnan'));
+% format data
+data = squeeze(sum(StimResponseFiring.firing_mean, 3, 'omitnan')); %nAud x nSom x cids
 
-%for each cluster
+for cluster = 1:length(cids)
+    figure
+    imagesc(data(:,:, cluster))
+    cb = colorbar(gca, 'eastoutside');
+    cb.Label.String = '	\Delta Spike rate (spikes/sec)';
 
-cluster = 7;
-figure
-imagesc(data(:,:, cluster))
-cb = colorbar(gca, 'eastoutside');
-cb.Label.String = 'delta Spike rate (spikes/sec)';
+    set(gca, 'YDir', 'normal', 'XTick',1:size(data,2),'XTickLabel',StimResponseFiring.amplitudes,'YTick',1:size(data,1),'YTicklabel',StimResponseFiring.frequencies)
+    xlabel('stimulus intensity (V)')
+    ylabel('bbn intensity (db SPL)')
+    sgtitle(['unit ' num2str(cids(cluster))])
 
-set(gca,'XTick',1:size(data,2),'XTickLabel',StimResponseFiring.amplitudes,'YTick',1:size(data,1),'YTicklabel',StimResponseFiring.frequencies)
-
-%set(gca,'Xscale', 'lin', 'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1),'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
-% xlabel(h,'Stimulus frequency (kHz)')
-
-sgtitle(['unit ' num2str(cids(cluster))]) % whole figure title
-
+end
 %% ISI histogram
 
 % amp = 1;

@@ -8,19 +8,19 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M16\M16_2024-09-17_13-20-35\';
+recordingFolder = 'D:\DATA\EphysRecordings\M16\M16_2024-09-17_11-53-45\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M16\ICX\rec2\'; % kilosort ephys data
+KSPath = 'D:\DATA\EphysRecordingsSorted\M16\ICX\rec1\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M16\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M16\ICX\rec2'; % output directory
+OutPath = 'D:\DATA\Processed\M16\ICX\rec1'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [6 12];
+relevant_sessions = [2 5];
 skip_sessions = 0;
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13 
 %relevant_sessions = [10 13]; %M13 ICX 1:6; ICC 10:13

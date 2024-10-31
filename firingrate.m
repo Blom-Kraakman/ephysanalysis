@@ -1,6 +1,8 @@
 function [baseFR, expFR, baseSpikes, expSpikes] = firingrate(SpkT, PreT, PostT, StimOn)
 % calculate baseline firing rate
 % SpkT: cell array with spike times aligned to stimulus onset
+% PreT & PostT in sec
+
 nClust = size(SpkT,2);
 nTrials = size(SpkT,1);
 baseFR = nan(nTrials, nClust);

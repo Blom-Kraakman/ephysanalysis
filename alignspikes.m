@@ -36,7 +36,7 @@ for file = relevant_sessions(1):relevant_sessions(2)
         PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
     elseif strcmp(stimuli_parameters.Par.Rec, 'SxA')
         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
-        %PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
+        % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
         PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
             + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
     elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
@@ -87,8 +87,8 @@ for file = relevant_sessions(1):relevant_sessions(2)
     disp(['stim counter: ' num2str(stim_counter)])
 
     % save aligned spikes
-    filename = sprintf('M%.2i_S%.2i_%s_AlignedSpikes', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-    save(fullfile(OutPath, filename), "SpkT","Srise","Sfall")
+   filename = sprintf('M%.2i_S%.2i_%s_AlignedSpikes', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+   save(fullfile(OutPath, filename), "SpkT","Srise","Sfall")
 
 end
 
