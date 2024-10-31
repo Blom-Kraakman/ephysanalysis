@@ -17,11 +17,12 @@ clearvars
 %session = [4, 6]; % M9
 
 %  set directories
-animal = 8;
-session = 5;
+animal = 16;
+session = 3;
 
 BehaviorPath = ['D:\DATA\Behavioral Stimuli\M' num2str(animal)]; % stimuli parameters
-OutPath = ['D:\DATA\Processed\M' num2str(animal)]; % output directory
+%OutPath = ['D:\DATA\Processed\M' num2str(animal)]; % output directory
+OutPath = 'D:\DATA\Processed\M16\ICX\rec1';
 
 [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, StimOn] = loadData(OutPath, session, BehaviorPath);
 
@@ -36,10 +37,14 @@ unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster'};
 % define pre and post simulus onset
 if strcmp(stimuli_parameters.Par.Rec, "SxA")
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
-    PostT = 0.5; % whole vibrotac + dual mode period
+    %PostT = 0.5; % whole vibrotac + dual mode period
+    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime);
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
-    %StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + 0.250;
-elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, "Square")
+    SomAudLag = str2double(stimuli_parameters.Par.SomAudSOA)/1000;
+    if SomAudLag ~= 0
+        StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + SomAudLag;
+    end
+elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = 0.1; % best way to capture onset stimulus
 elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
@@ -59,44 +64,29 @@ end
 % calculate stimulus induced change in firing rate
 dstimulusRate = stimulusRate - baselineRate;
 
-%% 2. Set parameter space
+%% 2. calculate mean stimulus induced change in firing & first spike latency
 
-% select correct amplitude and frequency parameters
-if strcmp(stimuli_parameters.Par.Rec, "AMn") % noise session
-    uAmp = unique(stimuli_parameters.Stm.Intensity); 
-    uFreq = unique(stimuli_parameters.Stm.Mf);
-elseif strcmp(stimuli_parameters.Par.Rec, "FRA")
-    uAmp = unique(stimuli_parameters.Stm.Intensity);
-    uFreq = unique(stimuli_parameters.Stm.Freq);
-else % SxA and SOM sessions
-    uAmp = unique(stimuli_parameters.Stm.Amplitude);
-    uFreq = unique(stimuli_parameters.Stm.SomFreq);
-end
-
+% 2et parameter space
+[uAmp, uFreq, conditions] = selectparameters(stimuli_parameters);
 nAmp = length(uAmp);
 nFreq = length(uFreq);
-NClu = size(aligned_spikes,2);
-
-% select multiple stimuli types in one session
-if strcmp(stimuli_parameters.Par.Rec, "SxA") %dual modal session
-    conditions = {'OO', 'OA', 'SO', 'SA'};
-else % unimodal sessions
-    conditions = 1;
-end
-
-%% 3. calculate mean stimulus induced change in firing & first spike latency
+NClu = length(cids);
 
 % initialize output variables
-firing_mean = nan(nFreq, nAmp, length(conditions), length(cids));
-MedFSL = nan(nFreq, nAmp, length(conditions), length(cids)); %nan(nAmp, nFreq, NClu); % median first spike latency
-IqrFSL = nan(nFreq, nAmp, length(conditions), length(cids)); %nan(nAmp, nFreq, NClu); % IQR first spike latency
+firing_mean = nan(nFreq, nAmp, length(conditions), NClu);
+MedFSL = nan(nFreq, nAmp, length(conditions), NClu); %nan(nAmp, nFreq, NClu); % median first spike latency
+IqrFSL = nan(nFreq, nAmp, length(conditions), NClu); %nan(nAmp, nFreq, NClu); % IQR first spike latency
 
 % mean dfiring rate per stimulus combination for all units
 for condition = 1:length(conditions)
     for freq = 1:nFreq
         for amp = 1:nAmp
             if strcmp(stimuli_parameters.Par.Rec, "SxA")
-                index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
+                if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
+                    index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.AudIntensity == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
+                elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
+                    index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
+                end
             elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
                 index = stimuli_parameters.Stm.Intensity == uAmp(amp) & stimuli_parameters.Stm.Mf == uFreq(freq);
             elseif strcmp(stimuli_parameters.Par.Rec, "FRA")
@@ -108,7 +98,7 @@ for condition = 1:length(conditions)
             if sum(index) == 0; continue; end
 
             % firing rate analysis
-            firing_mean(freq, amp, condition, :) = mean(dstimulusRate(index, 1:length(cids)));
+            firing_mean(freq, amp, condition, :) = mean(dstimulusRate(index, 1:NClu));
 
             % first spike time analysis
             for cluster = 1:size(aligned_spikes,2)
@@ -137,27 +127,7 @@ for condition = 1:length(conditions)
 end
 clear freq amp condition
 
-%% 4. ISI characterization
-
-% inter spike interval analysis
-[trials, clusters] = size(aligned_spikes);
-aligned_spikes_ISI = cell(trials, clusters);
-% set analysis window
-stimOn_ISIwindow = str2num(stimuli_parameters.Par.SomAudSOA)/1000;
-stimOff_ISIwindow = stimOn_ISIwindow + str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-
-for cluster = 1:clusters
-    for trial = 1:trials
-        % select stim on period only from aligned_spikes
-        sel = aligned_spikes{trial, cluster} > stimOn_ISIwindow & aligned_spikes{trial, cluster} < stimOff_ISIwindow;
-        taligned{trial, cluster} = aligned_spikes{trial,cluster}(sel);
-
-        % log interspike interval
-        aligned_spikes_ISI{trial, cluster} = log(diff(taligned{trial, cluster}));
-    end
-end
-
-%% 5. quantify reactive units
+%% 3. quantify reactive units
 % ! edit AMn indexing if needed (needed in earlier data sets)
 
 for cond = 1:length(conditions)
@@ -167,15 +137,14 @@ for cond = 1:length(conditions)
     idx = max(responsive == unitResponses.Cluster, [], 2);
 
     if isempty(idx)
-        idx = false(length(cids),1);
+        idx = false(NClu,1);
     end
 
     % add responsive true/false per cluster per condition
     unitResponses = addvars(unitResponses, idx);
 end
 
-if strcmp(stimuli_parameters.Par.Rec, "SxA") % add OA sound steady state
-    StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA), 1) + 0.250;
+if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2double(stimuli_parameters.Par.SomAudSOA) > 0 % add OA sound steady state
     [baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, StimOn); % calculate firing rate (Hz) in time window
     dstimulusRate = stimulusRate - baselineRate; % calculate stimulus induced change in firing rate
 
@@ -185,7 +154,7 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA") % add OA sound steady state
     idx = max(responsive == unitResponses.Cluster, [], 2);
 
     if isempty(idx)
-        idx = false(length(cids),1);
+        idx = false(NClu,1);
     end
 
     % add responsive true/false per cluster per condition
@@ -196,6 +165,9 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA") % add OA sound steady state
 
 elseif strcmp(stimuli_parameters.Par.Rec, "SOM")
     unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster', 'SOM'};
+
+elseif strcmp(stimuli_parameters.Par.Rec, "SxA") && str2double(stimuli_parameters.Par.SomAudSOA) == 0
+    unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster', 'OO', 'OA', 'SO', 'SA'};
 end
 
 StimResponseFiring.unitResponses = unitResponses;
@@ -217,11 +189,11 @@ StimResponseFiring.FSL = MedFSL;
 StimResponseFiring.pvalue = pval;
 StimResponseFiring.hvalue = hval;
 
-%% 5.5 Save if needed
+%% 3.5 Save if needed
 filename = sprintf('M%.2i_S%.2i_%s_ResponseProperties', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
 save(fullfile(OutPath, filename), "StimResponseFiring")
 
-%% 6.1 add SOM responses to table
+%% 4.1 add SOM responses to table
 animal = 9; % M11
 %session = [3, 4]; % M11
 %session = [2, 5]; % M10
@@ -249,26 +221,26 @@ unitResponses = joindata(unitResponses_SxA, unitResponses_SOM);
 filename = sprintf('M%.2i_S%.2i&S%.2i_UnitResponses', animal, session(1), session(2));
 save(fullfile(OutPath, filename), "unitResponses")
 
-%% 6.2 Bandwith FRA analysis
+%% 4.2 Bandwith FRA analysis
 
 % initiate variables
 spontRate = StimResponseFiring.firing_mean(1, 1, 1, cluster);
-excBand = NaN(length(deltaInt), 2, length(cids));
-inhBand = NaN(length(deltaInt), 2, length(cids));
-excBW_oct = NaN(length(deltaInt),length(cids));
-inhBW_oct = NaN(length(deltaInt),length(cids));
-excQ = NaN(length(deltaInt),length(cids));
-inhQ = NaN(length(deltaInt),length(cids));
-CF = NaN(length(cids),1);
-BestFreq = NaN(length(cids),1);
-BestFreqAmp = NaN(length(cids),1);
+excBand = NaN(length(deltaInt), 2, NClu);
+inhBand = NaN(length(deltaInt), 2, NClu);
+excBW_oct = NaN(length(deltaInt),NClu);
+inhBW_oct = NaN(length(deltaInt),NClu);
+excQ = NaN(length(deltaInt),NClu);
+inhQ = NaN(length(deltaInt),NClu);
+CF = NaN(NClu,1);
+BestFreq = NaN(NClu,1);
+BestFreqAmp = NaN(NClu,1);
 
 % parameters
 deltaInt = [0,10,20,30,40];
 uAmp = unique(stimuli_parameters.Stm.Intensity);
 uFreq = unique(stimuli_parameters.Stm.Freq);
 
-for cluster = 1:length(cids)
+for cluster = 1:NClu
 
     % find minimum threshold
     [row, col] = find(StimResponseFiring.hvalue(:,:,cluster)==1); % select from sig responses
@@ -318,7 +290,28 @@ for cluster = 1:length(cids)
     end
 end
 
-%% 7. combine datasets across mice
+%% 4.3 ISI characterization
+
+% inter spike interval analysis
+[trials, clusters] = size(aligned_spikes);
+aligned_spikes_ISI = cell(trials, clusters);
+% set analysis window
+stimOn_ISIwindow = str2double(stimuli_parameters.Par.SomAudSOA)/1000;
+stimOff_ISIwindow = stimOn_ISIwindow + str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
+
+for cluster = 1:clusters
+    for trial = 1:trials
+        % select stim on period only from aligned_spikes
+        sel = aligned_spikes{trial, cluster} > stimOn_ISIwindow & aligned_spikes{trial, cluster} < stimOff_ISIwindow;
+        taligned{trial, cluster} = aligned_spikes{trial,cluster}(sel);
+
+        % log interspike interval
+        aligned_spikes_ISI{trial, cluster} = log(diff(taligned{trial, cluster}));
+    end
+end
+
+clear trial trials cluster clusters sel stimOn_ISIwindow stimOff_ISIwindow taligned
+%% 5. combine datasets across mice
 
 % animals to include
 %animal = [4 6 7];
@@ -374,7 +367,7 @@ for file = 1:length(animal)
 
 end
 
-%% save if needed
+%% 5.5 save if needed
 filename = sprintf('M09-10-11_SxA_earplug_UnitResponses');
 save(fullfile(OutPath, filename), "unitResponses_all", "data_all")
 
@@ -728,15 +721,17 @@ ax.XScale = 'log';
 %% SxA pressure heatmap
 
 %for each cluster
+cluster = 1;
 
+figure
+imagesc(StimResponseFiring.firing_mean(:,:,3,cluster))
+cb = colorbar(gca, 'eastoutside');
+cb.Label.String = 'delta Spike rate (spikes/sec)';
 
-imagesc(StimResponseFiring.firing_mean(:,:,3,1))
-colorbar
+set(gca,'Xscale', 'lin', 'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1),'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
+xlabel(h,'Stimulus frequency (kHz)')
 
-set(gca,'Xscale', 'lin', 'YDir', 'normal',...
-            'XTick',2:4:NFreq,'XTickLabel',round(UFreq(2:4:NFreq),1), 'XTickLabelRotation',45,...
-            'YTick',2:2:NInt,'YTicklabel',UInt(2:2:NInt));
-        xlabel(h,'Stimulus frequency (kHz)')
+sgtitle(['unit ' num2str(cids(cluster))]) % whole figure title
 
 %% ISI histogram
 
@@ -1174,6 +1169,14 @@ else
     sessions_TTLs = [];
     disp('no session TTL file found')
 end
+
+% load response properties if already exists
+if isfolder([OutPath '\ResponseProperties'])
+files = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+resp_files = dir(fullfile(BehaviorPath, files));
+stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+end
+
 
 % add delay to "SO"
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')

@@ -26,10 +26,9 @@ end
 % nFreq = length(uFreq);
 % NClu = length(cids);
 
-% set parameters
 [uAmp, uFreq, ~] = selectparameters(stimuli_parameters);
 nAmp = length(uAmp);
-nFreq = length(uFreq); % contains aud amp in SxA pressure sessions
+nFreq = length(uFreq); % contai
 NClu = length(cids);
 
 pval = nan(nFreq, nAmp, NClu);
@@ -72,11 +71,7 @@ for cluster = 1:NClu
             elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % multimodal, vibrotac
                 control = strcmp(stimuli_parameters.Stm.MMType, 'OO');
                 %control = (stimuli_parameters.Stm.Amplitude == 0) & (stimuli_parameters.Stm.SomFreq == 0);
-                if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
-                    index = (strcmp(stimuli_parameters.Stm.MMType, condition)) & (stimuli_parameters.Stm.Amplitude == uAmp(amp)) & (stimuli_parameters.Stm.AudIntensity == uFreq(freq));
-                elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
-                    index = (strcmp(stimuli_parameters.Stm.MMType, condition)) & (stimuli_parameters.Stm.Amplitude == uAmp(amp)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
-                end
+                index = (strcmp(stimuli_parameters.Stm.MMType, condition)) & (stimuli_parameters.Stm.Amplitude == uAmp(amp)) & (stimuli_parameters.Stm.SomFreq == uFreq(freq));
                 baseline = stimulusRate(control,cluster);
                 stim_evoked = stimulusRate(index,cluster);
             end
