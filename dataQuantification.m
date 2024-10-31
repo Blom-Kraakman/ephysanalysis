@@ -465,8 +465,29 @@ ylabel('\Delta Firing rate (spikes/s)')
 
 hold off
 
-%% calculate preference and modulation index 
+%% calculate multisensory integration indexes 
 
+% preference_index = (dFRsom - dFRaud) / (dFRsom + dFRaud)
+% additivity_index = (dFRmulti - dFRsom - dFRaud) / (dFRsom + dFRaud)
+% enhancement_magnitude = (dFRmulti - dFRmax) / dFRmax
+% modulation_index = dFRmulti - (dFRsound + dFRsom)
+
+data = squeeze(sum(StimResponseFiring.firing_mean, 3, 'omitnan')); %nAud x nSom x cids
+%max_sound = max(data(:,1,:));
+%max_som = max(data(1,:,:));
+
+%enhancement_magnitude
+for c = 1:size(data,3)
+    for i = 2:size(data,1)
+        for j = 2:size(data,2)
+            dFRmulti = data(i,j,c);
+            dFRmax = max(data(1,j,c), data(i,1,c));
+            enhancement_magnitude = (dFRmulti - dFRmax) / dFRmax; % for each stim combination
+        end
+    end
+end
+
+%% preference index
 % select all units responding to sound and vibration
 unitResponses = unitResponses_all;
 sound_vibrotac = table2array(((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SO) |unitResponses.SA);
@@ -477,17 +498,17 @@ all_stim = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitR
 non = table2array(~unitResponses.OA & ~unitResponses(:,7) & ~unitResponses.SA & ~unitResponses.SO & ~unitResponses.SOM);
 
 % select and format data
-sound_vibro_idx = max(all_stim, sound_vibrotac);
+%sound_vibro_idx = max(all_stim, sound_vibrotac);
 %data = data_all(:,:,:,sound_vibro_idx);
 %aud_data = abs(squeeze(data(1,1,2,:)));
 %som_data = abs(squeeze(mean(data(2:7,3,3,:), 1)));
-data = data_all(:,:,:,~non);
-data = squeeze(mean(mean(data, 1, "omitnan"), 2, "omitnan"));
+%data = data_all(:,:,:,~non);
+%data = squeeze(mean(mean(data, 1, "omitnan"), 2, "omitnan"));
 %data(5,:) = abs(data(2,:)) + abs(data(3,:));
 
+% pref_index = (dFRsom - dFRaud) / (dFRsom + dFRaud)
 pref_index = (data(2,:) - data(3,:)) ./ (data(2,:) + data(3,:));
 pref_index = (data(2,:) - data(3,:)) ./ (abs(data(2,:)) + abs(data(3,:)));
-
 
 pref_index(isnan(pref_index)) = [];
 mean(pref_index)
@@ -508,6 +529,8 @@ ylabel('# units')
 set(gca,'fontsize',18)
 clear binCenters
 %%
+
+% modulation_index = dFRmulti - (dFRsound + dFRsom) 
 modulation_index = data(4,:) - (data(2,:) + data(3,:));
 modulation_index(isnan(modulation_index)) = 0;
 
