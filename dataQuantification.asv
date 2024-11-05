@@ -467,7 +467,6 @@ hold off
 
 %% calculate multisensory integration indexes 
 
-% basic formulas:
 % preference_index = (dFRsom - dFRaud) / (dFRsom + dFRaud)
 % additivity_index = (dFRmulti - dFRsom - dFRaud) / (dFRsom + dFRaud)
 % enhancement_magnitude = (dFRmulti - dFRmax) / dFRmax
@@ -496,14 +495,14 @@ for c = 1:size(data,3)
             enhancement_magnitude(i,j,c) = (((dFRmulti_sign * dFRmono_sign(max_index)) * abs(dFRmulti)) - abs(dFRmax)) / abs(dFRmax); % multisensory enhancement index = (dFRmulti - dFRmax) / dFRmax
             modulation_index(i,j,c) = dFRmulti - (dFRsound + dFRvibrotac); % multisensory modulation index, sign indicated direction multi
             additivity_index(i,j,c) = (dFRmulti - dFRvibrotac - dFRsound) / abs(dFRvibrotac + dFRsound);
-            preference_index(i,j,c) = (dFRvibrotac - dFRsound) / (abs(dFRvibrotac) + abs(dFRsound)); % - pref sound; + pref vibrotac
+            preference_index(i,j,c) = (dFRvibrotac - dFRsound) / (abs(dFRvibrotac) + abs(dFRsound));
 
         end
     end
 end
 
 clear i j c
-% Plotting multisensory integration measures
+%% Plotting multisensory integration measures 
 
 dataToPlot = enhancement_magnitude;
 %dataToPlot = modulation_index;
@@ -514,7 +513,7 @@ NaNindex_preference = ~isnan(preference_index) & ~isinf(preference_index);
 
 % plot enhancement magnitude index in heatmap
 
-for cluster = 1:length(cids)
+for cluster = 2:2%length(cids)
     figure('Position',[100,100,1000,800]);
     sgtitle(['unit ' num2str(cids(cluster))])
 
