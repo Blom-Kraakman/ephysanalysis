@@ -273,7 +273,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
         raster_yinc = [];%1,1,1];
         % define stimulus variable space
         if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
-            Var = [stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.AudIntensity, stimuli_parameters.Stm.Amplitude];
+            Var = [stimuli_parameters.Stm.AudIntensity, stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.Amplitude];
             yaxislabels = {'Control', 'Pressure only', 'Pressure + noise' 'Noise only'};
             yaxistext = 'Pressure (V)';
             raster_yinc = [10,20,20];

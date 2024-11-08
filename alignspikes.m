@@ -25,8 +25,15 @@ stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
 for file = relevant_sessions(1):relevant_sessions(2)
 
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
+   
+    % check file selection
+    if file ~= str2double(stimuli_parameters.Par.Set)
+        warning('WARNING: File indexing error, check if correct stimulus file is being selected.')
+        break
+    end
 
-    if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions)
+    % skip earlier stim files not in rec session
+    if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions) || ~ismember(str2double(stimuli_parameters.Par.Set), relevant_sessions(1):relevant_sessions(2))
         continue
     end
 

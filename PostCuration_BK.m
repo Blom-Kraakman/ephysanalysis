@@ -8,20 +8,20 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M16\M16_2024-09-17_11-53-45\';
+recordingFolder = 'D:\DATA\EphysRecordings\M16\M16_2024-09-17_13-20-35\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M16\ICX\rec1\'; % kilosort ephys data
+KSPath = 'D:\DATA\EphysRecordingsSorted\M16\ICX\rec2\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M16\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M16\ICX\rec1'; % output directory
+OutPath = 'D:\DATA\Processed\M16\ICX\rec2'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [2 5];
-skip_sessions = 0;
+relevant_sessions = [6 12];
+skip_sessions = [];
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13 
 %relevant_sessions = [10 13]; %M13 ICX 1:6; ICC 10:13
 %skip_sessions = [1 2 3 4 5 6 9]; %M13.1 7:9 
@@ -82,6 +82,18 @@ end
 
 alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions, Srise, Sfall, cids, Fs);
 
+%% optional: match units between session
+
+OutPath = 'D:\DATA\Processed\M16'; % output directory
+
+rec1 = [273 269 287 279 201 298 212 318 321 238 256 258];
+rec2 = [151 153 45 53 69 78 237 163 184 196 175 201];
+matchedUnits = [rec1', rec2'];
+
+% save
+filename = sprintf('M16_ICX_MatchedUnits');
+save(fullfile(OutPath, filename), "matchedUnits")
+
 %% ----------------------- FRA analysis & Plotting ----------------------- %%
 
 %% FRA analysis
@@ -94,10 +106,10 @@ cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
 % select correct input files
-aligned_spikes = load([OutPath, '\M16_S11_FRA_AlignedSpikes']);
-stimuli_parameters = load([BehaviorPath 'M16_S11_FRA.mat']);
+aligned_spikes = load([OutPath, '\M16_S05_FRA_AlignedSpikes']);
+stimuli_parameters = load([BehaviorPath 'M16_S05_FRA.mat']);
 
-% function saves figures, change mouse name
+% function saves figures
 FSL = 0;
 FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 
@@ -105,6 +117,10 @@ FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
 % FRA: raster
 % AMn: raster + PSTH
 % SOM: raster + PSTH
+close all
+
+OutPath = 'D:\DATA\Processed\M14'; % output directory
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M14\'; % stimuli parameters
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
@@ -112,30 +128,30 @@ cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
 % select which session to plot
-session = 12;
+%session = 18;
+for session = 1:5
+    % load corresponsing files
+    sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+    stim_files = dir(fullfile(BehaviorPath, sessionFile));
+    stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
-% load corresponsing files
-sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
-stim_files = dir(fullfile(BehaviorPath, sessionFile));
-stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+    aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+    aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 
-aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
-aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+    if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+        idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
+        stimuli_parameters.Stm(idx,25) = {2};
+        idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
+        stimuli_parameters.Stm(idx,25) = {3};
+        idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
+        stimuli_parameters.Stm(idx,25) = {4};
+        idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
+        stimuli_parameters.Stm(idx,25) = {1};
+        % order: type, freq, amplitude
+    end
 
-if strcmp(stimuli_parameters.Par.Rec, 'SxA')
-    idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
-    stimuli_parameters.Stm(idx,25) = {2};
-    idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
-    stimuli_parameters.Stm(idx,25) = {3}; 
-    idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
-    stimuli_parameters.Stm(idx,25) = {4}; 
-    idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
-    stimuli_parameters.Stm(idx,25) = {1};
-    % order: type, freq, amplitude
+    plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 end
-
-plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
-
 
 %% plot single unit
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10\'; % stimuli parameters

@@ -18,7 +18,7 @@ clearvars
 
 %  set directories
 animal = 16;
-session = 4;
+session = 2;
 
 BehaviorPath = ['D:\DATA\Behavioral Stimuli\M' num2str(animal)]; % stimuli parameters
 %OutPath = ['D:\DATA\Processed\M' num2str(animal)]; % output directory
@@ -36,10 +36,10 @@ unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster'};
 
 % define pre and post simulus onset
 if strcmp(stimuli_parameters.Par.Rec, "SxA")
+    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
     %PostT = 0.5; % whole vibrotac + dual mode period
     PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     SomAudLag = str2num(stimuli_parameters.Par.SomAudSOA)/1000;
     if SomAudLag ~= 0
         StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + SomAudLag;
@@ -48,12 +48,17 @@ elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Pa
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = 0.1; % best way to capture onset stimulus
 elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
-    PostT = 0.2; % limited by previous recordings
-    %PreT = (str2double(stimuli_parameters.Par.AMISI)/3)/1000; % baseline period
-    PreT = 0.2;
+    if max(stimuli_parameters.Stm.Md)
+        PreT = str2double(stimuli_parameters.Par.AMPreTime)/1000;
+        PostT = str2double(stimuli_parameters.Par.AMPostTime)/1000;
+    else
+        %PreT = (str2double(stimuli_parameters.Par.AMISI)/3)/1000; % baseline period
+        PreT = 0.2;
+        PostT = 0.2; % limited by previous recordings
+    end
 elseif strcmp(stimuli_parameters.Par.Rec, "FRA")
-    PostT = (str2double(stimuli_parameters.Par.FRAStimTime)/1000);
     PreT = 0.2;
+    PostT = (str2double(stimuli_parameters.Par.FRAStimTime)/1000);
 else
     error("No analysis window defined")
 end
@@ -68,7 +73,7 @@ clear MouseNum SomAudLag
 
 %% 2. calculate mean stimulus induced change in firing & first spike latency
 
-% 2et parameter space
+% set parameter space
 [uAmp, uFreq, conditions] = selectparameters(stimuli_parameters);
 nAmp = length(uAmp);
 nFreq = length(uFreq);
@@ -171,6 +176,9 @@ elseif strcmp(stimuli_parameters.Par.Rec, "SOM")
 
 elseif strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.SomAudSOA) == 0
     unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster', 'OO', 'OA', 'SO', 'SA'};
+
+elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
+    unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster', 'AM'};
 end
 
 StimResponseFiring.unitResponses = unitResponses;
@@ -305,9 +313,10 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA") && strcmp(stimuli_parameters.Par.So
     % vibrotactile stimuli
     stimOn_ISIwindow = str2num(stimuli_parameters.Par.SomAudSOA)/1000;
     stimOff_ISIwindow = stimOn_ISIwindow + str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-elseif  strcmp(stimuli_parameters.Par.Rec, "AM")
-    stimOn_ISIwindow = str2num(stimuli_parameters.Par.AMTransTime)-(str2double(stimuli_parameters.Par.AMPostTime) + str2double(stimuli_parameters.Par.AMPreTime));
-    stimOff_ISIwindow = stimOn_ISIwindow + (str2double(stimuli_parameters.Par.AMPostTime) + str2double(stimuli_parameters.Par.AMPreTime));
+elseif  strcmp(stimuli_parameters.Par.Rec, "AMn")
+    % AM noise
+    stimOn_ISIwindow = ((str2double(stimuli_parameters.Par.AMPostTime)) - (str2num(stimuli_parameters.Par.AMTransTime)))/1000;
+    stimOff_ISIwindow = stimOn_ISIwindow + (str2num(stimuli_parameters.Par.AMTransTime))/1000;
 end
 
 for cluster = 1:clusters
@@ -967,24 +976,33 @@ end
 % con = 1;
 
 % select unit to plot
-cluster = 3;
+%cluster = 2;
 conditions = StimResponseFiring.conditions;
 uAmp = StimResponseFiring.amplitudes;
 uFreq = StimResponseFiring.frequencies;
 nAmp = length(uAmp);
 nFreq = length(uFreq);
 
-for con = 2:length(conditions)
-    for amp = 2:nAmp
+for cluster = 1:length(StimResponseFiring.cids)
+for con = 1:length(conditions)
+    for amp = 1:nAmp
 
         figure;
         hold on
         pos = 1;
 
-        for freq = 2:nFreq
+        for freq = 1:nFreq
 
             % select unique stimulus combination
-            index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{con});
+            if strcmp(stimuli_parameters.Par.Rec, "SxA")
+                index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{con});
+                figTitle = [num2str(uFreq(freq)) 'Hz ' num2str(uAmp(amp)) 'V'];
+                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', condition: ' conditions{con} '(' num2str(uAmp(amp)) 'V)'];
+            elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
+                index = stimuli_parameters.Stm.Intensity == uAmp(amp) & stimuli_parameters.Stm.Mf == uFreq(freq);
+                figTitle = [num2str(uFreq(freq)) 'Hz '];
+                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', ' num2str(uAmp(amp)) 'dbSPL'];
+            end
 
             idx_rows = find(index);
             spikeISI = [];
@@ -994,17 +1012,17 @@ for con = 2:length(conditions)
             end
 
             [N, edges] = histcounts(spikeISI, -7:0.05:0);
-            subplot(2, 4, pos)
+            subplot(3, 3, pos)
             for i = 1:(length(edges)-1)
                 binCenters(:,i) = mean(edges(:,i:i+1));
                 % binCenters(:,i) = sqrt(edges(:,i)* edges(:,i+1)); % geometric mean
             end
 
-            bar(binCenters, N, 1, 'FaceColor', [0.5 0.5 0.5])
+            bar(binCenters, N, 1, 'FaceColor', 'k')
             xline(log(1/uFreq(freq)),'r--');
-            xline(log(1/uFreq(freq)/2),'b--');
-            xline(log(0.75*1/uFreq(freq)),'k--');
-            xline(log(0.25*1/uFreq(freq)),'g--');
+            %xline(log(1/uFreq(freq)/2),'b--');
+            %xline(log(0.75*1/uFreq(freq)),'k--');
+            %xline(log(0.25*1/uFreq(freq)),'g--');
             % stairs(edges(1:end-1), N, 'Color', [0.5 0.5 0.5])
             xticks([log(0.001), log(0.01), log(0.1), log(1)])
             set(gca,'TickDir','out')
@@ -1012,18 +1030,23 @@ for con = 2:length(conditions)
             xticklabels(xLab)
             xlabel('ISI (sec)')
             ylabel('# spikes')
-            ylim([0,max(N)+10])
-            title([num2str(uFreq(freq)) 'Hz ' num2str(uAmp(amp)) 'V'])
+            %ylim([0,max(N)+10])
+            ylim([0,25])
+            %legend;
+            title(figTitle)
             clear binCenters
 
             pos = pos+1;
+
         end
 
-        sgtitle(['Unit: ' num2str(cids(cluster)) ', condition: ' conditions{con} '(' num2str(uAmp(amp)) 'V)'])
+        sgtitle(figSGTitle)
 
     end
 
 end
+end
+
 %% vibrotac tuning curve single units
 % of only responsive units
 % work with 4D data format?
