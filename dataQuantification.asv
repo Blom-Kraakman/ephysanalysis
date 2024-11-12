@@ -339,19 +339,22 @@ clear trial trials cluster clusters sel stimOn_ISIwindow stimOff_ISIwindow talig
 % load in stimOrder.csv
 stimOrder = readtable('D:\DATA\Processed\stimOrder.csv');
 
+%initiate variables
+unitResponses_all = table;
+data_all = [];
+mousenum_all =[];
+session_all = [];
+amplitudes_all = [];
+frequencies_all = [];
+PreT_all = [];
+PostT_all = [];
+
 for condition = 2:size(stimOrder, 2)
-    
-    %initiate variables
-    unitResponses_all = table;
-    data_all = [];
-    mousenum_all =[];
-    session_all = [];
-    amplitudes_all = [];
-    frequencies_all = [];
-    PreT_all = [];
-    PostT_all = [];
 
     disp(['Concatinating ' stimOrder.Properties.VariableNames{condition}])
+
+    data_all = [];
+    unitResponses_all = table;
 
     % get data from session to analyse
     for animal = 1:size(stimOrder,1)
@@ -399,29 +402,27 @@ for condition = 2:size(stimOrder, 2)
         unitResponses_all = vertcat(unitResponses_all, dataS.StimResponseFiring.unitResponses);
 
         % add details
-        mousenum_all = cat(2, mousenum_all, str2double(dataS.StimResponseFiring.MouseNum));
-        session_all = cat(2, session_all, str2double(dataS.StimResponseFiring.session));
+        mousenum_all = cat(1, mousenum_all, str2double(dataS.StimResponseFiring.MouseNum));
+        session_all = cat(1, session_all, str2double(dataS.StimResponseFiring.session));
         amplitudes_all = cat(2, amplitudes_all, dataS.StimResponseFiring.amplitudes);
         frequencies_all = cat(2, frequencies_all, dataS.StimResponseFiring.frequencies);
-        PreT_all = cat(2, PreT_all, dataS.StimResponseFiring.PreT);
-        PostT_all = cat(2, PostT_all, dataS.StimResponseFiring.PostT);
+        PreT_all = cat(1, PreT_all, dataS.StimResponseFiring.PreT);
+        PostT_all = cat(1, PostT_all, dataS.StimResponseFiring.PostT);
 
     end
 
     StimResponseFiring_all.unitResponses = unitResponses_all;
     StimResponseFiring_all.firing_mean = data_all;
-    StimResponseFiring_all.MouseNum = mousenum_all;
-    StimResponseFiring_all.session = session_all;
-    StimResponseFiring_all.amplitudes = amplitudes_all;
-    StimResponseFiring_all.frequencies = frequencies_all;
-    StimResponseFiring_all.PreT = PreT_all;
-    StimResponseFiring_all.PostT = PostT_all;
+     StimResponseFiring_all.MouseNum = mousenum_all;
+      StimResponseFiring_all.session
+       StimResponseFiring_all.
+        StimResponseFiring_all.
+         StimResponseFiring_all.
+          StimResponseFiring_all.
 
     % save
     filename = sprintf('M12-16_%s_UnitResponses',stimOrder.Properties.VariableNames{condition});
-    save(fullfile('D:\DATA\Processed\', filename), "StimResponseFiring_all")
-
-    clear data_all
+    save(fullfile('D:\DATA\Processed\', filename), "unitResponses_all", "data_all")
 
 end
 
