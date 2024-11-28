@@ -1,7 +1,7 @@
-function sessions_TTLs = getSessionTTLs(messagesPath, rec_samples, Fs, skip_sessions)
-% sessions_TTLs_details contains cell array: text from message center,
-% start(1)/end(0) code, corresponding sample nr, time since start recording
-% sessions_TTLs contains array with: event nr, start(1)/end(0) code, corresponding sample nr
+function [sessions_TTLs, sessions_TTLs_variables] = getSessionTTLs(messagesPath, rec_samples, Fs, skip_sessions)
+% sessions_TTLs contains array with: event nr, start(1)/end(0) code,
+% corresponding sample nr, time since start recording
+% sessions_TTLs_variables contains cell array of labels
 
 % open files
 message_text = [messagesPath 'text.npy']; % session TTLs text
@@ -27,12 +27,16 @@ for i = 1:size(msgs, 1)
 
 end
 sessions_TTLs(:,3) = message_samples(1:length(sessions_TTLs)); % sample nr
-ttls_norm = (message_samples - rec_samples(1))/Fs;
+ttls_norm = double(message_samples - rec_samples(1))/Fs;
 sessions_TTLs(:,4) = ttls_norm;
 
 % keep only sessions in recording stretch
-idx_remove = find(sum(sessions_TTLs(:,1) == skip_sessions, 2));
-sessions_TTLs(idx_remove, :) = [];
+if ~isempty(skip_sessions)
+    idx_remove = find(sum(sessions_TTLs(:,1) == skip_sessions, 2));
+    sessions_TTLs(idx_remove, :) = [];
+end
+
+sessions_TTLs_variables = {'session nr', 'TTL on/off', 'TTL (sample nr)', 'TTL (sec since start)'};
 
     function msgs = getMessageText(message_text)
         % open messages file

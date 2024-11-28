@@ -17,14 +17,16 @@ clearvars
 %session = [4, 6]; % M9
 
 %  set directories
-animal=16;
-session = 16;
+animal = 14;
+session = 4;
 
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M16'; % stimuli parameters
+BehaviorPath = ['D:\DATA\Behavioral Stimuli\M' num2str(animal, 2)]; % stimuli parameters
 %OutPath = ['D:\DATA\Processed\M' num2str(animal)]; % output directory
-OutPath = 'D:\DATA\Processed\M16\ICC';
+OutPath = 'D:\DATA\Processed\M14\ICX';
 
-[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, StimOn, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
+[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
+
+stimOrder = readtable('D:\DATA\Processed\M12-16_stimOrder.csv'); % make more flexible
 
 %% 1. calculate firing rates
 
@@ -40,10 +42,6 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA")
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
     %PostT = 0.5; % whole vibrotac + dual mode period
     PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-    SomAudLag = str2num(stimuli_parameters.Par.SomAudSOA)/1000;
-    if SomAudLag ~= 0
-        StimOn = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + SomAudLag;
-    end
 elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = 0.1; % best way to capture onset stimulus
@@ -64,7 +62,7 @@ else
 end
 
 % calculate firing rate (Hz) in time window
-[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, StimOn);
+[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay);
 
 % calculate stimulus induced change in firing rate
 dstimulusRate = stimulusRate - baselineRate;
@@ -152,8 +150,11 @@ for cond = 1:length(conditions)
     unitResponses = addvars(unitResponses, idx);
 end
 
-if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.SomAudSOA) > 0 % add OA sound steady state
-    [baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, StimOn); % calculate firing rate (Hz) in time window
+if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.SomAudSOA) > 0 
+
+    onsetDelay = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + SomAudLag; % add OA sound steady state
+
+    [baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay); % calculate firing rate (Hz) in time window
     dstimulusRate = stimulusRate - baselineRate; % calculate stimulus induced change in firing rate
 
     responsive = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, 'OA'); % units responsive
@@ -191,7 +192,7 @@ StimResponseFiring.amplitudes = uAmp;
 StimResponseFiring.frequencies = uFreq;
 StimResponseFiring.PreT = PreT;
 StimResponseFiring.PostT = PostT;
-StimResponseFiring.StimOn = StimOn;
+StimResponseFiring.onsetDelay = onsetDelay;
 StimResponseFiring.baselineRate = baselineRate;
 StimResponseFiring.stimulusRate = stimulusRate;
 StimResponseFiring.dfiringRate = dstimulusRate;
@@ -442,6 +443,10 @@ all_stim = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitR
 non = table2array(~unitResponses.SOM & ~unitResponses.OA & ~unitResponses(:,7) & ~unitResponses.SA & ~unitResponses.SO);
 
 clear data dataS unitResponses_all
+
+%% data selection new
+stimOrder = readtable('D:\DATA\Processed\M12-16_stimOrder.csv');
+
 %% venn diagram response groups
 sets = ["sound" "vibrotactile" "pressure"];
 total = size(data_all,4);
@@ -454,10 +459,12 @@ venn(3,'sets',sets,'labels',labels, 'colors', [0.247 0.635 0.831; 0.266 0.666 0.
 %% quantify average response strength per condition
 % data format:
 %   firing_mean(freq, amp, condition, :)
-   conditions = ["OO", "OA", "SO", "SA"];
+
+conditions = ["OO", "OA", "SO", "SA"];
+unitResponses = StimResponseFiring_all.unitResponses;
+data_all = StimResponseFiring_all.firing_mean;
 
 % select all units responding to sound and vibration
-unitResponses = unitResponses_all;
 sound_vibrotac = table2array(((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SO) |unitResponses.SA);
 %sound_vibrotac = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SO & ~unitResponses.SOM |(unitResponses.SA & ~unitResponses.SOM & ~unitResponses.OA & ~unitResponses(:,7) & ~unitResponses.SO));
 all_stim = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SO);
@@ -515,6 +522,7 @@ set(gca,'fontsize',18)
 xticks(1:5)
 xticklabels(["control", "sound", "vibrotactile", "multimodal", "sound + vibrotactile"])
 ylabel('\Delta Firing rate (spikes/s)')
+ylim([-40 80])
 %title(PostT)
 
 hold off
@@ -567,8 +575,13 @@ NaNindex_additivity = ~isnan(additivity_index) & ~isinf(additivity_index);
 NaNindex_preference = ~isnan(preference_index) & ~isinf(preference_index);
 
 % plot enhancement magnitude index in heatmap
+% variables
+uAmp = unique(StimResponseFiring.amplitudes)';
+%nAmp = length(uAmp);
 
-for cluster = 1:length(cids)
+umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+
+for cluster = 12 %1:length(cids)
     figure('Position',[100,100,1000,800]);
     sgtitle(['unit ' num2str(cids(cluster))])
 
@@ -579,9 +592,9 @@ for cluster = 1:length(cids)
     %clim([minV, maxV]);
     cb.Label.String = 'multisensory enhancement index';
 
-    set(gca, 'YDir', 'normal', 'XTick',1:size(enhancement_magnitude,2),'XTickLabel',StimResponseFiring.amplitudes,'YTick',1:size(enhancement_magnitude,1),'YTicklabel',StimResponseFiring.frequencies)
-    xlabel('stimulus intensity (V)')
-    ylabel('bbn intensity (db SPL)')
+    set(gca, 'YDir', 'normal', 'XTick',1:size(enhancement_magnitude,2),'XTickLabel',umN,'YTick',1:size(enhancement_magnitude,1),'YTicklabel',StimResponseFiring.frequencies)
+    xlabel('stimulus intensity (mN)')
+    ylabel('bbn intensity (dB SPL)')
 
 
     % modulation index
@@ -590,9 +603,9 @@ for cluster = 1:length(cids)
     cb = colorbar(gca, 'eastoutside');
     cb.Label.String = 'multisensory modulation';
 
-    set(gca, 'YDir', 'normal', 'XTick',1:size(modulation_index,2),'XTickLabel',StimResponseFiring.amplitudes,'YTick',1:size(modulation_index,1),'YTicklabel',StimResponseFiring.frequencies)
-    xlabel('stimulus intensity (V)')
-    ylabel('bbn intensity (db SPL)')
+    set(gca, 'YDir', 'normal', 'XTick',1:size(modulation_index,2),'XTickLabel',umN,'YTick',1:size(modulation_index,1),'YTicklabel',StimResponseFiring.frequencies)
+    xlabel('stimulus intensity (mN)')
+    ylabel('bbn intensity (dB SPL)')
 
     % additivity index
     subplot(2,2,3);
@@ -600,9 +613,9 @@ for cluster = 1:length(cids)
     cb = colorbar(gca, 'eastoutside');
     cb.Label.String = 'additivity index';
 
-    set(gca, 'YDir', 'normal', 'XTick',1:size(additivity_index,2),'XTickLabel',StimResponseFiring.amplitudes,'YTick',1:size(additivity_index,1),'YTicklabel',StimResponseFiring.frequencies)
-    xlabel('stimulus intensity (V)')
-    ylabel('bbn intensity (db SPL)')
+    set(gca, 'YDir', 'normal', 'XTick',1:size(additivity_index,2),'XTickLabel',umN,'YTick',1:size(additivity_index,1),'YTicklabel',StimResponseFiring.frequencies)
+    xlabel('stimulus intensity (mN)')
+    ylabel('bbn intensity (dB SPL)')
 
     % preference index
     subplot(2,2,4);
@@ -610,9 +623,9 @@ for cluster = 1:length(cids)
     cb = colorbar(gca, 'eastoutside');
     cb.Label.String = 'preference index';
 
-    set(gca, 'YDir', 'normal', 'XTick',1:size(preference_index,2),'XTickLabel',StimResponseFiring.amplitudes,'YTick',1:size(preference_index,1),'YTicklabel',StimResponseFiring.frequencies)
-    xlabel('stimulus intensity (V)')
-    ylabel('bbn intensity (db SPL)')
+    set(gca, 'YDir', 'normal', 'XTick',1:size(preference_index,2),'XTickLabel',umN,'YTick',1:size(preference_index,1),'YTicklabel',StimResponseFiring.frequencies)
+    xlabel('stimulus intensity (mN)')
+    ylabel('bbn intensity (dB SPL)')
 
 end
 
@@ -836,9 +849,15 @@ end
 %% plot bbn for multiple animals
 uAmp = [0 15 30 45 60];
 
-data_all = squeeze(data_all);
-data = mean(data_all,2);
+%data_all = squeeze(data_all);
+%data = mean(data_all,2);
 %errors = std(data_all,[],2) / sqrt(size(data_all, 2));
+
+% select data in new format
+%cluster_index = StimResponseFiring_all.unitResponses{:,5} == 1;
+%data_all = squeeze(max(StimResponseFiring_all.firing_mean(:,1,2,cluster_index'), StimResponseFiring_all.firing_mean(:,1,1,cluster_index')));
+data_all = squeeze(max(StimResponseFiring_all.firing_mean(:,1,2,:), StimResponseFiring_all.firing_mean(:,1,1,:)));
+data = mean(data_all,2);
 
 figure;
 hold on
@@ -850,21 +869,25 @@ xticks(uAmp)
 
 ylabel('\Delta Firing rate (Hz)')
 xlabel('Broadband noise intensity (dB SPL)')
+ylim([-50 120])
 set(gca,'fontsize',18)
 
 %% pressure tuning curve
 % work with 4D data format? 
+StimResponseFiring = StimResponseFiring_all;
 
 % variables
 uAmp = unique(StimResponseFiring.amplitudes)';
-nAmp = length(uAmp);
+%nAmp = length(uAmp);
 
 umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
 nmN = length(umN);
 
 % format data
-data = squeeze(data_all)';
-index = unitResponses_all.SOM;
+%data = squeeze(data_all)';
+data = squeeze(StimResponseFiring.firing_mean(1,:,3,:))';
+data(:,1) = squeeze(StimResponseFiring.firing_mean(1,1,1,:))';
+index = StimResponseFiring.unitResponses.SO;
 
 FRpressure_mean = mean(data(index,:));
 FRpressure_mean_c = mean(data(~index,:));
@@ -929,28 +952,31 @@ plot(x, mean(dataToPlot'), 'k', 'LineWidth', 1.5)
 
 %uAmp = unique(stimuli_parameters.Stm.Amplitude);
 uAmp = [0;0.1;0.3];
-nAmp = length(uAmp);
+%nAmp = length(uAmp);
 
 umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
-nmN = length(umN);
+%nmN = length(umN);
 
 %uFreq = unique(stimuli_parameters.Stm.SomFreq);
-uFreq = [10;20;50;100;200;300;400];
-nFreq = length(uFreq);
+uFreq = [0; 10;20;50;100;200;300;400];
+%nFreq = length(uFreq);
 
 % select correct condition from SxA session
 condition = 3; % ["OO", "OA", "SO", "SA"]
+data_all = StimResponseFiring_all.firing_mean;
 
 %responsive units
-units_idx = unitResponses_all.SO;
-data = data_all(2:8, 2:3, condition, units_idx);
+units_idx = StimResponseFiring_all.unitResponses.SO;
+data = repmat(data_all(1,1,1,units_idx), 1, 3);
+data(2:8, 2:3,:, :) = data_all(2:8, 2:3, condition, units_idx);
 FRvibrotac_mean = mean(data, 4, "omitnan");
 FRvibrotac_se = std(data, [],4) / sqrt(size(data, 4));
 FRvibrotac_std = std(data, [],4);
 
 %non responsive units
-no_resp_idx = ~unitResponses_all.SO;
-data_c = data_all(2:8, 2:3, condition, no_resp_idx);
+no_resp_idx = ~StimResponseFiring_all.unitResponses.SO;
+data_c = repmat(data_all(1,1,1,no_resp_idx), 1, 3);
+data_c(2:8, 2:3,:, :)= data_all(2:8, 2:3, condition, no_resp_idx);
 FRvibrotac_mean_c = mean(data_c, 4, "omitnan");
 FRvibrotac_se_c = std(data_c, [],4) / sqrt(size(data_c, 4));
 FRvibrotac_std_c = std(data_c, [],4);
@@ -980,7 +1006,7 @@ plot(uFreq, FRvibrotac_mean_c(:, 2), 'k', 'LineWidth', 3)
 %plot(FRvibrotac_mean(2:nFreq, 2:nAmp));
 
 ax = gca;
-xlim = ([10 400]);
+xlim = ([0 400]);
 ylabel('\Delta Firing rate (spikes/s)')
 xlabel('Vibrotactile frequency (Hz)')
 %legend(num2str(umN(2:end)))
@@ -992,19 +1018,31 @@ ax.XScale = 'log';
 %% SxA pressure heatmap
 
 % format data
-data = squeeze(sum(StimResponseFiring.firing_mean, 3, 'omitnan')); %nAud x nSom x cids
+data = squeeze(sum(StimResponseFiring_all.firing_mean, 3, 'omitnan')); %nAud x nSom x cids
+amps = StimResponseFiring_all.amplitudes(:,1);
+force = round((amps * 0.158)*1000); %0.158N/V callibation
+freqs = StimResponseFiring_all.frequencies(:,1);
+cids = StimResponseFiring_all.unitResponses.Cluster';
+mouse = StimResponseFiring_all.unitResponses.MouseNum';
+OutPath = 'D:\DATA\Processed\temp';
 
 for cluster = 1:length(cids)
     figure
     imagesc(data(:,:, cluster))
     cb = colorbar(gca, 'eastoutside');
-    cb.Label.String = '	\Delta Spike rate (spikes/sec)';
+    cb.Label.String = '	\Delta spike rate (spikes/sec)';
 
-    set(gca, 'YDir', 'normal', 'XTick',1:size(data,2),'XTickLabel',StimResponseFiring.amplitudes,'YTick',1:size(data,1),'YTicklabel',StimResponseFiring.frequencies)
-    xlabel('stimulus intensity (V)')
-    ylabel('bbn intensity (db SPL)')
-    sgtitle(['unit ' num2str(cids(cluster))])
+    set(gca, 'YDir', 'normal', 'XTick',1:size(data,2),'XTickLabel',force','YTick',1:size(data,1),'YTicklabel',freqs')
+    xlabel('stimulus intensity (mN)')
+    ylabel('bbn intensity (dB SPL)')
+    %sgtitle(['unit ' num2str(cids(cluster))])
 
+    % save
+    figname = sprintf('M%.2i_cluster%i_PxApost', mouse(cluster), cids(cluster));
+    saveas(gcf, fullfile(OutPath, figname));
+    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+
+    
 end
 %% ISI histogram
 
@@ -1014,13 +1052,18 @@ end
 
 % select unit to plot
 %cluster = 2;
+
+%StimResponseFiring = StimResponseFiring_all;
+
+OutPath = 'D:\DATA\Processed\temp';
+
 conditions = StimResponseFiring.conditions;
 uAmp = StimResponseFiring.amplitudes;
 uFreq = StimResponseFiring.frequencies;
 nAmp = length(uAmp);
 nFreq = length(uFreq);
 
-for cluster = 1:length(StimResponseFiring.cids)
+for cluster = 12 %1:length(StimResponseFiring.cids)
 for con = 1:length(conditions)
     for amp = 1:nAmp
 
@@ -1082,6 +1125,12 @@ for con = 1:length(conditions)
     end
 
 end
+
+% figname = sprintf('M%.2i_cluster%i_VxApre', animal, cids(cluster));
+% saveas(gcf, fullfile(OutPath, figname));
+% saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+
+
 end
 
 %% vibrotac tuning curve single units
@@ -1103,15 +1152,16 @@ condition = 3; % ["OO", "OA", "SO", "SA"]
 
 %responsive units
 %units_idx = unitResponses_all.SO;
-unit_idx = 41;
-data = data_all(2:8, 2:3, condition, unit_idx);
+unit_idx = 12;
+data = StimResponseFiring.firing_mean(2:8, 2:3, condition, unit_idx);
+
 
 % plot
 figure;
 hold on
 
-plot(uFreq , data(:, 1, cluster), 'LineWidth', 3, 'Color', "#8BC9E8")
-plot(uFreq , data(:, 2, cluster), 'LineWidth', 3, 'Color', "#3FA2D4")
+plot(uFreq , data(:, 1), 'LineWidth', 3, 'Color', "#8BC9E8")
+plot(uFreq , data(:, 2), 'LineWidth', 3, 'Color', "#3FA2D4")
 
 ax = gca;
 %xlim([10 400]);
@@ -1130,7 +1180,7 @@ nAmp = length(uAmp);
 umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
 nmN = length(umN);
 
-% format data
+%% format data
 data = squeeze(data_all)';
 index = unitResponses_all.SOM;
 
@@ -1153,6 +1203,8 @@ FRpressure_iqr_c = iqr(data(~index,:));
 figure;
 hold on
 plot(umN, data(index,:), 'Color',  "#44AA99", 'LineWidth', 0.1)
+FRpressure_mean(1,1) = StimResponseFiring.firing_mean(1,1,1,12);
+FRpressure_mean(1,2:9) = StimResponseFiring.firing_mean(1,2:9,3,12);
 plot(umN, FRpressure_mean, 'Color',  "#267165", 'LineWidth', 3)
 %errorbar(uAmp, FRpressure_med, FRpressure_iqr, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 
@@ -1421,7 +1473,7 @@ end
 
 % match matrix with firing rate
 %% ------------------------- Local functions ------------------------- %%
-function [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, StimOn, StimResponseFiring] = loadData(OutPath, session, BehaviorPath)
+function [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring] = loadData(OutPath, session, BehaviorPath)
 % get data files
 
 % load cluster unit info
@@ -1480,6 +1532,7 @@ if isfolder([OutPath '\ResponseProperties'])
     if ~isempty(resp_files)
         StimResponseFiring = load([resp_files.folder '\' resp_files.name]);
         StimResponseFiring = StimResponseFiring.StimResponseFiring;
+        disp('analysed data loaded')
     else
         StimResponseFiring = [];
     end
@@ -1487,12 +1540,14 @@ else
     StimResponseFiring = [];
 end
 
-
 % add delay to "SO"
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')
-    StimOn = stimuli_parameters.Stm.SomAudSOA./1000;
-    StimOn(isnan(stimuli_parameters.Stm.SomAudSOA)) = 0;
+    onsetDelay = stimuli_parameters.Stm.SomAudSOA./1000;
+    onsetDelay(isnan(stimuli_parameters.Stm.SomAudSOA)) = 0;
 else
-    StimOn = zeros(size(stimuli_parameters.Stm, 1), 1);
+    onsetDelay = zeros(size(stimuli_parameters.Stm, 1), 1);
 end
+
 end
+
+

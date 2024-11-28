@@ -34,19 +34,21 @@ skip_sessions = [];
 
 %% sessions TTLs
 % save session TTLs if needed, else load correct file
-
+% get trials onset TTLs of all sessions in recording
 TTLs_file = dir([OutPath '\*_OE_TTLs.mat']);
 
 if isempty(TTLs_file)
-    sessions_TTLs = getSessionTTLs(messagesPath, rec_samples, Fs, skip_sessions);
-
-    filename = sprintf('M%.2i_S%02d-%02d_OE_TTLs', str2double(Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
-    save(fullfile(OutPath, filename), "sessions_TTLs")
+    % get trials onset TTLs of all sessions in recording
+    [sessions_TTLs, sessions_TTLs_variables] = getSessionTTLs(messagesPath, rec_samples, Fs, skip_sessions);
+    
+    % save
+    filename = sprintf('M%s_S%02d-%02d_OE_TTLs', BehaviorPath(29:30), relevant_sessions(1), relevant_sessions(2));
+    save(fullfile(OutPath, filename), "sessions_TTLs", "sessions_TTLs_variables")
     disp('sessions TTLs saved')
-else
+else % load from directory
     TTLs = load([OutPath '\' TTLs_file.name]); 
-    sessions_TTLs = TTLs.sessions_TTLs;
     disp('sessions TTLs loaded from saved file')
+    sessions_TTLs = TTLs.sessions_TTLs;
 end
 
 %% Kilosort: post-curation unit extraction
@@ -54,7 +56,7 @@ end
 % spike extraction from curated units
 
 % to add: load if previously saved
-[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, sessions_TTLs, Fs, OutPath);
+[spiketimes, cids] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, Fs, OutPath);
 %% remove double spikes from originating in Phy - No longer needed
 % make into function
 % get all spiketimes from each good unit
@@ -76,11 +78,15 @@ for cluster = 1:length(cids)
 end
 
 %spiketimes = spiketimes2;
+
+%% OLD get trials onset TTLs of all sessions in recording OLD
+[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTLPath, rec_samples);
+
 %% align spikes
 % alignment of extracted spikes to stimulus on/off-set
 % spike times in sec
 
-alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions, Srise, Sfall, cids, Fs);
+alignspikes(BehaviorPath, TTLPath, OutPath, spiketimes, relevant_sessions, skip_sessions, cids, sessions_TTLs, Fs);
 
 %% optional: match units between session
 
@@ -99,6 +105,8 @@ save(fullfile(OutPath, filename), "matchedUnits")
 %% FRA analysis
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
 close all
+OutPath = 'D:\DATA\Processed\M15\ICC';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M15\';
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
@@ -106,8 +114,8 @@ cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
 % select correct input files
-aligned_spikes = load([OutPath, '\M16_S05_FRA_AlignedSpikes']);
-stimuli_parameters = load([BehaviorPath 'M16_S05_FRA.mat']);
+aligned_spikes = load([OutPath, '\M15_S16_FRA_AlignedSpikes']);
+stimuli_parameters = load([BehaviorPath 'M15_S16_FRA.mat']);
 
 % function saves figures
 FSL = 0;
@@ -154,14 +162,14 @@ for session = 1:5
 end
 
 %% plot single unit
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M10'; % output directory
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M15\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M15\ICC'; % output directory
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
 cpos = load([OutPath '\' cpos_file]);
 cids = cpos.cpos.id';
 
-cluster = 20; % specify cluster position M10:441=20  M8 331=17
-session = 2; % m10 2; m8 5
+cluster = 1; % specify cluster position M10:441=20  M8 331=17
+session = 17; % m10 2; m8 5
 
 % load corresponsing files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
@@ -184,11 +192,11 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA')
     % order: type, freq, amplitude
 end
 
-% add spacing where needed
-idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
-for ii = idx'
-    aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + 0.25;
-end
+% % add spacing where needed
+% idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
+% for ii = idx'
+%     aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + 0.25;
+% end
 
 % define shared x-lim parameters
 preT  = -0.2;
@@ -268,12 +276,12 @@ plot(edges(1:end-1), ((N/sum(SA))/binsize), 'Color', "#9474A6",'LineWidth',2) % 
 xlabel('Time (s)')
 ylabel('Spike rate (spikes/s)')
 xline(xlinerange) % on/off set
-%legend('control', 'sound only', 'vibrotactile only', 'multimodal', 'Location', 'northeastoutside')
+legend('control', 'sound only', 'vibrotactile only', 'multimodal', 'Location', 'northeast')
 
 ax2 = gca;
 ax2.FontSize = 16;
 xlim(ax2,xrange);
-ylim(ax2, [0 130])
+ylim(ax2, [0 100])
 
 
 %% plotting SOM sessions

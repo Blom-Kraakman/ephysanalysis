@@ -1,8 +1,8 @@
-function [spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, sessions_TTLs, Fs, OutPath)
+function [spiketimes, cids] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, Fs, OutPath)
 % Kilosort: post-curation unit extraction
 % INPUT - paths to sorted data (cluster_info, table), spike times (vector)
 % and matched unit ids (vector), recording time stamps (vector)
-% OUTPUT - spike times of each single unit
+% OUTPUT - clusterinto: overview of all single units, spiketimes: spike times of each single unit 
 % based on postcuration in PostCuration_ABW.m
 
 %check if paths contain needed files
@@ -16,12 +16,12 @@ cluster_info = readtable([KSPath,'cluster_info.tsv'],'FileType','text'); % info 
 cids = cluster_info.cluster_id(strcmp(cluster_info.group,'good'))';
 [~, idx] = ismember(cids, cluster_info.cluster_id);
 % to do: improve name of table cpos
-cpos(:,1) = cluster_info.cluster_id(idx);
-cpos(:,2) = cluster_info.ch(idx);
-cpos(:,3) = cluster_info.depth(idx);
-cpos(:,4) = cluster_info.fr(idx);
-cpos(:,5) = cluster_info.n_spikes(idx);
-cpos = array2table(cpos, 'VariableNames', {'id' , 'channel', 'depth', 'firing_rate', 'nr_spikes'});
+clusterinto(:,1) = cluster_info.cluster_id(idx);
+clusterinto(:,2) = cluster_info.ch(idx);
+clusterinto(:,3) = cluster_info.depth(idx);
+clusterinto(:,4) = cluster_info.fr(idx);
+clusterinto(:,5) = cluster_info.n_spikes(idx);
+clusterinto = array2table(clusterinto, 'VariableNames', {'id' , 'channel', 'depth', 'firing_rate', 'nr_spikes'});
 
 fprintf('Found %i good units for analysis\n', length(cids));
 
@@ -35,9 +35,6 @@ Nr_sessions = (relevant_sessions(1):relevant_sessions(2))';
 for file = 1:length(Nr_sessions)
     stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
 end
-
-%keep only TTLs recorded during specific session
-[Srise, Sfall] = TTLsToUse(sessions_TTLs, TTLPath, rec_samples);
 
 % get all spiketimes from each good unit
 spiketimes = cell(length(cids), 1);
@@ -55,7 +52,7 @@ for cluster = 1:length(cids)
 end
 
 filename = sprintf('M%.2i_S%02d-%02d_InfoGoodUnits', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
-save(fullfile(OutPath, filename), "cpos") %cpos variables: unit id, channel, depth, avg firing rate, nr spikes;
+save(fullfile(OutPath, filename), "clusterinto") %clusterinto variables: unit id, channel, depth, avg firing rate, nr spikes;
 
 fprintf('unit extraction done\n');
 

@@ -1,4 +1,4 @@
-function [aligned_spikes] = alignspikes(BehaviorPath, OutPath, spiketimes, relevant_sessions, skip_sessions, Srise, Sfall, cids, Fs)
+function [aligned_spikes] = alignspikes(BehaviorPath, TTLPath, OutPath, spiketimes, relevant_sessions, skip_sessions, cids, sessions_TTLs, Fs)
 % align spikes
 % INPUT - spiketimes (cell array, 1 cell: timestamp of spike for 1 unit),
 % TTLs (vector), stimulus parameters (struct)
@@ -7,19 +7,29 @@ function [aligned_spikes] = alignspikes(BehaviorPath, OutPath, spiketimes, relev
 % based on AlignSpkS in PostCuration_ABW.m
 
 % check input
-if isempty(spiketimes) || isempty(cids) || isempty(Srise) || isempty(Sfall)
+if isempty(spiketimes) || isempty(cids)
     error('Input arguments missing. Extract spikes first.')
 elseif isempty(relevant_sessions)
     relevant_sessions = input('Enter first and last session number in this recording: ');
 end
 
-Srise = double(Srise);
-Sfall = double(Sfall);
-stim_counter = 0;
+%stim_counter = 0;
 aligned_spikes = {}; % nStim x Ncids
 
 % select correct behaviour file
 stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
+
+% load TTL data
+TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs
+TTL_states = readNPY([TTLPath 'states.npy']);
+TTL_words = readNPY([TTLPath 'full_words.npy']);
+
+% remove camera TTLs
+index = (abs(TTL_states) == 8);
+TTL_states(index) = [];
+TTL_samples(index) = [];
+TTL_words(index) = [];
+
 
 % allign spikes to stimuli (per session)
 for file = relevant_sessions(1):relevant_sessions(2)
@@ -35,6 +45,8 @@ for file = relevant_sessions(1):relevant_sessions(2)
     % skip earlier stim files not in rec session
     if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions) || ~ismember(str2double(stimuli_parameters.Par.Set), relevant_sessions(1):relevant_sessions(2))
         continue
+    else
+        disp(['Aligning session: ' num2str(file)])
     end
 
     % select correct analysis window and
@@ -57,9 +69,17 @@ for file = relevant_sessions(1):relevant_sessions(2)
     % select correct number of TTLs based on stimuli_parameters.par file
     SpkT = [];
     NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
+    disp(['Stimuli in session: ' num2str(NStim)])
 
-    disp(['session ' num2str(stimuli_parameters.Par.Set)])
-    disp(['Nr stim in session ' num2str(NStim)])
+    % get Srise & Sfall for session
+    tsessions_TTLs = sessions_TTLs(sessions_TTLs(:,1) == file, :);
+    [Srise, Sfall] = getTrialTTLs(tsessions_TTLs, TTL_states, TTL_samples, TTL_words);
+    Srise = double(Srise);
+    Sfall = double(Sfall);
+
+    if NStim ~= size(Srise)
+        warning('Check Srise')
+    end
 
     % loop through all clusters
     for cluster = 1:length(cids)
@@ -70,28 +90,18 @@ for file = relevant_sessions(1):relevant_sessions(2)
 
         % loop through all stimuli
         for stim = 1:NStim
-            tS = (Spks - Srise(stim + stim_counter))./ Fs; % s; spiketimes re. stimulus k onset
+            %tS = (Spks - Srise(stim + stim_counter))./ Fs; % s; spiketimes re. stimulus k onset
+            tS = (Spks - Srise(stim))./ Fs; % s; all spiketimes re. stimulus k onset
             sel = (tS > - PreT/1e3) & (tS < PostT/1e3); % select relevant spikes (including pre and post rec)
             tSpkT{(stim)} = tS(sel); % store spike times in cell array
         end
-
-        % if strcmp(stimuli_parameters.Par.Rec, 'SxA')
-        %     % add delay to "SO","OO"
-        %     idx_Sound = find(ismember(stimuli_parameters.Stm.MMType,["SA","OA"]));
-        %     idx_noSound = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
-        %     for ii = idx_noSound'
-        %         aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} - 0.25;
-        %     end
-        % end
 
         SpkT = [SpkT, tSpkT]; % stimuli x units per session
 
     end
 
-    stim_counter = stim_counter + NStim; % keep track of how many stimuliu have past
+    %stim_counter = stim_counter + NStim; % keep track of how many stimuliu have past
     aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
-
-    disp(['stim counter: ' num2str(stim_counter)])
 
     % save aligned spikes
    filename = sprintf('M%.2i_S%.2i_%s_AlignedSpikes', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
