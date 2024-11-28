@@ -17,12 +17,12 @@ clearvars
 %session = [4, 6]; % M9
 
 %  set directories
-animal = 14;
-session = 4;
+animal = 16;
+session = 6;
 
 BehaviorPath = ['D:\DATA\Behavioral Stimuli\M' num2str(animal, 2)]; % stimuli parameters
-%OutPath = ['D:\DATA\Processed\M' num2str(animal)]; % output directory
-OutPath = 'D:\DATA\Processed\M14\ICX';
+OutPath = ['D:\DATA\Processed\M' num2str(animal) '\ICX\rec2']; % output directory
+%OutPath = 'D:\DATA\Processed\M14\ICX';
 
 [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
 
@@ -36,7 +36,7 @@ MouseNum = repmat(animal,[length(cids'),1]);
 unitResponses = table(MouseNum, cids');
 unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster'};
 
-% define pre and post simulus onset
+% define analysis window
 if strcmp(stimuli_parameters.Par.Rec, "SxA")
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
@@ -62,17 +62,49 @@ else
 end
 
 % calculate firing rate (Hz) in time window
-[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay);
+%[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay);
+% format 
+PostT = repmat(PostT, size(aligned_spikes,1),1);
+PreT = repmat(PreT, size(aligned_spikes,1),1);
+
+% calculate baseline FR
+baselineRate = firingrate(aligned_spikes, PreT, zeros(size(aligned_spikes,1), 1));
+
+% calculate stimulus induced FR
+stimulusRate = firingrate(aligned_spikes, onsetDelay, (PostT+onsetDelay));
 
 % calculate stimulus induced change in firing rate
 dstimulusRate = stimulusRate - baselineRate;
 
-clear MouseNum SomAudLag
+clear MouseNum
 
 %% 2. calculate mean stimulus induced change in firing & first spike latency
 
 % set parameter space
-[uAmp, uFreq, conditions] = selectparameters(stimuli_parameters);
+%[uAmp, uFreq, conditions] = selectparameters(stimuli_parameters);
+
+% select correct amplitude and frequency parameters
+if strcmp(stimuli_parameters.Par.Rec, "AMn") % noise session
+    uAmp = unique(stimuli_parameters.Stm.Intensity); 
+    uFreq = unique(stimuli_parameters.Stm.Mf);
+elseif strcmp(stimuli_parameters.Par.Rec, "FRA")
+    uAmp = unique(stimuli_parameters.Stm.Intensity);
+    uFreq = unique(stimuli_parameters.Stm.Freq);
+elseif strcmp(stimuli_parameters.Par.Rec, "SxA") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, "Square") % SxA pressure session
+    uAmp = unique(stimuli_parameters.Stm.Amplitude);
+    uFreq = unique(stimuli_parameters.Stm.AudIntensity); % sound variable
+else % SxA vibrotac and SOM sessions
+    uAmp = unique(stimuli_parameters.Stm.Amplitude);
+    uFreq = unique(stimuli_parameters.Stm.SomFreq);
+end
+
+% select multiple stimuli types in one session
+if strcmp(stimuli_parameters.Par.Rec, "SxA") %dual modal session
+    conditions = {'OO', 'OA', 'SO', 'SA'};
+else % unimodal sessions
+    conditions = 1;
+end
+
 nAmp = length(uAmp);
 nFreq = length(uFreq);
 NClu = length(cids);
@@ -131,7 +163,7 @@ for condition = 1:length(conditions)
     end
 end
 
-clear freq amp condition cluster trial tempSpiketimes index
+clear freq amp condition cluster trial tempSpiketimes index spks
 
 %% 3. quantify reactive units
 % ! edit AMn indexing if needed (needed in earlier data sets)
@@ -150,12 +182,20 @@ for cond = 1:length(conditions)
     unitResponses = addvars(unitResponses, idx);
 end
 
-if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.SomAudSOA) > 0 
+% REDO!
+% add OA sound steady state
+if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.SomAudSOA) > 0
 
-    onsetDelay = zeros(length(stimuli_parameters.Stm.SomAudSOA),1) + SomAudLag; % add OA sound steady state
+    onsetDelay_OA = repmat(max(onsetDelay), length(onsetDelay), 1);
 
-    [baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay); % calculate firing rate (Hz) in time window
-    dstimulusRate = stimulusRate - baselineRate; % calculate stimulus induced change in firing rate
+    % calculate stimulus induced FR, time window now same as som
+    stimulusRate = firingrate(aligned_spikes, onsetDelay_OA, (PostT+onsetDelay_OA));
+
+    % calculate stimulus induced change in firing rate
+    %dstimulusRate = stimulusRate - baselineRate;
+
+    %[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay); % calculate firing rate (Hz) in time window
+    %dstimulusRate = stimulusRate - baselineRate; % calculate stimulus induced change in firing rate
 
     responsive = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, 'OA'); % units responsive
 
@@ -1480,10 +1520,10 @@ function [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs,
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']); %.name;
 if ~isempty(cpos_file)
     cpos = load([OutPath '\' cpos_file.name]);
-    cids = cpos.cpos.id';
+    cids = cpos.clusterinfo.id';
 else
     cids = [];
-    disp('no cluster details found')
+    warning('no cluster details found')
 end
 
 % load corresponsing  behaviour files
@@ -1503,7 +1543,7 @@ if ~isempty(aligned_spikes_files)
     else
         Srise = [];
         Sfall = [];
-        disp("Extract Srise before continuing")
+        warning("Extract Srise before continuing")
     end
 
     aligned_spikes = aligned_spikes.SpkT;
@@ -1512,7 +1552,7 @@ else
     Srise = [];
     Sfall = [];
     aligned_spikes = [];
-    disp('no aligned spikes file found')
+    warning('no aligned spikes file found')
 end
 
 % load sessions details
@@ -1522,7 +1562,7 @@ if ~isempty(TTLs_file)
     sessions_TTLs = sessions_TTLs.sessions_TTLs;
 else
     sessions_TTLs = [];
-    disp('no session TTL file found')
+    warning('no session TTL file found')
 end
 
 % load response properties if already exists

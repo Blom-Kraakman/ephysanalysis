@@ -11,6 +11,8 @@ end
 % initiate variables
 nClust = size(SpkT,2);
 nTrials = size(SpkT,1);
+%baseFR = nan(nTrials, nClust);
+%expFR = nan(nTrials, nClust);
 FR = nan(nTrials, nClust);
 nrSpikes = nan(nTrials, nClust);
 window = PostT - PreT;
@@ -23,11 +25,17 @@ for cluster = 1:nClust
         S = SpkT{trial, cluster};
         
         % count spikes in time windows
-        tnrSpikes = sum(S >= -PreT(trial) & S <= PostT(trial));
+        %baseSpikes = sum(S >= -PreT & S <= 0); % preT - 0
+        %expSpikes = sum(S > onsetDelay(trial) & S <= (onsetDelay(trial) + PostT)); % StimOn moment - postT
+
+        %nrSpikes = sum(S >= -PreT & S <= (onsetDelay(trial) + PostT));
+        tnrSpikes = sum(S >= PreT(trial) & S <= PostT(trial));
 
         % convert to firing rate (Hz)
+        %baseFR(trial, cluster) = baseSpikes/abs(PreT);
+        %expFR(trial, cluster) = expSpikes/abs(PostT);
         nrSpikes(trial, cluster) = tnrSpikes;
-        FR(trial, cluster) = tnrSpikes/abs(window(trial));
+        FR(trial, cluster) = tnrSpikes/window(trial);
 
     end
 end
