@@ -16,12 +16,12 @@ cluster_info = readtable([KSPath,'cluster_info.tsv'],'FileType','text'); % info 
 cids = cluster_info.cluster_id(strcmp(cluster_info.group,'good'))';
 [~, idx] = ismember(cids, cluster_info.cluster_id);
 % to do: improve name of table cpos
-clusterinto(:,1) = cluster_info.cluster_id(idx);
-clusterinto(:,2) = cluster_info.ch(idx);
-clusterinto(:,3) = cluster_info.depth(idx);
-clusterinto(:,4) = cluster_info.fr(idx);
-clusterinto(:,5) = cluster_info.n_spikes(idx);
-clusterinto = array2table(clusterinto, 'VariableNames', {'id' , 'channel', 'depth', 'firing_rate', 'nr_spikes'});
+clusterinfo(:,1) = cluster_info.cluster_id(idx);
+clusterinfo(:,2) = cluster_info.ch(idx);
+clusterinfo(:,3) = cluster_info.depth(idx);
+clusterinfo(:,4) = cluster_info.fr(idx);
+clusterinfo(:,5) = cluster_info.n_spikes(idx);
+clusterinfo = array2table(clusterinfo, 'VariableNames', {'id' , 'channel', 'depth', 'firing_rate', 'nr_spikes'});
 
 fprintf('Found %i good units for analysis\n', length(cids));
 
@@ -52,7 +52,7 @@ for cluster = 1:length(cids)
 end
 
 filename = sprintf('M%.2i_S%02d-%02d_InfoGoodUnits', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
-save(fullfile(OutPath, filename), "clusterinto") %clusterinto variables: unit id, channel, depth, avg firing rate, nr spikes;
+save(fullfile(OutPath, filename), "clusterinfo") %clusterinto variables: unit id, channel, depth, avg firing rate, nr spikes;
 
 fprintf('unit extraction done\n');
 

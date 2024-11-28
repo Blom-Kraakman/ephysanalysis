@@ -1,4 +1,5 @@
 function [Srise, Sfall] = TTLsToUse(sessions_TTLs, TTLPath, rec_samples)
+% OLD - REMOVE
 
 % load data
 TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs

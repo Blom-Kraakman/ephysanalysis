@@ -85,17 +85,17 @@ clear MouseNum
 
 % select correct amplitude and frequency parameters
 if strcmp(stimuli_parameters.Par.Rec, "AMn") % noise session
-    uAmp = unique(stimuli_parameters.Stm.Intensity); 
-    uFreq = unique(stimuli_parameters.Stm.Mf);
+    uparamA = unique(stimuli_parameters.Stm.Intensity); 
+    uparamB = unique(stimuli_parameters.Stm.Mf);
 elseif strcmp(stimuli_parameters.Par.Rec, "FRA")
-    uAmp = unique(stimuli_parameters.Stm.Intensity);
-    uFreq = unique(stimuli_parameters.Stm.Freq);
+    uparamA = unique(stimuli_parameters.Stm.Intensity);
+    uparamB = unique(stimuli_parameters.Stm.Freq);
 elseif strcmp(stimuli_parameters.Par.Rec, "SxA") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, "Square") % SxA pressure session
-    uAmp = unique(stimuli_parameters.Stm.Amplitude);
-    uFreq = unique(stimuli_parameters.Stm.AudIntensity); % sound variable
+    uparamA = unique(stimuli_parameters.Stm.Amplitude);
+    uparamB = unique(stimuli_parameters.Stm.AudIntensity); % sound variable
 else % SxA vibrotac and SOM sessions
-    uAmp = unique(stimuli_parameters.Stm.Amplitude);
-    uFreq = unique(stimuli_parameters.Stm.SomFreq);
+    uparamA = unique(stimuli_parameters.Stm.Amplitude);
+    uparamB =  unique(stimuli_parameters.Stm.SomFreq);
 end
 
 % select multiple stimuli types in one session
@@ -105,31 +105,33 @@ else % unimodal sessions
     conditions = 1;
 end
 
-nAmp = length(uAmp);
-nFreq = length(uFreq);
+%nAmp = length(uAmp);
+%nFreq = length(uFreq);
+nparamA = length(uparamA);
+nparamB = length(uparamB);
 NClu = length(cids);
 
 % initialize output variables
-firing_mean = nan(nFreq, nAmp, length(conditions), NClu);
-MedFSL = nan(nFreq, nAmp, length(conditions), NClu); %nan(nAmp, nFreq, NClu); % median first spike latency
-IqrFSL = nan(nFreq, nAmp, length(conditions), NClu); %nan(nAmp, nFreq, NClu); % IQR first spike latency
+firing_mean = nan(nparamB, nparamA, length(conditions), NClu);
+MedFSL = nan(nparamB, nparamA, length(conditions), NClu); %nan(nAmp, nFreq, NClu); % median first spike latency
+IqrFSL = nan(nparamB, nparamA, length(conditions), NClu); %nan(nAmp, nFreq, NClu); % IQR first spike latency
 
 % mean dfiring rate per stimulus combination for all units
 for condition = 1:length(conditions)
-    for freq = 1:nFreq
-        for amp = 1:nAmp
+    for freq = 1:nparamB
+        for amp = 1:nparamA
             if strcmp(stimuli_parameters.Par.Rec, "SxA")
                 if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
-                    index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.AudIntensity == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
+                    index = stimuli_parameters.Stm.Amplitude == uparamA(amp) & stimuli_parameters.Stm.AudIntensity == uparamB(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
                 elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
-                    index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
+                    index = stimuli_parameters.Stm.Amplitude == uparamA(amp) & stimuli_parameters.Stm.SomFreq == uparamB(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{condition});
                 end
             elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
-                index = stimuli_parameters.Stm.Intensity == uAmp(amp) & stimuli_parameters.Stm.Mf == uFreq(freq);
+                index = stimuli_parameters.Stm.Intensity == uparamA(amp) & stimuli_parameters.Stm.Mf == uparamB(freq);
             elseif strcmp(stimuli_parameters.Par.Rec, "FRA")
-                index = stimuli_parameters.Stm.Intensity == uAmp(amp) & stimuli_parameters.Stm.Freq == uFreq(freq);
+                index = stimuli_parameters.Stm.Intensity == uparamA(amp) & stimuli_parameters.Stm.Freq == uparamB(freq);
             elseif strcmp(stimuli_parameters.Par.Rec, "SOM")
-                index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq);
+                index = stimuli_parameters.Stm.Amplitude == uparamA(amp) & stimuli_parameters.Stm.SomFreq == uparamB(freq);
             end
 
             if sum(index) == 0; continue; end
@@ -182,7 +184,6 @@ for cond = 1:length(conditions)
     unitResponses = addvars(unitResponses, idx);
 end
 
-% REDO!
 % add OA sound steady state
 if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.SomAudSOA) > 0
 
@@ -190,12 +191,6 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.S
 
     % calculate stimulus induced FR, time window now same as som
     stimulusRate = firingrate(aligned_spikes, onsetDelay_OA, (PostT+onsetDelay_OA));
-
-    % calculate stimulus induced change in firing rate
-    %dstimulusRate = stimulusRate - baselineRate;
-
-    %[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay); % calculate firing rate (Hz) in time window
-    %dstimulusRate = stimulusRate - baselineRate; % calculate stimulus induced change in firing rate
 
     responsive = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, 'OA'); % units responsive
 
@@ -228,8 +223,8 @@ StimResponseFiring.session = stimuli_parameters.Par.Set;
 StimResponseFiring.type = stimuli_parameters.Par.Rec;
 StimResponseFiring.conditions = conditions;
 StimResponseFiring.cids = cids;
-StimResponseFiring.amplitudes = uAmp;
-StimResponseFiring.frequencies = uFreq;
+StimResponseFiring.amplitudes = uparamA;
+StimResponseFiring.frequencies = uparamB;
 StimResponseFiring.PreT = PreT;
 StimResponseFiring.PostT = PostT;
 StimResponseFiring.onsetDelay = onsetDelay;
@@ -279,8 +274,8 @@ save(fullfile(OutPath, filename), "unitResponses")
 
 % parameters
 deltaInt = [0,10,20,30,40];
-uAmp = unique(stimuli_parameters.Stm.Intensity);
-uFreq = unique(stimuli_parameters.Stm.Freq);
+uparamA = unique(stimuli_parameters.Stm.Intensity);
+uparamB = unique(stimuli_parameters.Stm.Freq);
 
 % initiate variables
 spontRate = StimResponseFiring.firing_mean(1, 1, 1, cluster);
@@ -301,32 +296,32 @@ for cluster = 1:NClu
     if isempty(col)
         minThr = NaN;
     else
-        minThr = uAmp(min(col)); % minimal threshold
+        minThr = uparamA(min(col)); % minimal threshold
     end
 
     %find CF
-    CF(cluster) = mean(uFreq(row(col == min(col))));
+    CF(cluster) = mean(uparamB(row(col == min(col))));
 
     % find BF
     [~,maxIdx] = max(StimResponseFiring.firing_mean(:, :, 1, cluster),[],'all','linear'); % find max firing rate change
     [maxRow, maxCol] = ind2sub(size(StimResponseFiring.firing_mean(:, :, 1, cluster)), maxIdx); % translate to position in matrix
     if StimResponseFiring.hvalue(maxRow, maxCol, cluster) % select from sig responses
-        BestFreq(cluster) = uFreq(maxRow);
-        BestFreqAmp(cluster) = uAmp(maxCol);
+        BestFreq(cluster) = uparamB(maxRow);
+        BestFreqAmp(cluster) = uparamA(maxCol);
     end
 
     % bandwith
     for dInt = 1:length(deltaInt)
-        idx = find(uAmp == minThr + deltaInt(dInt)); % min threshold + delta
+        idx = find(uparamA == minThr + deltaInt(dInt)); % min threshold + delta
 
         excBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) >= spontRate) & (StimResponseFiring.hvalue(idx,:,cluster)==1);
         inhBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) <= spontRate) & (StimResponseFiring.hvalue(idx,:,cluster)==1);
 
         if(sum(excBandIdx)>0) % excitatory band
             band_start = find(excBandIdx,1,'first');
-            excBand(dInt,1, cluster) = sqrt(uFreq(band_start) * uFreq(band_start - 1)) ;
+            excBand(dInt,1, cluster) = sqrt(uparamB(band_start) * uparamB(band_start - 1)) ;
             band_end = find(excBandIdx,1,'last');
-            excBand(dInt,2, cluster) = sqrt(uFreq(band_end) * uFreq(band_end + 1)) ;
+            excBand(dInt,2, cluster) = sqrt(uparamB(band_end) * uparamB(band_end + 1)) ;
 
             excBW_oct(dInt, cluster) = log2(excBand(dInt,2,cluster) / excBand(dInt,1,cluster));
             excQ(dInt, cluster) = CF(cluster) / (excBand(dInt,2, cluster) - excBand(dInt,1, cluster));
@@ -334,9 +329,9 @@ for cluster = 1:NClu
 
         if(sum(inhBandIdx)>0) % inhibitory band
             band_start = find(inhBandIdx,1,'first');
-            inhBand(dInt, 1, cluster) = sqrt(uFreq(band_start) * uFreq(band_start - 1)) ;
+            inhBand(dInt, 1, cluster) = sqrt(uparamB(band_start) * uparamB(band_start - 1)) ;
             band_end = find(inhBandIdx, 1,'last');
-            inhBand(dInt, 2, cluster) = sqrt(uFreq(band_end) * uFreq(band_end + 1)) ;
+            inhBand(dInt, 2, cluster) = sqrt(uparamB(band_end) * uparamB(band_end + 1)) ;
 
             inhBW_oct(dInt, cluster) = log2(inhBand(dInt, 2, cluster) / inhBand(dInt, 1, cluster));
             inhQ(dInt, cluster) = CF(cluster) / (inhBand(dInt, 2, cluster) - inhBand(dInt, 1, cluster));
@@ -616,10 +611,10 @@ NaNindex_preference = ~isnan(preference_index) & ~isinf(preference_index);
 
 % plot enhancement magnitude index in heatmap
 % variables
-uAmp = unique(StimResponseFiring.amplitudes)';
+uparamA = unique(StimResponseFiring.amplitudes)';
 %nAmp = length(uAmp);
 
-umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+umN = round((uparamA * 0.158)*1000); %0.158N/V callibation
 
 for cluster = 12 %1:length(cids)
     figure('Position',[100,100,1000,800]);
@@ -887,7 +882,7 @@ end
 
 
 %% plot bbn for multiple animals
-uAmp = [0 15 30 45 60];
+uparamA = [0 15 30 45 60];
 
 %data_all = squeeze(data_all);
 %data = mean(data_all,2);
@@ -901,11 +896,11 @@ data = mean(data_all,2);
 
 figure;
 hold on
-plot(uAmp, data_all, 'Color', "#CE87AA")
-plot(uAmp, data, 'Color', "#9E0E56", 'LineWidth', 3)
+plot(uparamA, data_all, 'Color', "#CE87AA")
+plot(uparamA, data, 'Color', "#9E0E56", 'LineWidth', 3)
 
 %errorbar(1:length(data), data, errors, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
-xticks(uAmp)
+xticks(uparamA)
 
 ylabel('\Delta Firing rate (Hz)')
 xlabel('Broadband noise intensity (dB SPL)')
@@ -917,10 +912,10 @@ set(gca,'fontsize',18)
 StimResponseFiring = StimResponseFiring_all;
 
 % variables
-uAmp = unique(StimResponseFiring.amplitudes)';
+uparamA = unique(StimResponseFiring.amplitudes)';
 %nAmp = length(uAmp);
 
-umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+umN = round((uparamA * 0.158)*1000); %0.158N/V callibation
 nmN = length(umN);
 
 % format data
@@ -991,14 +986,14 @@ plot(x, mean(dataToPlot'), 'k', 'LineWidth', 1.5)
 % work with 4D data format?
 
 %uAmp = unique(stimuli_parameters.Stm.Amplitude);
-uAmp = [0;0.1;0.3];
+uparamA = [0;0.1;0.3];
 %nAmp = length(uAmp);
 
-umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+umN = round((uparamA * 0.158)*1000); %0.158N/V callibation
 %nmN = length(umN);
 
 %uFreq = unique(stimuli_parameters.Stm.SomFreq);
-uFreq = [0; 10;20;50;100;200;300;400];
+uparamB = [0; 10;20;50;100;200;300;400];
 %nFreq = length(uFreq);
 
 % select correct condition from SxA session
@@ -1028,18 +1023,18 @@ hold on
 %errorbar(uFreq, FRvibrotac_mean, FRvibrotac_se, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 for cluster = 1:size(data,4)
     %plot(uFreq , data(:, 1, cluster), 'Color', [0.5, 0.5, 0.5])
-    plot(uFreq , data(:, 2, cluster), 'Color', "#8BC9E8")
+    plot(uparamB , data(:, 2, cluster), 'Color', "#8BC9E8")
 
 end
 
 for cluster_c = 1:size(data_c,4)
-    plot(uFreq , data_c(:, 2, cluster_c), 'Color', [0.5, 0.5, 0.5])
+    plot(uparamB , data_c(:, 2, cluster_c), 'Color', [0.5, 0.5, 0.5])
 end
 
-plot(uFreq, FRvibrotac_mean(:, 2), 'LineWidth', 3, 'Color', "#3FA2D4")
+plot(uparamB, FRvibrotac_mean(:, 2), 'LineWidth', 3, 'Color', "#3FA2D4")
 %errorbar(uFreq, FRvibrotac_mean, FRvibrotac_std, 'b', 'linestyle', 'none', 'LineWidth', 0.5);
 
-plot(uFreq, FRvibrotac_mean_c(:, 2), 'k', 'LineWidth', 3)
+plot(uparamB, FRvibrotac_mean_c(:, 2), 'k', 'LineWidth', 3)
 %errorbar(uFreq, FRvibrotac_mean_c, FRvibrotac_std_c, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 
 % format figure
@@ -1098,30 +1093,30 @@ end
 OutPath = 'D:\DATA\Processed\temp';
 
 conditions = StimResponseFiring.conditions;
-uAmp = StimResponseFiring.amplitudes;
-uFreq = StimResponseFiring.frequencies;
-nAmp = length(uAmp);
-nFreq = length(uFreq);
+uparamA = StimResponseFiring.amplitudes;
+uparamB = StimResponseFiring.frequencies;
+nparamA = length(uparamA);
+nparamB = length(uparamB);
 
 for cluster = 12 %1:length(StimResponseFiring.cids)
 for con = 1:length(conditions)
-    for amp = 1:nAmp
+    for amp = 1:nparamA
 
         figure;
         hold on
         pos = 1;
 
-        for freq = 1:nFreq
+        for freq = 1:nparamB
 
             % select unique stimulus combination
             if strcmp(stimuli_parameters.Par.Rec, "SxA")
-                index = stimuli_parameters.Stm.Amplitude == uAmp(amp) & stimuli_parameters.Stm.SomFreq == uFreq(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{con});
-                figTitle = [num2str(uFreq(freq)) 'Hz ' num2str(uAmp(amp)) 'V'];
-                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', condition: ' conditions{con} '(' num2str(uAmp(amp)) 'V)'];
+                index = stimuli_parameters.Stm.Amplitude == uparamA(amp) & stimuli_parameters.Stm.SomFreq == uparamB(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{con});
+                figTitle = [num2str(uparamB(freq)) 'Hz ' num2str(uparamA(amp)) 'V'];
+                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', condition: ' conditions{con} '(' num2str(uparamA(amp)) 'V)'];
             elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
-                index = stimuli_parameters.Stm.Intensity == uAmp(amp) & stimuli_parameters.Stm.Mf == uFreq(freq);
-                figTitle = [num2str(uFreq(freq)) 'Hz '];
-                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', ' num2str(uAmp(amp)) 'dbSPL'];
+                index = stimuli_parameters.Stm.Intensity == uparamA(amp) & stimuli_parameters.Stm.Mf == uparamB(freq);
+                figTitle = [num2str(uparamB(freq)) 'Hz '];
+                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', ' num2str(uparamA(amp)) 'dbSPL'];
             end
 
             idx_rows = find(index);
@@ -1139,7 +1134,7 @@ for con = 1:length(conditions)
             end
 
             bar(binCenters, N, 1, 'FaceColor', 'k')
-            xline(log(1/uFreq(freq)),'r--');
+            xline(log(1/uparamB(freq)),'r--');
             %xline(log(1/uFreq(freq)/2),'b--');
             %xline(log(0.75*1/uFreq(freq)),'k--');
             %xline(log(0.25*1/uFreq(freq)),'g--');
@@ -1178,14 +1173,14 @@ end
 % work with 4D data format?
 
 %uAmp = unique(stimuli_parameters.Stm.Amplitude);
-uAmp = [0;0.1;0.3];
-nAmp = length(uAmp);
-umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+uparamA = [0;0.1;0.3];
+nparamA = length(uparamA);
+umN = round((uparamA * 0.158)*1000); %0.158N/V callibation
 nmN = length(umN);
 
 %uFreq = unique(stimuli_parameters.Stm.SomFreq);
-uFreq = [10;20;50;100;200;300;400];
-nFreq = length(uFreq);
+uparamB = [10;20;50;100;200;300;400];
+nparamB = length(uparamB);
 
 % select correct condition from SxA session
 condition = 3; % ["OO", "OA", "SO", "SA"]
@@ -1200,8 +1195,8 @@ data = StimResponseFiring.firing_mean(2:8, 2:3, condition, unit_idx);
 figure;
 hold on
 
-plot(uFreq , data(:, 1), 'LineWidth', 3, 'Color', "#8BC9E8")
-plot(uFreq , data(:, 2), 'LineWidth', 3, 'Color', "#3FA2D4")
+plot(uparamB , data(:, 1), 'LineWidth', 3, 'Color', "#8BC9E8")
+plot(uparamB , data(:, 2), 'LineWidth', 3, 'Color', "#3FA2D4")
 
 ax = gca;
 %xlim([10 400]);
@@ -1215,9 +1210,9 @@ ax.XScale = 'log';
 %% pressure tuning curve single unit 
 
 % variables
-uAmp = unique(StimResponseFiring.amplitudes)';
-nAmp = length(uAmp);
-umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+uparamA = unique(StimResponseFiring.amplitudes)';
+nparamA = length(uparamA);
+umN = round((uparamA * 0.158)*1000); %0.158N/V callibation
 nmN = length(umN);
 
 %% format data
@@ -1261,14 +1256,14 @@ xlabel('Stimulus strength (mN)')
 %xticklabels(uAmp)
 
 %% noise intensity level tuning curve
-uAmp = unique(Stm.Intensity);
-nAmp = length(uAmp);
+uparamA = unique(Stm.Intensity);
+nparamA = length(uparamA);
 cids = cpos.id;
 nClusters = length(cids);
 
 % pressure tuning curve mean of only responsive units
-for amp = 1:nAmp
-    index = Stm.Intensity == uAmp(amp);
+for amp = 1:nparamA
+    index = Stm.Intensity == uparamA(amp);
     dfiring_mean(amp, :) = mean(stimulusRate(index, resp_cids));
     dfiring_se(amp,:) = std(stimulusRate(index, resp_cids)) / sqrt(length(resp_cids));
 end
@@ -1279,8 +1274,8 @@ data = mean(dfiring_mean, 2); %mean(firing_mean, 2);
 errors = mean(dfiring_se, 2); %mean(firing_sd, 2);
 plot(data, 'LineWidth', 1.25)
 errorbar(1:length(data), data, errors, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
-xticks(1:nAmp)
-xticklabels(uAmp)
+xticks(1:nparamA)
+xticklabels(uparamA)
 
 ylabel('df Firing rate (spikes/s)')
 xlabel('Broadband noise intensity (dB SPL)')
@@ -1291,8 +1286,8 @@ figure;
 hold on
 plot(data, 'LineWidth', 1.25)
 errorbar(1:length(data), data, errors, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
-xticks(1:length(uAmp))
-xticklabels(uAmp)
+xticks(1:length(uparamA))
+xticklabels(uparamA)
 
 ylabel('df Firing rate (spikes/s)')
 xlabel('Broadband noise intensity (dB SPL)')
@@ -1315,7 +1310,7 @@ x_axis = 1:length(cids(index'));
 sound = squeeze(MedFSL(1,1,2,index))*1000;
 scatter(x_axis, sound, 'r');
 
-vibrotac = squeeze(MedFSL(2:nFreq, 2:nAmp, 3, index))*1000;
+vibrotac = squeeze(MedFSL(2:nparamB, 2:nparamA, 3, index))*1000;
 vibrotac_med = squeeze(median(vibrotac, 1));
 scatter(x_axis, squeeze(vibrotac_med(1, :)), 'c')
 scatter(x_axis, squeeze(vibrotac_med(2, :)), 'b')
