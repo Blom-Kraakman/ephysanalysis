@@ -1,3 +1,87 @@
+%% define start/end cycle + cycle window
+% does not work well
+
+nCycles = (stimuli_parameters.Stm.SomFreq .* (str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000));
+cycle_window = ((str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000) ./ nCycles); %samples
+trialDur = ((str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI))/1000) * Fs; %in samples
+
+%cycle_aligned = nan(nClusters, nTrials, max(nCycles)); 
+cycle_aligned = [];
+% get samples corresponding to each cycle window
+% for each cell
+for cluster = 1:nClusters
+    % for all trials
+    for stim = 1:nTrials
+        % time window each cycle
+        cycle_on = 0;
+        cycle_off = cycle_window(stim);
+        for cycle = 1:nCycles(stim)
+            % get spike times in this time window from aligned_spikes
+            taligned_spikes = aligned_spikes.SpkT{stim, cluster};
+            idx = (taligned_spikes >= cycle_on) & (taligned_spikes <= cycle_off);
+
+            if max(idx) == 0; continue; end
+
+            tcycle_aligned{(cycle)} = taligned_spikes(idx); % store spike times in cell array
+
+            %cycle_aligned(cluster, stim, cycle) = taligned_spikes(idx);
+
+            % update window
+            cycle_on = cycle_on + cycle_window(stim);
+            cycle_off = cycle_off + cycle_window(stim);
+        end
+
+        cycle_aligned = [cycle_aligned, tcycle_aligned];
+    end
+
+end
+
+
+% match matrix with firing rate
+
+%% OLD - remove double spikes from originating in Phy - No longer needed OLD
+% make into function
+% get all spiketimes from each good unit
+spiketimes2 = cell(length(cids), 1);
+
+for cluster = 1:length(cids)
+    Tspkt = spiketimes{cluster};
+    ISI = zeros(length(Tspkt),1);
+
+    %find minimal time between two spikes
+    for spike = 1:(length(Tspkt)-1)
+        ISI(spike) = min(abs(Tspkt(spike) - Tspkt(spike+1)));
+    end
+
+    % select spikes following next one with more than 0.2ms (6 samples)
+    index = ISI>=6;
+    spiketimes2{cluster} = Tspkt(index);
+    disp(size(spiketimes{cluster}, 1) - size(spiketimes2{cluster}, 1))
+end
+
+%spiketimes = spiketimes2;
+
+%% plot aligned spikes raster of each condition
+all_freqs = unique(stimuli_parameters.Stm.SomFreq);
+
+for cluster = 1:nClusters
+    %for freq = 1:length(all_freqs)
+freq = 7;
+        figure;
+
+        index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.1);
+        SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
+        Var = SOM_Hz;
+        yaxistext = [num2str(all_freqs(freq)) ' Hz'];
+
+        % make rasterplot
+        [f, YTick, ~, ~, ~, YTickLim] = plotraster(gca, aligned_spikes(index, cluster), Var, [0, 0, 0], [5 5], 1);
+        yrange = [min(YTick{end}) - 50, max(YTick{end}) + 50];
+
+    %end
+end
+
+
 %% CF / threshold / band with 10dB
 
 function FRACfThr(clusterIdx,FRA)
@@ -434,7 +518,179 @@ for i = 1:length(sessions_TTLs)
 
 end
 
+%% plot data: raster & PSTH
+% select correct behaviour file
+% check for:
+stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
+%relevant_sessions = [17 21];
 
+stim_counter = 1;
+
+% allign spikes to stimuli (per session)
+for file = relevant_sessions(1):relevant_sessions(2)
+
+    % load correct trial and initiate stimuli counter
+    stimuli_parameters = load([stim_files(file).folder '\' stim_files(file).name]);
+    NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
+    last_stim = stim_counter + NStim - 1;
+
+    % plot FRA data
+    if strcmp(stimuli_parameters.Par.Rec, 'FRA')
+        for cluster = 1:length(cids)
+
+            fig = figure;
+            ax = gca;
+
+            % make rasterplot
+            %Var =  [stimuli_parameters.Stm.Intensity,stimuli_parameters.Stm.Freq];
+            Var =  [stimuli_parameters.Stm.Freq,stimuli_parameters.Stm.Intensity];
+            [f, YTick, YTickLab] = plotraster(ax, aligned_spikes(stim_counter:last_stim, cluster), Var, [0,0,0], [], 1);
+            UFreq = unique(stimuli_parameters.Stm.Freq);
+            nFreq = length(UFreq);
+            yticks(YTick{1}([1,2:4:nFreq])); yticklabels(UFreq([1,2:4:nFreq]));
+            yrange = [min(YTick{end}) - 100, max(YTick{end}) + 100];
+            ylim(f,yrange)
+            xlim(f,[-.1,.19]);
+            set(gcf,'position',[500,150,600,400])
+
+            % format and save
+            title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set])
+            xlabel('Time (s)')
+            ylabel('Stimulus frequency (kHz)')
+
+            % figname = sprintf('M1_S06_cluster%i', cluster);
+            % saveas(fig, fullfile(OutPath, figname));
+
+            disp(stimuli_parameters.Par.Rec)
+            disp(NStim)
+            disp(stim_counter)
+            disp(last_stim)
+
+            % display untill button press
+            waitforbuttonpress
+            close
+
+        end
+
+    % plot SOM data
+    elseif strcmp(stimuli_parameters.Par.Rec, 'SOM')
+
+        xrange = [-.2,+.55];
+
+        for cluster = 1:length(cids)
+            % PSTH related variables
+            SOM_idx = (stimuli_parameters.Stm.Amplitude == 10); % select stimulus trials
+            ctrl_idx = (stimuli_parameters.Stm.Amplitude == 0); % select control trials
+            preT  = -0.2;
+            postT = 0.55;
+            binsize = 0.01;
+
+            fig = subplot(2,1,1); % rasterplot
+            % set(gcf,'position',[500,150,900,700])
+            set(gcf,'position',[500,150,600,400])
+
+            % make rasterplot
+            Var = stimuli_parameters.Stm.Amplitude;
+            [f, YTick, YTickLab] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
+            yticks(YTick{1});
+            yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
+            ylim(f,yrange);
+            yticklabels(unique(stimuli_parameters.Stm.Amplitude));
+            xlim(f,xrange);
+
+            % format axis
+            xlabel('Time (s)')
+            ylabel('Stimulus off / on')
+            fig.FontSize = 11;
+
+            sgtitle(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+            % % save plot
+            % %figname = sprintf('PSTH_S06_cluster_%i', cluster);
+            % %saveas(gcf, fullfile(OutPath, figname));
+
+            % display untill button press
+            waitforbuttonpress
+            close
+
+        end
+
+    end
+
+    stim_counter = stim_counter + NStim; % keep track of how many stimuliu have past
+
+end
+
+
+ %% plot SOM
+% raster & PSTH
+% to do: select correct part of aligned_spikes to plot
+
+    xrange = [-.2,+.55];
+
+    for cluster = 1:length(cids)
+        % PSTH related variables
+        SOM_idx = (stimuli_parameters.Stm.Amplitude == 10); % select stimulus trials
+        ctrl_idx = (stimuli_parameters.Stm.Amplitude == 0); % select control trials
+        preT  = -0.2;
+        postT = 0.55;
+        binsize = 0.01;
+
+        fig = subplot(2,1,1); % rasterplot
+        % set(gcf,'position',[500,150,900,700])
+        set(gcf,'position',[500,150,600,400])
+
+        % make rasterplot
+        Var = stimuli_parameters.Stm.Amplitude;
+        [f, YTick, YTickLab] = plotraster(fig, aligned_spikes(61:140, cluster), Var, [0, 0, 0], [], 1);
+        yticks(YTick{1});
+        yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
+        ylim(f,yrange);
+        yticklabels(unique(stimuli_parameters.Stm.Amplitude));
+        xlim(f,xrange);
+
+        % format axis
+        xlabel('Time (s)')
+        ylabel('Stimulus off / on')
+        fig.FontSize = 11;
+        title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+        % make histogram / PSTH
+        % TO DO: histcounts select correct trials
+        fig = subplot(2,1,2);
+
+        % index into correct range
+        [N, edges] = histcounts(vertcat(aligned_spikes{61:140, cluster}), preT:binsize:postT);
+        histogram('BinEdges', edges, 'BinCounts', N, 'FaceColor', '#D95319') % spike/s
+
+        %[N, edges] = histcounts(vertcat(aligned_spikes{SOM_idx, cluster}), preT:binsize:postT);
+        % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
+        % hold on
+        % [N,edges] = histcounts(vertcat(aligned_spikes{ctrl_idx, cluster}), preT:binsize:postT);
+        %histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 0))/binsize), 'FaceColor', '#0072BD')
+
+        %format axis
+        legend('stimulus', 'control')
+        xlabel('Time (s)')
+        ylabel('Spike rate (Hz)')
+        fig.FontSize = 11;
+        xlim(fig,xrange);
+
+        sgtitle(['Cluster ' num2str(cids(cluster))])
+        %title([num2str(cids(cluster)),' (', num2str(length(spiketimes{cluster})),' total spikes)'])
+        % % save plot
+        % %figname = sprintf('PSTH_S06_cluster_%i', cluster);
+        % %saveas(gcf, fullfile(OutPath, figname));
+
+        disp(stimuli_parameters.Par.Rec)
+        disp(NStim)
+        disp(stim_counter)
+        disp(last_stim)
+
+        % display untill button press
+        waitforbuttonpress
+        close
+
+    end
 
 %% check for TTL flickers & remove them
 if length(unique(tTTL_samples)) ~= length(tTTL_samples)
@@ -577,6 +833,49 @@ title(['Stimulus induced responses - session ' stimuli_parameters.Par.Set ': ' s
 figname = sprintf('M%.2i_S%.2i_%s_boxplot_all units', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
 saveas(gcf, fullfile(OutPath, [figname '.jpg']));
 saveas(gcf, fullfile(OutPath, figname));
+
+%% plot vibrotac stimulus signal
+% include also feedback signal
+% see plotting in GUI
+% not correct yet, Ramp and offset
+
+Waveform = 'BiSine';
+Fs = 30000;
+StimDur = 500;
+Amplitude = 1;
+SomFreq = 100;
+Ramp = 10;
+ISI = 1000;
+Offset = 0.1;
+
+StimDurSamp = ceil(StimDur * 0.001 * Fs);
+som_waveform = nan(1,StimDurSamp);
+tt = 0:1/Fs:(StimDur* 0.001);
+switch Waveform
+    case {'Square'}
+        som_waveform = Amplitude .* ones(1,StimDurSamp);
+        som_waveform(1) = 0; som_waveform(end) = 0; % zero at beginning or end
+    case {'UniSine'}
+        som_waveform =  0.5 * Amplitude .* ( 1-cos(2*pi*SomFreq .* tt) );
+    case {'BiSine'}
+        som_waveform =  Amplitude .* ( sin(2*pi*SomFreq .* tt) );
+end
+
+% apply envelope (On-/Off-ramps)
+if Ramp > 0
+    Nenv			=	round( Ramp * 10^-3 * Fs );
+    som_waveform    =	envelope(som_waveform',Nenv)';
+end
+
+% padding pre-post stimulus time with zeroes
+PrePostDur = 0.2 * ISI * 0.001;
+PrePostSamp = round(PrePostDur * Fs);
+tt = [-flip(1:PrePostSamp)./Fs, tt, tt(end) + (1:PrePostSamp)./Fs];
+som_waveform = [zeros(1,PrePostSamp), som_waveform, zeros(1,PrePostSamp)];
+
+% plotting the waveform
+plot(tt(1:length(som_waveform)),som_waveform+Offset);
+xlim([min(tt),max(tt)]);
 
 %% -------------------- Local functions -------------------------- %%
 
@@ -738,70 +1037,3 @@ fprintf('unit extraction done\n');
 end
 
 
-
-%% plot SOM piezo data
-% if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'Piezo')
-%     %if strcmp(stimuli_parameters.Par.SomatosensoryActuator, 'Piezo') || strcmp(stimuli_parameters.Par.Rec, 'SOM')
-% 
-%     xrange = [-.2, +.7];
-% 
-%     for cluster = 1:length(cids)
-% 
-%         figure;
-% 
-%         fig = subplot(2,1,1); % rasterplot
-%         set(gcf,'position',[500,150,800,600])
-%         %set(gcf,'position',[500,150,600,400])
-% 
-%         % make rasterplot
-%         Var = [stimuli_parameters.Stm.Amplitude, stimuli_parameters.Stm.SomFreq];
-%         %[f, YTick, YTickLab] = plotraster(fig, aligned_spikes(1:40, 1), Var, [0, 0, 0], [], 1);
-% 
-%         [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
-%         yticks(YTick{1});
-%         yrange = [min(YTick{2}) - 5, max(YTick{2}) + 5];
-%         ylim(f,yrange);
-%         yticklabels(unique(stimuli_parameters.Stm.Amplitude));
-%         xlim(f,xrange);
-% 
-%         % format axis
-%         xlabel('Time (s)')
-%         ylabel('Stimulus off / on')
-%         fig.FontSize = 11;
-%         title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
-% 
-%         % make histogram / PSTH
-%         SOM_idx = (stimuli_parameters.Stm.Amplitude == 10); % select stimulus trials
-%         ctrl_idx = (stimuli_parameters.Stm.Amplitude == 0); % select control trials
-%         preT  = -0.2;
-%         postT = 0.7;
-%         binsize = 0.5;
-% 
-%         fig = subplot(2,1,2);
-% 
-%         [N, edges] = histcounts(vertcat(aligned_spikes{SOM_idx, cluster}), preT:binsize:postT);
-%         % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 1))/binsize), 'FaceColor', '#D95319') % spike/s
-%         plot(edges(1:end-1),((N/sum(SOM_idx == 1))/binsize),'Color', '#D95319','LineWidth',2.5)
-%         hold on
-%         [N,edges] = histcounts(vertcat(aligned_spikes{ctrl_idx, cluster}), preT:binsize:postT);
-%         % histogram('BinEdges', edges, 'BinCounts', ((N/sum(SOM_idx == 0))/binsize), 'FaceColor', '#0072BD')
-%         plot(edges(1:end-1),((N/sum(SOM_idx == 0))/binsize),'Color', '#0072BD','LineWidth',2.5)
-% 
-%         %format axis
-%         legend('stimulus', 'control')
-%         xlabel('Time (s)')
-%         ylabel('Spike rate (Hz)')
-%         fig.FontSize = 11;
-%         xlim(fig,xrange);
-% 
-%         sgtitle(['Cluster ' num2str(cids(cluster))])
-% 
-%         % save plot
-%         figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
-%         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-%         saveas(fig, fullfile(OutPath, figname));
-% 
-%         hold off
-% 
-%     end
-% end
