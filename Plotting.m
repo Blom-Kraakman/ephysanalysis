@@ -1,15 +1,5 @@
-%% ---------------------- Channel map plotting  ---------------------- %%
-% matches unit position to channel map
-
-% load unit info
-cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
-cpos = load([OutPath '\' cpos_file]);
-plot_in_channel_map(KSPath, cpos.clusterinfo);
-
-%% ---------------------- PostCuration Plotting ---------------------- %%
-% plot aligned spikes from PostCuration_BK output files
-
-% load data
+%% ---------------------- Load data  ---------------------- %%
+% aligned spike data
 
 close all
 
@@ -30,6 +20,17 @@ stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 aligned_spikes = aligned_spikes.SpkT;
+
+%% ---------------------- Channel map plotting  ---------------------- %%
+% matches unit position to channel map
+
+% load unit info
+cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+cpos = load([OutPath '\' cpos_file]);
+plot_in_channel_map(KSPath, cpos.clusterinfo);
+
+%% ---------------------- PostCuration Plotting ---------------------- %%
+% plot aligned spikes from PostCuration_BK output files
 
 
 %% plotting single sessions - in use

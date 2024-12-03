@@ -81,205 +81,6 @@ freq = 7;
     %end
 end
 
-
-%% CF / threshold / band with 10dB
-
-function FRACfThr(clusterIdx,FRA)
-
-deltaInt = [0,10,20,30,40];
-Color =[0,      0,      1; ...
-    0.25,   0.25,   1;...
-    0.5,    0.5,    1; ...
-    0.5,    0.5,    0.5;...
-    0,      0,      0] ;%;0.25,0.25,.75;0,0,0];
-
-    for cluster = clusterIdx
-        % set alpha value
-        alpha = 1e-3;
-
-        % assign significance (based on bootstrapped p-value)
-        sig = double(FRA.FACApval(:,:,Set,cluster) <= alpha);
-        sig(isnan(FRA.FACApval(:,:,Set,cluster))) = nan;
-
-        % find minimum threshold and CF
-        [row,col] = find(sig==1);
-        if isempty(row)
-            minThr = NaN;
-        else
-            minThr = FRA.UInt(min(row));
-        end
-        CF = mean(FRA.UFreq(col(row == min(row))));
-
-        % find BF
-        freqMat = repmat(FRA.UFreq',FRA.NInt,1);
-        IntMat = repmat(FRA.UInt,1,FRA.NFreq);
-        [~,I] = max(FRA.FRASR(:,:,Set,cluster),[],'all','linear');
-        if (sig(I) == 1) % condition on significant response
-            BF = freqMat(I); BFInt = IntMat(I);
-        else
-            BF = NaN; BFInt = NaN;
-        end
-
-
-        % Bandwidth
-        spontRate = FRA.FRASR(1,1,Set,cluster);
-        excBand = NaN(length(deltaInt),2);
-        inhBand = NaN(length(deltaInt),2);
-        excBW_oct = NaN(length(deltaInt),1);
-        inhBW_oct = NaN(length(deltaInt),1);
-        excQ = NaN(length(deltaInt),1);
-        inhQ = NaN(length(deltaInt),1);
-        octStep = 4;
-        for k = 1:length(deltaInt)
-            i = find(FRA.UInt == minThr+deltaInt(k));
-            excBandIdx = (FRA.FRASR(i,:,Set,cluster) >= spontRate) & ...
-                (sig(i,:) == 1 );
-            inhBandIdx = (FRA.FRASR(i,:,Set,cluster) <= spontRate) & ...
-                (sig(i,:) == 1 );
-
-            if(sum(excBandIdx)>0)
-                %             excBW(k) = (find(excBandIdx,1,'last') - find(excBandIdx,1,'first') +1) / octStep;
-                xx = find(excBandIdx,1,'first');
-                excBand(k,1) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx-1)) ;
-                xx = find(excBandIdx,1,'last');
-                excBand(k,2) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx+1)) ;
-
-                excBW_oct(k) = log2(excBand(k,2) / excBand(k,1));
-                excQ(k) = CF / (excBand(k,2) - excBand(k,1) );
-            end
-
-            if(sum(inhBandIdx)>0)
-                %             inhBW(k) = (find(inhBandIdx,1,'last') - find(inhBandIdx,1,'first') +1) / octStep;
-                xx = find(inhBandIdx,1,'first');
-                inhBand(k,1) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx-1)) ;
-                xx = find(inhBandIdx,1,'last');
-                inhBand(k,2) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx+1)) ;
-
-                inhBW_oct(k) = log2(inhBand(k,2) / inhBand(k,1));
-                inhQ(k) = CF / (inhBand(k,2) - inhBand(k,1) );
-            end
-        end
-        factor = FRA.FRASR(1,1,Set,cluster)/FRA.FRAScnt(1,1,Set,cluster);
-        spontRateSD = factor*FRA.FRAScntSD(1,1,Set,cluster);
-
-
-        % evaluate output
-        fig = figure(setNum*100+cluster);clf;
-        set(fig,'Position',[100,100,1600,800]);
-
-        % spike rate and p-values
-        h = subplot(2,3,1);
-
-        CData = FRA.FRASR(:,:,Set,cluster);
-        imagesc(h,CData,'AlphaData',~isnan(CData),[0,Inf]);
-        % contour of FACA p-value
-        Cont = -log10(FRA.FACApval(:,:,Set,cluster));
-        hold(h,'on');contour(h,Cont,[2,3],'w','ShowText','on');hold(h,'off');
-        % contour of max neighbour correlation
-        Cont = (FRA.MaxNeighCorr(:,:,Set,cluster));
-        hold(h,'on');contour(h,Cont,[0.1,0.2,0.5],'r','ShowText','on');hold(h,'off');
-        % format and label graph
-        set(h,'Xscale','lin','YDir','normal',...
-            'FontName','Arial','FontWeight','bold','FontSize',12, ...
-            'XTick',2:4:FRA.NFreq,'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45,...
-            'YTick',2:2:FRA.NInt,'YTicklabel',FRA.UInt(2:2:FRA.NInt));
-        ylabel(h,'Intensity (dB SPL)');
-        xlabel(h,'frequency (kHz)')
-        title(['BF = ',num2str(BF,'%.1f'),' kHz  ',' Int = ',num2str(BFInt),' dB'])
-        cb = colorbar(h,'eastoutside');
-        cb.Label.String = 'spike rate (spk/s)';
-
-        % thresholded significant response
-        h = subplot(2,3,2);
-
-        imagesc(h, sig,'AlphaData',~isnan(sig),[0,1]);
-        set(h,'Xscale','lin','YDir','normal',...
-            'FontName','Arial','FontWeight','bold','FontSize',12, ...
-            'XTick',2:4:FRA.NFreq,'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45,...
-            'YTick',2:2:FRA.NInt,'YTicklabel',FRA.UInt(2:2:FRA.NInt));
-        title(['CF = ',num2str(CF,'%.1f'),' kHz  ',' minThr = ',num2str(minThr),' dB'])
-        ylabel(h,'Intensity (dB SPL)');
-        xlabel(h,'frequency (kHz)')
-        cb = colorbar(h,'eastoutside','Ticks',[0,1],'TickLabels',{'not sig','sig'});
-        cb.Label.String = 'significance';
-
-        % MED FSL
-        h = subplot(2,3,3);
-
-        imagesc(h, FRA.MedFSL(:,:,Set,cluster)*1e3,'AlphaData',~isnan(sig),[5,40]);
-        set(h,'Xscale','lin','YDir','normal',...
-            'FontName','Arial','FontWeight','bold','FontSize',12, ...
-            'XTick',2:4:FRA.NFreq,'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45,...
-            'YTick',2:2:FRA.NInt,'YTicklabel',FRA.UInt(2:2:FRA.NInt));
-        BF_FSL = FRA.MedFSL(FRA.UInt==BFInt,FRA.UFreq==BF,Set,cluster)*1e3;
-        [~,CFIdx] = min(abs(FRA.UFreq-CF));
-        CF30_FSL = FRA.MedFSL(FRA.UInt==minThr+30,CFIdx,Set,cluster)*1e3;
-        minFSL = min(FRA.MedFSL(:,:,Set,cluster)*1e3,[],'all','omitnan');
-        title(['@CF (Thr+30dB): ',num2str(CF30_FSL,'%.1f'),' ms  ',newline,' @BF: ',num2str(BF_FSL,'%.1f'),' ms  ' ...
-            ,newline,' min: ',num2str(minFSL,'%.1f'), ' ms'])
-        cb = colorbar(h,'eastoutside');
-        cb.Label.String = 'median first spike latency (ms)';
-
-        ylabel(h,'Intensity (dB SPL)');
-        xlabel(h,'frequency (kHz)')
-
-        % bandwidth
-        h = subplot(2,3,4);cla(h);hold(h,'on');
-        lbls = {};traces =[];
-        for k = 1:length(deltaInt)
-            i = find(FRA.UInt == minThr+deltaInt(k));
-            if deltaInt(k) == 0; lbl = 'Thr'; else; lbl = ['Thr + ' num2str(deltaInt(k)) ' dB'];end
-            lbls = [lbls,{lbl}];
-            traces(k) = plot(h,FRA.UFreq,FRA.FRASR(i,:,Set,cluster),'Color',Color(k,:));
-            sigFreq = sig(i,:) == 1;
-            plot(h,FRA.UFreq(sigFreq),FRA.FRASR(i,sigFreq,Set,cluster),'o','Color',Color(k,:),'MarkerFaceColor',Color(k,:));
-        end
-        %     meanRate = mean(FRA.FRASR(:,:,setIdx,cluster),'all','omitnan');
-        traces(k+1) = plot(h,FRA.UFreq,repmat(spontRate,FRA.NFreq,1),'--k');
-        lbls = [lbls,{'spont rate'}];
-        %     traces(k+2) = plot(h,FRA.UFreq,repmat(spontRate+3*spontRateSD/sqrt(20),FRA.NFreq,1),':b');
-        %     lbls = [lbls,{'spont + 3 sem'}];
-        set(h,'Xscale','log',...
-            'FontName','Arial','FontWeight','bold','FontSize',12, ...
-            'XTick',FRA.UFreq(2:4:FRA.NFreq),'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45 ...
-            );
-        ylabel(h,'spike rate (spk/s)');ylim([0,inf]);
-        xlabel(h,'frequency (kHz)')
-        legend(traces,lbls,'location','eastoutside')
-        title(['alpha = ',num2str(alpha,'%.4f'),''])
-
-        % bandwidth 2
-        h = subplot(2,3,5);cla(h);hold(h,'on');
-        traces = [];
-        traces(2) = plot(deltaInt+1,inhBW_oct,'-v','Color',[.75,0,.75],'MarkerFaceColor',[.75,0,.75]);
-        traces(1) = plot(deltaInt-1,excBW_oct,'-square','Color',[0,.5,0],'MarkerFaceColor',[0,.5,0]);
-        set(h,'FontName','Arial','FontWeight','bold','FontSize',12 ...
-            ,'XTick',deltaInt,'XTickLabel',deltaInt);
-        ylabel('bandwidth (octave)');ylim([0,2.5]);
-        xlabel('Intensity (dB re. minThr)');xlim([min(deltaInt)-2.5,max(deltaInt)+2.5]);
-        legend(traces,{'excitatory','inhibitory'},'Location','eastoutside');
-
-        % bandwidth 3
-        h = subplot(2,3,6);cla(h);hold(h,'on');
-        traces = [];
-        traces(2) = plot(deltaInt+1,inhQ,'-v','Color',[.75,0,.75],'MarkerFaceColor',[.75,0,.75]);
-        traces(1) = plot(deltaInt-1,excQ,'-square','Color',[0,.5,0],'MarkerFaceColor',[0,.5,0]);
-        set(h,'FontName','Arial','FontWeight','bold','FontSize',12 ...
-            ,'XTick',deltaInt,'XTickLabel',deltaInt);
-        ylabel('QXdB [CF/bw at X dB re. Thr]');ylim([0,10]);
-        xlabel('Intensity (dB re. minThr)');xlim([min(deltaInt)-2.5,max(deltaInt)+2.5]);
-        legend(traces,{'excitatory','inhibitory'},'Location','eastoutside');
-
-
-        sgtitle([Mouse ' - E' num2str(cpos(cluster)) ' - FRA ',num2str(Set),' Set #',num2str(setNum)]);
-        figName = [Mouse '- E' num2str(cpos(cluster)) '_FRA',num2str(setNum)];
-        set(fig,'Name',figName);
-
-        %     saveas(fig,[ResPath '\Figures\' figName,'.png']);
-    end
-end
-
-
 %% use full words TTLs for spike alignment
 full_words = readNPY('D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\full_words.npy');
 
@@ -1037,3 +838,200 @@ fprintf('unit extraction done\n');
 end
 
 
+
+%% CF / threshold / band with 10dB
+
+function FRACfThr(clusterIdx,FRA)
+
+deltaInt = [0,10,20,30,40];
+Color =[0,      0,      1; ...
+    0.25,   0.25,   1;...
+    0.5,    0.5,    1; ...
+    0.5,    0.5,    0.5;...
+    0,      0,      0] ;%;0.25,0.25,.75;0,0,0];
+
+    for cluster = clusterIdx
+        % set alpha value
+        alpha = 1e-3;
+
+        % assign significance (based on bootstrapped p-value)
+        sig = double(FRA.FACApval(:,:,Set,cluster) <= alpha);
+        sig(isnan(FRA.FACApval(:,:,Set,cluster))) = nan;
+
+        % find minimum threshold and CF
+        [row,col] = find(sig==1);
+        if isempty(row)
+            minThr = NaN;
+        else
+            minThr = FRA.UInt(min(row));
+        end
+        CF = mean(FRA.UFreq(col(row == min(row))));
+
+        % find BF
+        freqMat = repmat(FRA.UFreq',FRA.NInt,1);
+        IntMat = repmat(FRA.UInt,1,FRA.NFreq);
+        [~,I] = max(FRA.FRASR(:,:,Set,cluster),[],'all','linear');
+        if (sig(I) == 1) % condition on significant response
+            BF = freqMat(I); BFInt = IntMat(I);
+        else
+            BF = NaN; BFInt = NaN;
+        end
+
+
+        % Bandwidth
+        spontRate = FRA.FRASR(1,1,Set,cluster);
+        excBand = NaN(length(deltaInt),2);
+        inhBand = NaN(length(deltaInt),2);
+        excBW_oct = NaN(length(deltaInt),1);
+        inhBW_oct = NaN(length(deltaInt),1);
+        excQ = NaN(length(deltaInt),1);
+        inhQ = NaN(length(deltaInt),1);
+        octStep = 4;
+        for k = 1:length(deltaInt)
+            i = find(FRA.UInt == minThr+deltaInt(k));
+            excBandIdx = (FRA.FRASR(i,:,Set,cluster) >= spontRate) & ...
+                (sig(i,:) == 1 );
+            inhBandIdx = (FRA.FRASR(i,:,Set,cluster) <= spontRate) & ...
+                (sig(i,:) == 1 );
+
+            if(sum(excBandIdx)>0)
+                %             excBW(k) = (find(excBandIdx,1,'last') - find(excBandIdx,1,'first') +1) / octStep;
+                xx = find(excBandIdx,1,'first');
+                excBand(k,1) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx-1)) ;
+                xx = find(excBandIdx,1,'last');
+                excBand(k,2) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx+1)) ;
+
+                excBW_oct(k) = log2(excBand(k,2) / excBand(k,1));
+                excQ(k) = CF / (excBand(k,2) - excBand(k,1) );
+            end
+
+            if(sum(inhBandIdx)>0)
+                %             inhBW(k) = (find(inhBandIdx,1,'last') - find(inhBandIdx,1,'first') +1) / octStep;
+                xx = find(inhBandIdx,1,'first');
+                inhBand(k,1) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx-1)) ;
+                xx = find(inhBandIdx,1,'last');
+                inhBand(k,2) = sqrt(FRA.UFreq(xx) * FRA.UFreq(xx+1)) ;
+
+                inhBW_oct(k) = log2(inhBand(k,2) / inhBand(k,1));
+                inhQ(k) = CF / (inhBand(k,2) - inhBand(k,1) );
+            end
+        end
+        factor = FRA.FRASR(1,1,Set,cluster)/FRA.FRAScnt(1,1,Set,cluster);
+        spontRateSD = factor*FRA.FRAScntSD(1,1,Set,cluster);
+
+
+        % evaluate output
+        fig = figure(setNum*100+cluster);clf;
+        set(fig,'Position',[100,100,1600,800]);
+
+        % spike rate and p-values
+        h = subplot(2,3,1);
+
+        CData = FRA.FRASR(:,:,Set,cluster);
+        imagesc(h,CData,'AlphaData',~isnan(CData),[0,Inf]);
+        % contour of FACA p-value
+        Cont = -log10(FRA.FACApval(:,:,Set,cluster));
+        hold(h,'on');contour(h,Cont,[2,3],'w','ShowText','on');hold(h,'off');
+        % contour of max neighbour correlation
+        Cont = (FRA.MaxNeighCorr(:,:,Set,cluster));
+        hold(h,'on');contour(h,Cont,[0.1,0.2,0.5],'r','ShowText','on');hold(h,'off');
+        % format and label graph
+        set(h,'Xscale','lin','YDir','normal',...
+            'FontName','Arial','FontWeight','bold','FontSize',12, ...
+            'XTick',2:4:FRA.NFreq,'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45,...
+            'YTick',2:2:FRA.NInt,'YTicklabel',FRA.UInt(2:2:FRA.NInt));
+        ylabel(h,'Intensity (dB SPL)');
+        xlabel(h,'frequency (kHz)')
+        title(['BF = ',num2str(BF,'%.1f'),' kHz  ',' Int = ',num2str(BFInt),' dB'])
+        cb = colorbar(h,'eastoutside');
+        cb.Label.String = 'spike rate (spk/s)';
+
+        % thresholded significant response
+        h = subplot(2,3,2);
+
+        imagesc(h, sig,'AlphaData',~isnan(sig),[0,1]);
+        set(h,'Xscale','lin','YDir','normal',...
+            'FontName','Arial','FontWeight','bold','FontSize',12, ...
+            'XTick',2:4:FRA.NFreq,'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45,...
+            'YTick',2:2:FRA.NInt,'YTicklabel',FRA.UInt(2:2:FRA.NInt));
+        title(['CF = ',num2str(CF,'%.1f'),' kHz  ',' minThr = ',num2str(minThr),' dB'])
+        ylabel(h,'Intensity (dB SPL)');
+        xlabel(h,'frequency (kHz)')
+        cb = colorbar(h,'eastoutside','Ticks',[0,1],'TickLabels',{'not sig','sig'});
+        cb.Label.String = 'significance';
+
+        % MED FSL
+        h = subplot(2,3,3);
+
+        imagesc(h, FRA.MedFSL(:,:,Set,cluster)*1e3,'AlphaData',~isnan(sig),[5,40]);
+        set(h,'Xscale','lin','YDir','normal',...
+            'FontName','Arial','FontWeight','bold','FontSize',12, ...
+            'XTick',2:4:FRA.NFreq,'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45,...
+            'YTick',2:2:FRA.NInt,'YTicklabel',FRA.UInt(2:2:FRA.NInt));
+        BF_FSL = FRA.MedFSL(FRA.UInt==BFInt,FRA.UFreq==BF,Set,cluster)*1e3;
+        [~,CFIdx] = min(abs(FRA.UFreq-CF));
+        CF30_FSL = FRA.MedFSL(FRA.UInt==minThr+30,CFIdx,Set,cluster)*1e3;
+        minFSL = min(FRA.MedFSL(:,:,Set,cluster)*1e3,[],'all','omitnan');
+        title(['@CF (Thr+30dB): ',num2str(CF30_FSL,'%.1f'),' ms  ',newline,' @BF: ',num2str(BF_FSL,'%.1f'),' ms  ' ...
+            ,newline,' min: ',num2str(minFSL,'%.1f'), ' ms'])
+        cb = colorbar(h,'eastoutside');
+        cb.Label.String = 'median first spike latency (ms)';
+
+        ylabel(h,'Intensity (dB SPL)');
+        xlabel(h,'frequency (kHz)')
+
+        % bandwidth
+        h = subplot(2,3,4);cla(h);hold(h,'on');
+        lbls = {};traces =[];
+        for k = 1:length(deltaInt)
+            i = find(FRA.UInt == minThr+deltaInt(k));
+            if deltaInt(k) == 0; lbl = 'Thr'; else; lbl = ['Thr + ' num2str(deltaInt(k)) ' dB'];end
+            lbls = [lbls,{lbl}];
+            traces(k) = plot(h,FRA.UFreq,FRA.FRASR(i,:,Set,cluster),'Color',Color(k,:));
+            sigFreq = sig(i,:) == 1;
+            plot(h,FRA.UFreq(sigFreq),FRA.FRASR(i,sigFreq,Set,cluster),'o','Color',Color(k,:),'MarkerFaceColor',Color(k,:));
+        end
+        %     meanRate = mean(FRA.FRASR(:,:,setIdx,cluster),'all','omitnan');
+        traces(k+1) = plot(h,FRA.UFreq,repmat(spontRate,FRA.NFreq,1),'--k');
+        lbls = [lbls,{'spont rate'}];
+        %     traces(k+2) = plot(h,FRA.UFreq,repmat(spontRate+3*spontRateSD/sqrt(20),FRA.NFreq,1),':b');
+        %     lbls = [lbls,{'spont + 3 sem'}];
+        set(h,'Xscale','log',...
+            'FontName','Arial','FontWeight','bold','FontSize',12, ...
+            'XTick',FRA.UFreq(2:4:FRA.NFreq),'XTickLabel',round(FRA.UFreq(2:4:FRA.NFreq),1), 'XTickLabelRotation',45 ...
+            );
+        ylabel(h,'spike rate (spk/s)');ylim([0,inf]);
+        xlabel(h,'frequency (kHz)')
+        legend(traces,lbls,'location','eastoutside')
+        title(['alpha = ',num2str(alpha,'%.4f'),''])
+
+        % bandwidth 2
+        h = subplot(2,3,5);cla(h);hold(h,'on');
+        traces = [];
+        traces(2) = plot(deltaInt+1,inhBW_oct,'-v','Color',[.75,0,.75],'MarkerFaceColor',[.75,0,.75]);
+        traces(1) = plot(deltaInt-1,excBW_oct,'-square','Color',[0,.5,0],'MarkerFaceColor',[0,.5,0]);
+        set(h,'FontName','Arial','FontWeight','bold','FontSize',12 ...
+            ,'XTick',deltaInt,'XTickLabel',deltaInt);
+        ylabel('bandwidth (octave)');ylim([0,2.5]);
+        xlabel('Intensity (dB re. minThr)');xlim([min(deltaInt)-2.5,max(deltaInt)+2.5]);
+        legend(traces,{'excitatory','inhibitory'},'Location','eastoutside');
+
+        % bandwidth 3
+        h = subplot(2,3,6);cla(h);hold(h,'on');
+        traces = [];
+        traces(2) = plot(deltaInt+1,inhQ,'-v','Color',[.75,0,.75],'MarkerFaceColor',[.75,0,.75]);
+        traces(1) = plot(deltaInt-1,excQ,'-square','Color',[0,.5,0],'MarkerFaceColor',[0,.5,0]);
+        set(h,'FontName','Arial','FontWeight','bold','FontSize',12 ...
+            ,'XTick',deltaInt,'XTickLabel',deltaInt);
+        ylabel('QXdB [CF/bw at X dB re. Thr]');ylim([0,10]);
+        xlabel('Intensity (dB re. minThr)');xlim([min(deltaInt)-2.5,max(deltaInt)+2.5]);
+        legend(traces,{'excitatory','inhibitory'},'Location','eastoutside');
+
+
+        sgtitle([Mouse ' - E' num2str(cpos(cluster)) ' - FRA ',num2str(Set),' Set #',num2str(setNum)]);
+        figName = [Mouse '- E' num2str(cpos(cluster)) '_FRA',num2str(setNum)];
+        set(fig,'Name',figName);
+
+        %     saveas(fig,[ResPath '\Figures\' figName,'.png']);
+    end
+end

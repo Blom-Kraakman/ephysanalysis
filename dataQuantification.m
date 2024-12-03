@@ -1,6 +1,6 @@
 %% Quantify results
-% Data paths to sorted data, behavioral data file, output folder
 % To be done after PostCuration_BK.m
+% General data input: single units (array) stimuli order (table), aligned spikes (cell array), 
 % Post processing data steps:
 %   1. get firing rate during set time frame for each trial of each unit
 %   2. quatify which cluster responds to which event
@@ -16,17 +16,15 @@ clearvars
 %session = [5, 3]; % M8
 %session = [4, 6]; % M9
 
-%  set directories
+% Data paths to sorted data, behavioral data file, output folder
+
 animal = 16;
 session = 6;
 
 BehaviorPath = ['D:\DATA\Behavioral Stimuli\M' num2str(animal, 2)]; % stimuli parameters
 OutPath = ['D:\DATA\Processed\M' num2str(animal) '\ICX\rec2']; % output directory
-%OutPath = 'D:\DATA\Processed\M14\ICX';
 
 [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
-
-stimOrder = readtable('D:\DATA\Processed\M12-16_stimOrder.csv'); % make more flexible
 
 %% 1. calculate firing rates
 
