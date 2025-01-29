@@ -3,15 +3,17 @@
 
 close all
 
-OutPath = 'D:\DATA\Processed\M16\ICX\rec2'; % output directory
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M16\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M19\ICX'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M19\ICX\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M19\'; % stimuli parameters
 
 % load unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
 cpos = load([OutPath '\' cpos_file]);
 cids = cpos.clusterinfo.id';
 
-% load stimuli order files
+%% load stimuli order files
+session = 1
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
@@ -39,13 +41,17 @@ plot_in_channel_map(KSPath, cpos.clusterinfo);
 
 % select which session to plot
 %session = 18;
-for session = 6
+for session = relevant_sessions(1):relevant_sessions(2)
     % load corresponsing files
     sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
     stim_files = dir(fullfile(BehaviorPath, sessionFile));
-    stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-
     aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+
+    if isempty(stim_files) || isempty(aligned_spikes_files)
+        continue
+    end
+
+    stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
     aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 
     if strcmp(stimuli_parameters.Par.Rec, 'SxA')
@@ -61,6 +67,8 @@ for session = 6
     end
 
     plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
+
+    close all
 end
 
 %% plot single unit - in use

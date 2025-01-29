@@ -7,20 +7,23 @@
 
 clearvars
 
+% TODO: parse out mouse number and recording site to avoid mistakes when
+% setting directories
+
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M16\M16_2024-09-17_13-20-35\';
+recordingFolder = 'D:\DATA\EphysRecordings\M20\M20_2024-12-18_11-31-57_ICX\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M16\ICX\rec2\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M16\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M16\ICX\rec2'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M20\ICX\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M20\ICX'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [6 12];
+relevant_sessions = [1 13];
 skip_sessions = [];
 
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13
@@ -33,7 +36,6 @@ skip_sessions = [];
 %relevant_sessions = [1 9]; % M6 behaviour files (if only 1 behavior file in rec: [1 1])
 %relevant_sessions = [4 11]; % M9
 
-%% sessions TTLs
 % save session TTLs if needed, else load correct file
 % get trials onset TTLs of all sessions in recording
 TTLs_file = dir([OutPath '\*_OE_TTLs.mat']);
@@ -59,14 +61,13 @@ end
 % to add: load if previously saved
 [spiketimes, cids] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, Fs, OutPath);
 
-%% align spikes
+% align spikes
 % saves aligned spikes with corresponding stimulus onset and offset timings
 % spike times in sec, Srise & Sfall in samples
 
 alignspikes(BehaviorPath, TTLPath, OutPath, spiketimes, relevant_sessions, skip_sessions, cids, sessions_TTLs, Fs);
 
-
-%% ----------------------- FRA analysis & Plotting ----------------------- %%
+% ----------------------- FRA analysis & Plotting ----------------------- %%
 % output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
 
 close all
