@@ -287,10 +287,11 @@ yticklabels(cids(I))
 sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
 
 %% PSTH heatmap of all units - Pressure
+% TEST!
 
 % per stimulus combination, for all units
 preT  = -0.2;
-postT = 0.5;
+postT = 1.2;
 binsize = 0.01; % 10ms
 conditions = {'OO', 'SA', 'SO', 'OA'};
 
@@ -304,8 +305,6 @@ for condition = 1:length(conditions)
 
     if condition == 1 || condition == 4
         dataidx = (stimuli_parameters.Stm.Var25 == condition);
-    elseif condition == 3
-        dataidx = (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.AudDur == 0) & (stimuli_parameters.Stm.Var25 == condition);
     else
         dataidx = (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.AudIntensity == audint) & (stimuli_parameters.Stm.Var25 == condition);
     end
@@ -313,7 +312,7 @@ for condition = 1:length(conditions)
     if ~sum(dataidx)
         error('no data selected')
     end
-
+    
     %for each cluster: spike count per bin
     clear spikecounts bin_edges
     for cluster = 1:length(cids)
@@ -333,7 +332,7 @@ for condition = 1:length(conditions)
 
     % sort PSTH based on strongest response
     stimonset = 0;%find(edges == 0);
-    stimoffset = 0.1;%find(edges == 0.5);
+    stimoffset = 0.5;%find(edges == 0.5);
     [~, I] = sort(mean(PSTH(:,bin_center > stimonset & bin_center < stimoffset, condition),2), 1); % avg stimperiod firing
     PSTH(:,:,condition) = PSTH(I,:, condition);
 end
@@ -343,7 +342,7 @@ figure;
 subplot(3,1,1); % mulitmodal
 plot(bin_center, mean(PSTH(:,:,2),1))
 title('Condition: SA')
-sgtitle([num2str(amp) 'V'])
+sgtitle([num2str(freq) 'Hz, ' num2str(amp) 'V'])
 subplot(3,1,2); % sound only
 plot(bin_center, mean(PSTH(:,:,4),1))
 title('Condition: OA')
@@ -360,7 +359,7 @@ title('individual traces')
 subplot(2,1,2);
 plot(bin_center,mean(PSTH(:,:,condition),1))
 title('mean PSTH')
-sgtitle(['Condition: ' conditions{condition} ' (' num2str(amp) 'V)'])
+sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
 
 %plot heatmap
 figure;
@@ -373,7 +372,7 @@ xlabel('Time (s)');
 ylabel('clusters')
 yticks(1:1:length(cids))
 yticklabels(cids(I))
-sgtitle(['Condition: ' conditions{condition} ' (' num2str(amp) 'V)'])
+sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
 
 %% ------------------- dataQuantification Plotting ------------------- %%
 % plot aligned spikes from PostCuration_BK output files
