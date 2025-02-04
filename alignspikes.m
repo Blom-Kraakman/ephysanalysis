@@ -79,6 +79,7 @@ for file = relevant_sessions(1):relevant_sessions(2)
 
     if NStim ~= size(Srise)
         warning('Check Srise')
+        continue
     end
 
     % loop through all clusters

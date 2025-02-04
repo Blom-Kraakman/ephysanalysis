@@ -48,7 +48,7 @@ else
 end
 
 % load response properties
-if isfolder([OutPath '\ResponseProperties'])
+if isfolder([OutPath '\ResponseProperties\'])
     files = ['\*_S' num2str(session, '%.2d') '_*.mat'];
     resp_files = dir(fullfile([OutPath '\ResponseProperties'], files));
     if ~isempty(resp_files)
