@@ -103,7 +103,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
         %     %
         %     %     %format axis
         %     %     legend('No modulation', 'Amplitude modulation')
-        % 
+        %
         % else
         %     % set variables for PSTH
         %     AM_15_idx = stimuli_parameters.Stm.Intensity == 15; % select trials
@@ -112,32 +112,32 @@ if strcmp(stimuli_parameters.Par.Rec, 'AMn')
         %     AM_60_idx = stimuli_parameters.Stm.Intensity == 60;
         %     AM_0_idx = (stimuli_parameters.Stm.Intensity ~= 15) & (stimuli_parameters.Stm.Intensity ~= 30) & ...
         %         (stimuli_parameters.Stm.Intensity ~= 45) & (stimuli_parameters.Stm.Intensity ~= 60);
-        % 
+        %
         %     % set range & figure
         %     fig = subplot(2,1,2);
-        % 
+        %
         %     % make histogram / PSTH
         %     [N, edges] = histcounts(vertcat(aligned_spikes{AM_60_idx, cluster}), preT:binsize:postT);
         %     plot(edges(1:end-1), ((N/sum(AM_60_idx))/binsize), 'Color', '#0072BD', 'LineWidth',1.5) % spike/s
         %     %plot(edges(1:end-1), ((N/sum(AM_60_idx))/binsize), 'Color', '#4FC5D3', 'LineWidth',1.5) % spike/s
         %     hold on
-        % 
+        %
         %     [N,edges] = histcounts(vertcat(aligned_spikes{(AM_45_idx), cluster}), preT:binsize:postT);
         %     plot(edges(1:end-1), ((N/sum(AM_45_idx))/binsize), 'Color', '#D95319', 'LineWidth',1.5) % spike/s
         %     %plot(edges(1:end-1), ((N/sum(AM_45_idx))/binsize), 'Color', '#B673C8', 'LineWidth',1.5) % spike/s
-        % 
+        %
         %     [N,edges] = histcounts(vertcat(aligned_spikes{(AM_30_idx), cluster}), preT:binsize:postT);
         %     plot(edges(1:end-1), ((N/sum(AM_30_idx))/binsize), 'Color', '#7E2F8E', 'LineWidth',1.5) % spike/s
-        % 
+        %
         %     [N,edges] = histcounts(vertcat(aligned_spikes{(AM_15_idx), cluster}), preT:binsize:postT);
         %     plot(edges(1:end-1), ((N/sum(AM_15_idx))/binsize), 'Color', '#77AC30', 'LineWidth',1.5) % spike/s
-        % 
+        %
         %     [N, edges] = histcounts(vertcat(aligned_spikes{AM_0_idx, cluster}), preT:binsize:postT);
         %     plot(edges(1:end-1), ((N/sum(AM_0_idx))/binsize), 'Color', 'k', 'LineWidth',1.5) % spike/s
-        % 
+        %
         %     %format axis
         %     legend('60dB (SPL)', '45dB (SPL)', '30dB (SPL)', '15dB (SPL)', 'no sound')
-        % 
+        %
         % end
 
         %xlabel('Time (s)')
@@ -165,7 +165,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
     start_stim = 0;
     end_stim = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
     xlinerange = [start_stim end_stim];
-    
+
     for cluster = 1:length(cids)
 
         fig = figure;
@@ -240,12 +240,12 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
 end
 
 % plot SxA
-if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
 
     % define shared x-lim parameters
     preT  =  max(-str2double(stimuli_parameters.Par.SomatosensoryISI)/2000, -0.2);
     postT = min((max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
-            + str2double(stimuli_parameters.Par.SomatosensoryISI)/2)/1000, 1.5);
+        + str2double(stimuli_parameters.Par.SomatosensoryISI)/2)/1000, 1.5);
     xrange = [preT, postT];
     binsize = 0.01;
     start_aud = 0;
@@ -327,12 +327,16 @@ end
 % plot pressure %for multiple onset delays
 % work in progress
 SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA);
+AudIntensities = str2num(stimuli_parameters.Par.AuditoryIntensity);
+% replace NaNs with 0 in stimuli_parameters.Stm.SomAudSOA
+index = isnan(stimuli_parameters.Stm.SomAudSOA);
+stimuli_parameters.Stm.SomAudSOA(index) = 0;
 if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(SOAdelays) > 2
 
     % define shared x-lim parameters
     preT  =  max(-str2double(stimuli_parameters.Par.SomatosensoryISI)/2000, -0.1);
-    postT = min((max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
-        + str2double(stimuli_parameters.Par.SomatosensoryISI)/2)/1000, 0.1);
+    postT = 0.35;%min((max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
+        %+ str2double(stimuli_parameters.Par.SomatosensoryISI)/2)/1000, 0.3);
     xrange = [preT, postT];
     binsize = 0.01;
     start_aud = 0;
@@ -345,59 +349,71 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
 
     for cluster = 1:length(cids)
 
-        % add delay to "SO","OO" if needed
+        %add delay to "SO","OO" if needed
         idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
         for ii = idx'
             aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + start_som;
         end
 
+        for j = 1:length(SOAdelays)
+            %idx = find(ismember(stimuli_parameters.Stm.MMType,"SA"));
+            if SOAdelays(j) < 0
+                idx = find(stimuli_parameters.Stm.SomAudSOA == SOAdelays(j));
+                for jj = idx'
+                    aligned_spikes{jj,cluster} = aligned_spikes{jj,cluster} + (SOAdelays(j)/1000);
+                end
+            end
+        end
+
         fig = figure;
-        %ax = gca;
+        ax = gca;
         set(gcf,'position',[500,150,900,700])
 
-        % make subplot per SOAdelay
-        % switch to subplot per sound intensity
-        for plotpos = 1:length(str2num(stimuli_parameters.Par.SomAudSOA))
-            ax = subplot(3,3,plotpos); % rasterplot
-            title(['onset delay: ' num2strSOAdelays(plotpos)])
+        % make subplot per Audintensity
+        for plotpos = 1:length(AudIntensities)
+
+            ax = subplot(2,2,plotpos); % rasterplot
+            idx = stimuli_parameters.Stm.AudIntensity == AudIntensities(plotpos);
 
             % define stimulus variable space
             raster_color = [0, 0, 0];
             raster_yinc = [];%1,1,1];
-            Var = [stimuli_parameters.Stm.AudIntensity, stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.Amplitude];
-            yaxislabels = {'Control', 'Pressure only', 'Pressure + noise' 'Noise only'};
+            Var = [stimuli_parameters.Stm.Var25(idx), stimuli_parameters.Stm.SomAudSOA(idx), stimuli_parameters.Stm.AudIntensity(idx), stimuli_parameters.Stm.Amplitude(idx)];
+            %yaxislabels = {'Control', 'Pressure only', 'Pressure + noise' 'Noise only'};
             yaxistext = 'Pressure (V)';
-            raster_yinc = [10,20,20];            
+            raster_yinc = [10,20,20,20];
 
-            % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
             % make rasterplot
-            [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(:, cluster), Var, raster_color, raster_yinc, 1);
+            [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(idx, 1), Var, raster_color, raster_yinc, 1);
             yticks(YTick{1});
             yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];        ylim(f,yrange);
             xlim(f,xrange);
 
             % add demarcation lines
             xline(xlinerange) % on/off set
-            horizontalLine(YTickLim, ax) % between categories
+            %horizontalLine(YTickLim, ax) % between categories
 
             % format axis
             xlabel('Time (s)')
-            yticklabels(yaxislabels)
+            %yticklabels(yaxislabels)
             %ylabel(yaxistext)
-            %fig.FontSize = 11;
-            title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+            ax.FontSize = 11;
+            title(['BBN intensity: ' num2str(AudIntensities(plotpos)) ' (dB SPL)'])
 
         end
+        sgtitle(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
 
-        %save figure
-        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
-        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-        saveas(fig, fullfile(OutPath, figname));
     end
 
+    %save figure
+    figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    saveas(fig, fullfile(OutPath, figname));
+end
 
-end
-end
+
+end %fcn end
+
 
 function horizontalLine(YTickLim, fig)
 

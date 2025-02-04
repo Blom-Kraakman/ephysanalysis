@@ -1,6 +1,4 @@
 function dataQuantification_analysis(animal, OutPath, BehaviorPath, session)
-clearvars
-
 % Load relevant data files
 [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, onsetDelay, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
 
@@ -13,14 +11,15 @@ unitResponses = table(MouseNum, cids');
 unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster'};
 
 % define analysis window
-if strcmp(stimuli_parameters.Par.Rec, "SxA")
+if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') % && strcmp(stimuli_parameters.Par.Rec, "SxA")
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
+    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
     %PostT = 0.5; % whole vibrotac + dual mode period
-    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-elseif strcmp(stimuli_parameters.Par.Rec, "SOM") && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
+elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') % && strcmp(stimuli_parameters.Par.Rec, "SOM")
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
-    PostT = 0.1; % best way to capture onset stimulus
+    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
+    %PostT = 0.1; % best way to capture onset stimulus
 elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
     if max(stimuli_parameters.Stm.Md)
         PreT = str2double(stimuli_parameters.Par.AMPreTime)/1000;
@@ -147,7 +146,7 @@ clear freq amp condition cluster trial tempSpiketimes index spks
 % ! edit AMn indexing if needed (needed in earlier data sets)
 
 for cond = 1:length(conditions)
-    [responsive, hval, pval] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, conditions(cond));
+    [responsive, hval, pval] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, conditions(cond), nparamA, uparamA, nparamB, uparamB);
 
     % index responsive units
     idx = max(responsive == unitResponses.Cluster, [], 2);
@@ -168,7 +167,7 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.S
     % calculate stimulus induced FR, time window now same as som
     stimulusRate = firingrate(aligned_spikes, onsetDelay_OA, (PostT+onsetDelay_OA));
 
-    responsive = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, 'OA'); % units responsive
+    responsive = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, 'OA', nparamA, uparamA, nparamB, uparamB); % units responsive
 
     % index responsive units
     idx = max(responsive == unitResponses.Cluster, [], 2);

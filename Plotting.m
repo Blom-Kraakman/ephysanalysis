@@ -9,7 +9,7 @@ KSPath = 'D:\DATA\EphysRecordingsSorted\M20\ICX\'; % kilosort ephys data
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20\'; % stimuli parameters
 
 % load stimuli order files
-session = 2;
+session = 13;
 [cids, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, onsetDelay, ~] = loadData(OutPath, session, BehaviorPath);
 
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')
@@ -66,7 +66,7 @@ for session = 13%relevant_sessions(1):relevant_sessions(2)
 
     plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
-    close all
+    %close all
 end
 
 %% plot single unit - in use
@@ -1001,92 +1001,85 @@ for cluster = 1:length(cids)
 end
 %% ISI histogram
 
-% amp = 1;
-% freq = (uFreq == 0);
-% con = 1;
-
-% select unit to plot
-%cluster = 2;
-
 %StimResponseFiring = StimResponseFiring_all;
+%OutPath = 'D:\DATA\Processed\temp';
 
-OutPath = 'D:\DATA\Processed\temp';
-
-conditions = StimResponseFiring.conditions;
+conditions = StimResponseFiring.conditions; % OO OA SO SA
 uparamA = StimResponseFiring.amplitudes;
 uparamB = StimResponseFiring.frequencies;
 nparamA = length(uparamA);
 nparamB = length(uparamB);
+ISICVs = nan(nparamA, nparamB, length(conditions), length(cids)); % most freq ISI %amp,freq,con,cluster
 
-for cluster = 12 %1:length(StimResponseFiring.cids)
-for con = 1:length(conditions)
-    for amp = 1:nparamA
+binsize = 0.05; %50ms
+cluster = 1;
+for cluster = 1%close all:length(StimResponseFiring.cids)
+    for con = 1:length(conditions)
+        for amp = 1:nparamA
 
-        figure;
-        hold on
-        pos = 1;
+            figure;
+            hold on
+            pos = 1;
 
-        for freq = 1:nparamB
+            for freq = 1:nparamB         
 
-            % select unique stimulus combination
-            if strcmp(stimuli_parameters.Par.Rec, "SxA")
-                index = stimuli_parameters.Stm.Amplitude == uparamA(amp) & stimuli_parameters.Stm.SomFreq == uparamB(freq) & strcmp(stimuli_parameters.Stm.MMType, conditions{con});
-                figTitle = [num2str(uparamB(freq)) 'Hz ' num2str(uparamA(amp)) 'V'];
-                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', condition: ' conditions{con} '(' num2str(uparamA(amp)) 'V)'];
-            elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
-                index = stimuli_parameters.Stm.Intensity == uparamA(amp) & stimuli_parameters.Stm.Mf == uparamB(freq);
-                figTitle = [num2str(uparamB(freq)) 'Hz '];
-                figSGTitle = ['Unit: ' num2str(cids(cluster)) ', ' num2str(uparamA(amp)) 'dbSPL'];
+                %spikeISI 4D cell array (amp, freq, con, cluster)
+                toplot = spikeISI{amp, freq, con, cluster};
+                [N, edges] = histcounts(toplot, -7:binsize:0); %-7: 0.001 sec ISI
+                subplot(3, 3, pos)
+                for i = 1:(length(edges)-1)
+                    binCenters(:,i) = mean(edges(:,i:i+1));
+                    % binCenters(:,i) = sqrt(edges(:,i)* edges(:,i+1)); % geometric mean
+                end
+
+              
+                % plot ISI histograms
+                bar(binCenters, N, 1, 'FaceColor', 'k')
+                xline(log(1/uparamB(freq)),'r--');
+                %xline(log(1/uFreq(freq)/2),'b--');
+                %xline(log(0.75*1/uFreq(freq)),'k--');
+                %xline(log(0.25*1/uFreq(freq)),'g--');
+                % stairs(edges(1:end-1), N, 'Color', [0.5 0.5 0.5])
+                xticks([log(0.001), log(0.01), log(0.1), log(1)])
+                set(gca,'TickDir','out')
+                xLab = [0.001, 0.01, 0.1, 1];
+                xticklabels(xLab)
+                xlabel('ISI (sec)')
+                ylabel('# spikes')
+                %ylim([0,max(N)+10])
+                ylim([0,30])
+                %legend;
+                title(figTitle)
+                clear binCenters
+
+                pos = pos+1;
+
             end
 
-            idx_rows = find(index);
-            spikeISI = [];
-            for i = 1:sum(index)
-                tISIspikes = aligned_spikes_ISI{idx_rows(i), cluster};
-                spikeISI = [spikeISI; tISIspikes];
-            end
-
-            [N, edges] = histcounts(spikeISI, -7:0.05:0);
-            subplot(3, 3, pos)
-            for i = 1:(length(edges)-1)
-                binCenters(:,i) = mean(edges(:,i:i+1));
-                % binCenters(:,i) = sqrt(edges(:,i)* edges(:,i+1)); % geometric mean
-            end
-
-            bar(binCenters, N, 1, 'FaceColor', 'k')
-            xline(log(1/uparamB(freq)),'r--');
-            %xline(log(1/uFreq(freq)/2),'b--');
-            %xline(log(0.75*1/uFreq(freq)),'k--');
-            %xline(log(0.25*1/uFreq(freq)),'g--');
-            % stairs(edges(1:end-1), N, 'Color', [0.5 0.5 0.5])
-            xticks([log(0.001), log(0.01), log(0.1), log(1)])
-            set(gca,'TickDir','out')
-            xLab = [0.001, 0.01, 0.1, 1];
-            xticklabels(xLab)
-            xlabel('ISI (sec)')
-            ylabel('# spikes')
-            %ylim([0,max(N)+10])
-            ylim([0,25])
-            %legend;
-            title(figTitle)
-            clear binCenters
-
-            pos = pos+1;
+           sgtitle(figSGTitle)
 
         end
 
-        sgtitle(figSGTitle)
-
     end
 
-end
-
-% figname = sprintf('M%.2i_cluster%i_VxApre', animal, cids(cluster));
-% saveas(gcf, fullfile(OutPath, figname));
-% saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    % figname = sprintf('M%.2i_cluster%i_VxApre', animal, cids(cluster));
+    % saveas(gcf, fullfile(OutPath, figname));
+    % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
 
 
 end
+
+%% plot CVs
+figure
+for cluster = 1:length(cids)
+    hold on
+    scatter(0, squeeze(ISICVs(1,1,1,cluster)))
+    scatter(-10, squeeze(ISICVs(1,1,2,cluster)))
+    scatter(uparamB(2:8),squeeze(ISICVs(3,2:8,3,cluster))) %SO, 0.3V, all freqs, all units
+end
+ylabel('CV')
+%set(gca,'Xscale','log')
+%plot(squeeze(ISICVs(3,3:end,4,:))) %SA, 0.3V, all freqs, all units
 
 %% linegraph: vibrotac tuning curve single units
 % of only responsive units
