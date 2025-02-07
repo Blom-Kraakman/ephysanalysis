@@ -4,25 +4,13 @@
 close all
 clearvars
 
-OutPath = 'D:\DATA\Processed\M20\ICX'; % output directory
-KSPath = 'D:\DATA\EphysRecordingsSorted\M20\ICX\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M10'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M10\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10\'; % stimuli parameters
 
 % load stimuli order files
-session = 13;
+session = 2;
 [cids, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, onsetDelay, ~] = loadData(OutPath, session, BehaviorPath);
-
-if strcmp(stimuli_parameters.Par.Rec, 'SxA')
-    idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
-    stimuli_parameters.Stm(idx,25) = {3};
-    idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
-    stimuli_parameters.Stm(idx,25) = {2}; 
-    idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
-    stimuli_parameters.Stm(idx,25) = {4}; 
-    idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
-    stimuli_parameters.Stm(idx,25) = {1};
-    % order: type, freq, amplitude
-end
 
 %% ---------------------- Channel map plotting  ---------------------- %%
 
@@ -39,7 +27,7 @@ end
 
 % select which session to plot
 %session = 18;
-for session = 13%relevant_sessions(1):relevant_sessions(2)
+for session = relevant_sessions(1):relevant_sessions(2)
     % load corresponsing files
     sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
     stim_files = dir(fullfile(BehaviorPath, sessionFile));
@@ -52,21 +40,9 @@ for session = 13%relevant_sessions(1):relevant_sessions(2)
     stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
     aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
 
-    if strcmp(stimuli_parameters.Par.Rec, 'SxA')
-        idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
-        stimuli_parameters.Stm(idx,25) = {2};
-        idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
-        stimuli_parameters.Stm(idx,25) = {3};
-        idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
-        stimuli_parameters.Stm(idx,25) = {4};
-        idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
-        stimuli_parameters.Stm(idx,25) = {1};
-        % order: type, freq, amplitude
-    end
-
     plotResponses(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath);
 
-    %close all
+    close all
 end
 
 %% plot single unit - in use
@@ -205,87 +181,132 @@ fig = SOMplotting(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, 0);
 
 %% PSTH heatmap of all units - vibrotactile
 
+% Run again for selected units
+%units = [121 334 400 441 457 247 259 153 265 269 287 277 290 303 305];
+%mousenums = [10 10 10 10 10 11 11 19 19 19 19 20 20 20 20];
+
 % per stimulus combination, for all units
 preT  = -0.2;
 postT = 1.2;
-binsize = 0.01; % 10ms
-conditions = {'OO', 'SA', 'SO', 'OA'};
+binsize = 0.01; %10ms
+conditions = {'OO', 'OA', 'SO', 'SA'};
 
 % set variables
 amp = 0.3; % [0 0.1 0.3]
 freq = 50;
-%condition = 2; % 1: OO, 2: SA, 3: SO, 4: OA
+PSTH = [];
 
-% calculate PSTH per condition
-for condition = 1:length(conditions)
 
-    if condition == 1 || condition == 4
-        dataidx = (stimuli_parameters.Stm.Var25 == condition);
-    else
-        dataidx = (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.SomFreq == freq) & (stimuli_parameters.Stm.Var25 == condition);
+for mouse = 1:size(StimResponseFiring_all.MouseNum,2)
+
+    clear tPSTH
+
+    % load in correct data file
+    mousestr = num2str(StimResponseFiring_all.MouseNum(mouse));
+    OutPath = ['D:\DATA\Processed\M' mousestr '\ICX'];
+    BehaviorPath = ['D:\DATA\Behavioral Stimuli\M', mousestr];
+    session = StimResponseFiring_all.session(mouse);
+    [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
+    % calculate PSTH per condition
+    for condition = 1:length(conditions)
+
+        if condition == 1 || condition == 2
+            dataidx = (stimuli_parameters.Stm.Var25 == condition);
+        else
+            dataidx = (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.SomFreq == freq) & (stimuli_parameters.Stm.Var25 == condition);
+        end
+
+        % to do: add delay in aligned_spikes
+
+        %for each cluster: spike count per bin
+        clear spikecounts bin_edges
+        for cluster = 1:length(cids)
+            [N, edges] = histcounts(vertcat(aligned_spikes{dataidx, cluster}), preT:binsize:postT);
+            spikecounts(cluster, :) = N;
+            bin_edges(cluster, :) = edges;
+        end
+        bin_center = edges(1:end-1)+0.5*binsize;
+
+        % baseline subtraction on spikecounts
+        baseline = spikecounts(:,bin_center<0); %200ms baseline
+        spikecounts = spikecounts - mean(baseline,2);
+
+        % normalize spikecounts into PSTH
+        % PSTH = sum spike counts / (number events * bin size)
+        tPSTH(:,:,condition) = spikecounts / (size(aligned_spikes(dataidx, cluster), 1) * binsize);
+
+        % % sort PSTH based on strongest response
+        % stimonset = 0;%find(edges == 0);
+        % stimoffset = 0.5;%find(edges == 0.5);
+        % [~, I] = sort(mean(tPSTH(:,bin_center > stimonset & bin_center < stimoffset, condition),2), 1); % avg stimperiod firing
+        % tPSTH(:,:,condition) = tPSTH(I,:, condition);
     end
 
-    %for each cluster: spike count per bin
-    clear spikecounts bin_edges
-    for cluster = 1:length(cids)
-        [N, edges] = histcounts(vertcat(aligned_spikes{dataidx, cluster}), preT:binsize:postT);
-        spikecounts(cluster, :) = N;
-        bin_edges(cluster, :) = edges;
-    end
-    bin_center = edges(1:end-1)+0.5*binsize;
+    % concatinate PSTH over all mice
+    %PSTHall = [PSTHall, PSTH];
+    PSTH = cat(1,PSTH,tPSTH);
 
-    % baseline subtraction on spikecounts
-    baseline = spikecounts(:,bin_center<0); %200ms baseline
-    spikecounts = spikecounts - mean(baseline,2);
-
-    % normalize spikecounts into PSTH
-    % PSTH = sum spike counts / (number events * bin size)
-    PSTH(:,:,condition) = spikecounts / (size(aligned_spikes(dataidx, cluster), 1) * binsize);
-
-    % sort PSTH based on strongest response
-    stimonset = 0;%find(edges == 0);
-    stimoffset = 0.5;%find(edges == 0.5);
-    [~, I] = sort(mean(PSTH(:,bin_center > stimonset & bin_center < stimoffset, condition),2), 1); % avg stimperiod firing
-    PSTH(:,:,condition) = PSTH(I,:, condition);
 end
+
+% sort PSTH based on strongest response
+stimonset = 0;%find(edges == 0);
+stimoffset = 0.5;%find(edges == 0.5);
+[~, I] = sort(mean(PSTH(:,bin_center > stimonset & bin_center < stimoffset, 4),2), 1); % avg stimperiod firing during vibrotac only
+PSTH(:,:,:) = PSTH(I,:,:);
 
 % plot sound subtracted PSTH
 figure;
 subplot(3,1,1); % mulitmodal
-plot(bin_center, mean(PSTH(:,:,2),1))
+plot(bin_center, mean(PSTH(:,:,4),1))
 title('Condition: SA')
 sgtitle([num2str(freq) 'Hz, ' num2str(amp) 'V'])
 subplot(3,1,2); % sound only
-plot(bin_center, mean(PSTH(:,:,4),1))
+plot(bin_center, mean(PSTH(:,:,2),1))
 title('Condition: OA')
 subplot(3,1,3); % avg PSTH of multimodal - sound only trace
-plot(bin_center,(mean(PSTH(:,:,2),1)- mean(PSTH(:,:,4),1)))
+plot(bin_center,(mean(PSTH(:,:,4),1)- mean(PSTH(:,:,2),1)))
 title('Residual SA - OA')
 
-condition = 3;
-% plot individual + mean PSTH traces
-figure;
-subplot(2,1,1);
-plot(bin_center,PSTH(:,:,condition))
-title('individual traces')
-subplot(2,1,2);
-plot(bin_center,mean(PSTH(:,:,condition),1))
-title('mean PSTH')
-sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
+% save
+%figname = sprintf('M10-11-19-20_PSTH_SA-OA_Residual_%s', StimResponseFiring_all.StimType);
+%saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', figname));
+%saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', [figname '.jpg']));
 
-%plot heatmap
-figure;
-imagesc(edges, (1:length(cids)), PSTH(:,:,condition))
-colormap('hot'); % Choose a color map
-cb = colorbar(gca, 'eastoutside');
-cb.Label.String = 'spike/sec';
-%clim([-5 30])
-xlabel('Time (s)');
-ylabel('clusters')
-yticks(1:1:length(cids))
-yticklabels(cids(I))
-sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
+for condition = 2:4 % condition = 4; % {'OO', 'OA', 'SO', 'SA'};
 
+    % plot individual + mean PSTH traces
+    figure;
+    subplot(2,1,1);
+    plot(bin_center,PSTH(:,:,condition))
+    title('individual traces')
+    subplot(2,1,2);
+    plot(bin_center,mean(PSTH(:,:,condition),1))
+    title('mean PSTH')
+    sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
+
+    % figname = sprintf('M10-11-19-20_PSTH_%s_%s', conditions{condition}, StimResponseFiring_all.StimType);
+    % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', figname));
+    % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', [figname '.jpg']));
+
+    %plot heatmap
+    figure;
+    imagesc(edges, (1:length(StimResponseFiring_all.unitResponses.Cluster)), PSTH(:,:,condition))
+    colormap('hot'); % Choose a color map
+    cb = colorbar(gca, 'eastoutside');
+    cb.Label.String = 'spike/sec';
+    %clim([-5 30])
+    xlabel('Time (s)');
+    ylabel('clusters')
+    yticks(1:1:length(StimResponseFiring_all.unitResponses.Cluster))
+    yticklabels(StimResponseFiring_all.unitResponses.Cluster(I))
+    sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
+
+    % figname = sprintf('M10-11-19-20_PSTH_heatmap_%s_%s', conditions{condition},StimResponseFiring_all.StimType);
+    % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', figname));
+    % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', [figname '.jpg']));
+
+end
 %% PSTH heatmap of all units - Pressure
 
 % per stimulus combination, for all units
@@ -378,8 +399,8 @@ sgtitle(['Condition: ' conditions{condition} ' (' num2str(amp) 'V)'])
 %% ------------------- dataQuantification Plotting ------------------- %%
 % plot aligned spikes from PostCuration_BK output files
 
-OutPath = 'D:\DATA\Processed\M20\ICX';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20';
+OutPath = 'D:\DATA\Processed\M10';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
 session = 2;
 [~, ~, ~, ~, ~, ~, ~, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
 
@@ -1012,7 +1033,7 @@ nparamB = length(uparamB);
 ISICVs = nan(nparamA, nparamB, length(conditions), length(cids)); % most freq ISI %amp,freq,con,cluster
 
 binsize = 0.05; %50ms
-cluster = 1;
+%cluster = 1;
 for cluster = 1%close all:length(StimResponseFiring.cids)
     for con = 1:length(conditions)
         for amp = 1:nparamA
@@ -1031,7 +1052,6 @@ for cluster = 1%close all:length(StimResponseFiring.cids)
                     binCenters(:,i) = mean(edges(:,i:i+1));
                     % binCenters(:,i) = sqrt(edges(:,i)* edges(:,i+1)); % geometric mean
                 end
-
               
                 % plot ISI histograms
                 bar(binCenters, N, 1, 'FaceColor', 'k')
@@ -1071,15 +1091,18 @@ end
 
 %% plot CVs
 figure
+
 for cluster = 1:length(cids)
     hold on
-    scatter(0, squeeze(ISICVs(1,1,1,cluster)))
-    scatter(-10, squeeze(ISICVs(1,1,2,cluster)))
-    scatter(uparamB(2:8),squeeze(ISICVs(3,2:8,3,cluster))) %SO, 0.3V, all freqs, all units
+    scatter(0, squeeze(ISICVs(1,1,1,cluster)), 'r')
+    scatter(-10, squeeze(ISICVs(1,1,2,cluster)), 'r')
+    scatter(uparamB(2:8),squeeze(ISICVs(3,2:8,4,cluster)), 'c') %SA, 0.3V, all freqs, all units
+    scatter(uparamB(2:8),squeeze(ISICVs(3,2:8,3,cluster)), 'k') %SO, 0.3V, all freqs, all units
+
 end
 ylabel('CV')
+legend('cyan: multimodal, black: tactile')
 %set(gca,'Xscale','log')
-%plot(squeeze(ISICVs(3,3:end,4,:))) %SA, 0.3V, all freqs, all units
 
 %% linegraph: vibrotac tuning curve single units
 % of only responsive units

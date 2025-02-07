@@ -16,6 +16,19 @@ sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
 stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
+if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+    idx = strcmp(stimuli_parameters.Stm.MMType, "SO");
+    stimuli_parameters.Stm(idx,25) = {3};
+    idx = strcmp(stimuli_parameters.Stm.MMType, "SA");
+    stimuli_parameters.Stm(idx,25) = {4}; 
+    idx = strcmp(stimuli_parameters.Stm.MMType, "OA");
+    stimuli_parameters.Stm(idx,25) = {2}; 
+    idx = strcmp(stimuli_parameters.Stm.MMType, "OO");
+    stimuli_parameters.Stm(idx,25) = {1};
+    % order: type, freq, amplitude
+
+end
+
 % load aligned spike times
 aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 if ~isempty(aligned_spikes_files)

@@ -5,7 +5,7 @@ function dataQuantification_poolDatasets(stimOrder, fn)
 %   data_all: delta FR for all units
 %   unitResponses_all: table with metadata 
 
-for condition = 2:size(stimOrder, 2)
+for condition = 2:(size(stimOrder, 2)-1)
 
     %initiate variables
     unitResponses_all = table;
@@ -64,6 +64,8 @@ for condition = 2:size(stimOrder, 2)
         % else
         unitResponses_all = vertcat(unitResponses_all, dataS.StimResponseFiring.unitResponses);
 
+        % TO DO: add mousenum as prefix to unit nr to avoid doubles
+
         % add details
         mousenum_all = cat(2, mousenum_all, str2double(dataS.StimResponseFiring.MouseNum));
         session_all = cat(2, session_all, str2double(dataS.StimResponseFiring.session));
@@ -74,6 +76,7 @@ for condition = 2:size(stimOrder, 2)
 
     end
 
+    StimResponseFiring_all.StimType = stimOrder.Properties.VariableNames{condition};
     StimResponseFiring_all.unitResponses = unitResponses_all;
     StimResponseFiring_all.firing_mean = data_all;
     StimResponseFiring_all.MouseNum = mousenum_all;
@@ -84,15 +87,10 @@ for condition = 2:size(stimOrder, 2)
     StimResponseFiring_all.PostT = PostT_all;
 
     % save
-    %filename = sprintf('M12-16_%s_UnitResponses',stimOrder.Properties.VariableNames{condition});
-    save(fullfile('D:\DATA\Processed\', fn), "StimResponseFiring_all", "data_all")
+    filename = sprintf('M10-11-19-20_%s_UnitResponses', stimOrder.Properties.VariableNames{condition});
+    save(fullfile('D:\DATA\Processed\', filename), "StimResponseFiring_all", "data_all")
 
     clear data_all
 
 end
-
-%% 5.5 save if needed
-%filename = sprintf('M09-10-11_SxA_earplug_UnitResponses');
-%save(fullfile(OutPath, filename), "unitResponses_all", "data_all")
-
 end

@@ -16,23 +16,45 @@ clearvars
 %session = [4, 6]; % M9
 
 %set paths
-mousenr = 20;
-OutPath = 'D:\DATA\Processed\M20\ICX';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20';
+mousenr = 19;
+OutPath = 'D:\DATA\Processed\M19\ICX';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M19';
 
 %% quantitative analysis
 
-sessions = 1:12; %all sessions to be analyzed 
+sessions = [1 2 6 7 8 9 10 11 12 13 14 15 16]; %all sessions to be analyzed 
 for session = 1:length(sessions)
-    if isempty(dir([OutPath '\*_S' num2str(session,'%02i') '*_ResponseProperties.mat']))
+    if isempty(dir([OutPath '\*_S' num2str(sessions(session),'%02i') '*_ResponseProperties.mat']))
         dataQuantification_analysis(mousenr, OutPath, BehaviorPath, sessions(session))
     else
         continue
     end
 end
 %% Pool datasets across mice
-stimOrder = readtable('D:\DATA\Processed\stimOrder.csv');
+stimOrder = readtable('D:\DATA\Processed\M10-11-19-20_stimOrder.csv');
+fn = 'M10-11-19-20';
+%%
 dataQuantification_poolDatasets(stimOrder, fn)
+
+%% add mousenr to unit nr
+
+Path = 'D:\DATA\Processed\M10-11-19-20\';
+File = '*_UnitResponses.mat';
+files = dir(fullfile(Path, File));
+
+for i = 3:size(files, 1)
+    data = load([files(i).folder '\' files(i).name]);
+
+    cids = data.StimResponseFiring_all.unitResponses.Cluster';
+    mice = data.StimResponseFiring_all.unitResponses.MouseNum';
+    s = sprintf( '%1d%1d ', [mice;cids]);
+    data.StimResponseFiring_all.unitResponses.Cluster = str2num(s)';
+
+    StimResponseFiring_all = data.StimResponseFiring_all;
+
+    %filename = sprintf('M10-11-19-20_%s_UnitResponses', stimOrder.Properties.VariableNames{condition});
+    save(fullfile(files(i).folder, files(i).name), "StimResponseFiring_all")
+end
 
 %% STATS - to do
 
@@ -176,8 +198,6 @@ nparamA = length(uparamA);
 nparamB = length(uparamB);
 ISICVs = nan(nparamA, nparamB, length(conditions), length(cids)); % most freq ISI %amp,freq,con,cluster
 
-binsize = 0.05; %50ms
-%cluster = 1;
 spikeISI = cell(nparamA, nparamB, size(conditions, 2), length(cids));
 for cluster = 1:length(StimResponseFiring.cids)
     for con = 1:length(conditions)
@@ -211,34 +231,23 @@ for cluster = 1:length(StimResponseFiring.cids)
                 % to do: save SpikeISI in cell array to disentangle analysis from plotting
                 spikeISI{amp, freq, con, cluster} = tspikeISI; %amp, freq, con, cluster
 
-                %  % calculate coefficient of variation (CV = standard deviation / mean)
-                % ISICV = mean(exp(spikeISI))/ std(exp(spikeISI));
-                % ISICVs(amp,freq,con,cluster) = ISICV;
-                % 
-                % 
-                % % calculate ISI distribution
-                % [N, edges] = histcounts(spikeISI, -7:binsize:0); %-7: 0.001 sec ISI
-                % %subplot(3, 3, pos)
-                % for i = 1:(length(edges)-1)
-                %     binCenters(:,i) = mean(edges(:,i:i+1));
-                %     % binCenters(:,i) = sqrt(edges(:,i)* edges(:,i+1)); % geometric mean
-                % end
-                % 
-                % % find max N
-                % ISImax = max(N);
-                % ISImaxpos = find(N == ISImax);
-                % 
-                % if length(ISImaxpos) == 1
-                %     ISIpeak = edges(ISImaxpos); % match with edges to get ISI
-                % else
-                %     %disp('two peaks found, check')
-                %     ISIpeak = edges(ISImaxpos(1)); % match with edges to get ISI
-                % end
-                % 
-                % % save in matrix amp x freq x condition x cluster
-                % ISIpeaks(amp,freq,con,cluster) = ISIpeak;
-                % 
+                % calculate coefficient of variation (CV = standard deviation / mean)
+                ISICV = mean(exp(spikeISI{amp, freq, con, cluster}))/ std(exp(spikeISI{amp, freq, con, cluster}));
+                ISICVs(amp,freq,con,cluster) = ISICV;
 
+                % find most occuring ISI
+                ISImax = max(N);
+                ISImaxpos = find(N == ISImax);
+
+                if length(ISImaxpos) == 1
+                    ISIpeak = edges(ISImaxpos); % match with edges to get ISI
+                else
+                    %disp('two peaks found, check')
+                    ISIpeak = edges(ISImaxpos(1)); % match with edges to get ISI
+                end
+
+                % save in matrix amp x freq x condition x cluster
+                ISIpeaks(amp,freq,con,cluster) = ISIpeak;
 
             end
         end
@@ -249,4 +258,4 @@ end
 
 
 
-clear trial trials cluster clusters sel stimOn_ISIwindow stimOff_ISIwindow taligned
+clear trial trials cluster clusters sel stimOn_ISIwindow stimOff_ISIwindow taligned tspikeISI ttspikeISI

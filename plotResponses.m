@@ -325,14 +325,15 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
 end
 
 % plot pressure %for multiple onset delays
-% work in progress
-SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA);
-AudIntensities = str2num(stimuli_parameters.Par.AuditoryIntensity);
-% replace NaNs with 0 in stimuli_parameters.Stm.SomAudSOA
-index = isnan(stimuli_parameters.Stm.SomAudSOA);
-stimuli_parameters.Stm.SomAudSOA(index) = 0;
-if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(SOAdelays) > 2
 
+if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') %%&& length(SOAdelays) > 2
+    
+    SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA);
+    AudIntensities = str2num(stimuli_parameters.Par.AuditoryIntensity);
+    % replace NaNs with 0 in stimuli_parameters.Stm.SomAudSOA
+    index = isnan(stimuli_parameters.Stm.SomAudSOA);
+    stimuli_parameters.Stm.SomAudSOA(index) = 0;
+    
     % define shared x-lim parameters
     preT  =  max(-str2double(stimuli_parameters.Par.SomatosensoryISI)/2000, -0.1);
     postT = 0.35;%min((max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
