@@ -64,7 +64,7 @@ for condition = 2:(size(stimOrder, 2)-1)
 
     end
 
-    % add mousenum as prefix to unit nr to make unique
+    % TO DO: add mousenum as prefix to unit nr to make unique
     cids = unitResponses_all.Cluster';
     mice = unitResponses_all.MouseNum';
     newcids = sprintf( '%1d%1d ', [mice;cids]);

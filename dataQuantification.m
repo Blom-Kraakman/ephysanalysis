@@ -15,14 +15,50 @@ clearvars
 %session = [5, 3]; % M8
 %session = [4, 6]; % M9
 
-%set paths
-mousenr = 19;
+%% ----------------------- FRA analysis & Plotting ----------------------- %%
+% output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
+
+close all
+
 OutPath = 'D:\DATA\Processed\M19\ICX';
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M19';
 
+% load FRA session(s) aligned spikes
+aligned_spikes_files = dir(fullfile(OutPath, '*FRA_AlignedSpikes.mat'));
+
+
+for file = 1:size(aligned_spikes_files, 1)
+
+    % load each FRA aligned spikes file
+    %aligned_spikes = load([aligned_spikes_files(file).folder '\' aligned_spikes_files(file).name]);
+    % load corresponding stimuli file
+    %session = aligned_spikes_files(file).name(6:7);
+    %stim_files = dir(fullfile(BehaviorPath, ['*_S' session '_*.mat']));
+    %stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+
+    session = str2double(aligned_spikes_files(file).name(6:7));
+    [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
+    % FRA analysis saves heatmap figures
+    FSL = 0;
+    heatmap = 1;
+    FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath, heatmap, FSL);
+
+end
+
 %% quantitative analysis
 
-sessions = [1 2 6 7 8 9 10 11 12 13 14 15 16]; %all sessions to be analyzed 
+%set paths
+mousenr = 20;
+OutPath = 'D:\DATA\Processed\M20\ICX';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20';
+
+%sessions = [1 2 3 4 5 7 8 9 10];% M10
+%sessions = [1 2 3 4 5 6 7 8 9 10];% M11
+%sessions = [1 2 6 7 8 9 10 11 12 13 14 15 16]; % M19 all sessions to be analyzed 
+sessions = [1 2 3 4 5 6 7 8 9 10 11 12];% M20
+
+
 for session = 1:length(sessions)
     if isempty(dir([OutPath '\*_S' num2str(sessions(session),'%02i') '*_ResponseProperties.mat']))
         dataQuantification_analysis(mousenr, OutPath, BehaviorPath, sessions(session))
@@ -32,8 +68,9 @@ for session = 1:length(sessions)
 end
 %% Pool datasets across mice
 stimOrder = readtable('D:\DATA\Processed\M10-11-19-20_stimOrder.csv');
+stimOrder.AM_pre(2) = NaN; % discard M11 AM session, wrong params
 fn = 'M10-11-19-20';
-%%
+
 dataQuantification_poolDatasets(stimOrder, fn)
 
 %% add mousenr to unit nr
@@ -88,14 +125,26 @@ save(fullfile(OutPath, filename), "unitResponses")
 
 %% OPTIONAL: Bandwith FRA analysis
 
+OutPath = 'D:\DATA\Processed\M10\ICX';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
 session = 4;
-[cids, stimuli_parameters, ~, ~, ~, ~, ~, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
 
-% parameters
+[cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
+
+if ~strcmp(stimuli_parameters.Par.Rec, 'FRA')
+    error('non FRA session loaded')
+end
+
+FRA = FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath, 0, 0);
+
+%% parameters
+uparamA = StimResponseFiring_all.amplitudes(:,1); % unique(stimuli_parameters.Stm.Intensity);
+uparamB = StimResponseFiring_all.frequencies(:,1); %unique(stimuli_parameters.Stm.Freq);
+NClu = length(StimResponseFiring_all.unitResponses.Cluster);  %length(cids);
+StimResponseFiring = StimResponseFiring_all;
+
 deltaInt = [0,10,20,30,40];
-uparamA = unique(stimuli_parameters.Stm.Intensity);
-uparamB = unique(stimuli_parameters.Stm.Freq);
-NClu = length(cids);
 
 % initiate variables
 excBand = NaN(length(deltaInt), 2, NClu);
@@ -105,13 +154,21 @@ inhBW_oct = NaN(length(deltaInt),NClu);
 excQ = NaN(length(deltaInt),NClu);
 inhQ = NaN(length(deltaInt),NClu);
 CF = NaN(NClu,1);
-BestFreq = NaN(NClu,1);
+BF = NaN(NClu,1);
 BestFreqAmp = NaN(NClu,1);
 
 for cluster = 1:NClu
     spontRate = StimResponseFiring.firing_mean(1, 1, 1, cluster);
 
-    % find minimum threshold
+    % find best frequency (BF)
+    [~,maxIdx] = max(StimResponseFiring.firing_mean(:, :, 1, cluster),[],'all','linear'); % find max firing rate change
+    [maxRow, maxCol] = ind2sub(size(StimResponseFiring.firing_mean(:, :, 1, cluster)), maxIdx); % translate to position in matrix
+    if StimResponseFiring.hvalue(maxRow, maxCol, cluster) % select from sig responses
+        BF(cluster) = uparamB(maxRow);
+        BestFreqAmp(cluster) = uparamA(maxCol);
+    end
+
+    % find minimum threshold from significant neurons
     [row, col] = find(StimResponseFiring.hvalue(:,:,cluster)==1); % select from sig responses
     if isempty(col)
         minThr = NaN;
@@ -119,16 +176,11 @@ for cluster = 1:NClu
         minThr = uparamA(min(col)); % minimal threshold
     end
 
-    %find charactristic frequency (CF)
-    CF(cluster) = mean(uparamB(row(col == min(col))));
+    % find minimum threshold for all units
+    %[row, col] = find(FRA.FRASR(:,:,1,cluster))
 
-    % find best frequency (BF)
-    [~,maxIdx] = max(StimResponseFiring.firing_mean(:, :, 1, cluster),[],'all','linear'); % find max firing rate change
-    [maxRow, maxCol] = ind2sub(size(StimResponseFiring.firing_mean(:, :, 1, cluster)), maxIdx); % translate to position in matrix
-    if StimResponseFiring.hvalue(maxRow, maxCol, cluster) % select from sig responses
-        BestFreq(cluster) = uparamB(maxRow);
-        BestFreqAmp(cluster) = uparamA(maxCol);
-    end
+    %find charactristic frequency (CF)
+    CF(cluster) = mean(uparamB(row(col == min(col))));  
 
     % bandwith
     for dInt = 1:length(deltaInt)

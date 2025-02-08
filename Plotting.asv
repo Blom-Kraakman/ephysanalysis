@@ -1339,24 +1339,19 @@ for i = 1:5
     xlabel('CF')
     ylim([0 20])
     xlim([0 50])
-
+    
 end
 
 %% plot Q = CF / BW
 
 excBandWith = squeeze(excBand(:,2,:) - excBand(:,1,:));
-Qval = CF' ./ excBandWith(:,:);
 figure;
 for i = 1:5
     subplot(2,3,i)
-    scatter(CF', Qval(i,:))
+    scatter(CF, excBandWith(i,:))
 
-    ylabel(['Q' num2str(deltaInt(i)) 'dB'])
-    xlabel('CF')
-    ylim([0 20])
-    xlim([0 50])
+
 end
-
 
 %% select TTLs of session 4
 nTrials = size(aligned_spikes, 1);
