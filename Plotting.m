@@ -276,7 +276,7 @@ PSTH(:,:,:) = PSTHt(selected_cids_idx,:,:);
 [~, I] = sort(mean(PSTH(:,bin_center > stimonset & bin_center < stimoffset, 4),2), 1); % avg stimperiod firing during vibrotac only
 PSTH(:,:,:) = PSTH(I,:,:);
 
-%% plot sound subtracted PSTH
+% plot sound subtracted PSTH
 figure;
 subplot(3,1,1); % mulitmodal
 plot(bin_center, mean(PSTH(:,:,4),1))
@@ -367,23 +367,25 @@ clear data dataS unitResponses_all
 
 %% data selection new
 %stimOrder = readtable('D:\DATA\Processed\M12-16_stimOrder.csv');
-load('D:\DATA\Processed\M10-11-19-20\M10-11-19-20_FRA_pre_UnitResponses.mat');
-OutPath = 'D:\DATA\Processed\M10-11-19-20\figures';
+%load('D:\DATA\Processed\M10-11-19-20\M10-11-19-20_FRA_pre_UnitResponses.mat');
+%OutPath = 'D:\DATA\Processed\M10-11-19-20\figures';
 
 cids = StimResponseFiring_all.unitResponses.Cluster;
 
 % selection single units
 % vibrotac responsive, during plug
-%vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; 
+vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; 
 %vibrotac_nosound_idx = ismember(cids, vibrotac_nosound);
 % pressure responsive, during plug
-%pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306];
+pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]';
 %pressure_nosound_idx = ismember(cids, pressure_nosound);
 
-% vibrotac and/or pressure responsive, not exclusively during plug
-selected_cids = [10121 10328 10330 10334 10382 10386 10400 10421 10423 10441 10457 11210 11212 11217 11247 11257 11259 11263 1939 1990 19153 19265 19287 19296 2046 20225 20276 20277 20287 20290 20303 20306]'; 
-selected_cids_idx = ismember(cids, selected_cids);
+% vibrotac and/or pressure responsive, not exclusively with earplug
+%selected_cids = [10121 10328 10330 10334 10382 10386 10400 10421 10423 10441 10457 11210 11212 11217 11247 11257 11259 11263 1939 1990 19153 19265 19287 19296 2046 20225 20276 20277 20287 20290 20303 20306]'; 
+%selected_cids_idx = ismember(cids, selected_cids);
 
+% vibrotac and/or pressure responsive, exclusively with earplug
+selected_cids = unique([vibrotac_nosound; pressure_nosound]); % CHECK, LEFT OFF HERE
 
 %% venn diagram: response ratio groups
 sets = ["sound" "vibrotactile" "pressure"];
@@ -409,7 +411,8 @@ all_stim = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitR
 %all = table2array((unitResponses.OA == 1 | unitResponses(:,7) == 1) & unitResponses.SOM & unitResponses.SO);
 
 % select and format data
-sound_vibro_idx = max(all_stim, sound_vibrotac);
+%sound_vibro_idx = max(all_stim, sound_vibrotac);
+sound_vibro_idx = selected_cids_idx;
 %data = (mean(data, 1, "omitnan"));
 %data = squeeze(mean(mean(data, 1, "omitnan"), 2, "omitnan"));
 
@@ -460,14 +463,14 @@ set(gca,'fontsize',18)
 xticks(1:5)
 xticklabels(["control", "sound", "vibrotactile", "multimodal", "sound + vibrotactile"])
 ylabel('\Delta Firing rate (spikes/s)')
-ylim([-40 80])
+ylim([-5 140])
 title(['Condition: ' StimResponseFiring_all.StimType])
 
 hold off
 
 figname = sprintf('M10-11-19-20_stimrespchanges_%s_%s', conditions{condition}, StimResponseFiring_all.StimType);
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', figname));
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', [figname '.jpg']));
+saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures\selected_units', figname));
+saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures\selected_units', [figname '.jpg']));
 
 %% heatmap: calculate multisensory integration indexes
 
