@@ -86,10 +86,9 @@ for cluster = 1:NClu
             end
 
             % stat test
-            %[p,h,stats] = ranksum(baseline, stim_evoked, 'alpha', 0.05/(nAmp*nFreq)); % stricter alpha correction
             alpha_val =  0.05/(nparamB*nparamA);
             [p,h,stats] = ranksum(baseline, stim_evoked, 'alpha',  alpha_val); % nonpaired version: experimental diff from control
-            %[p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % exp trial diff from baseline
+            %[p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % paired versiom: exp trial diff from baseline
             pval(freq, amp,cluster) = p;
             zval(freq, amp, cluster) = stats.zval;
             hval(freq, amp,cluster) = h;

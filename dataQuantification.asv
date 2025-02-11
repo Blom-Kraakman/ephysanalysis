@@ -49,17 +49,17 @@ end
 %% quantitative analysis
 
 %set paths
-mousenr = 20;
-OutPath = 'D:\DATA\Processed\M20\ICX';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20';
+mousenr = 10;
+OutPath = 'D:\DATA\Processed\M10\ICX';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
 
-%sessions = [1 2 3 4 5 7 8 9 10];% M10
+sessions = [1 2 3 4 5 6 7 8 9 10];% M10
 %sessions = [1 2 3 4 5 6 7 8 9 10];% M11
 %sessions = [1 2 6 7 8 9 10 11 12 13 14 15 16]; % M19 all sessions to be analyzed 
-sessions = [1 2 3 4 5 6 7 8 9 10 11 12];% M20
+%sessions = [1 2 3 4 5 6 7 8 9 10 11 12];% M20
 
 
-for session = 1:length(sessions)
+for session = 6%1:length(sessions)
     if isempty(dir([OutPath '\*_S' num2str(sessions(session),'%02i') '*_ResponseProperties.mat']))
         dataQuantification_analysis(mousenr, OutPath, BehaviorPath, sessions(session))
     else
@@ -73,25 +73,6 @@ fn = 'M10-11-19-20';
 
 dataQuantification_poolDatasets(stimOrder, fn)
 
-%% add mousenr to unit nr
-
-Path = 'D:\DATA\Processed\M10-11-19-20\';
-File = '*_UnitResponses.mat';
-files = dir(fullfile(Path, File));
-
-for i = 3:size(files, 1)
-    data = load([files(i).folder '\' files(i).name]);
-
-    cids = data.StimResponseFiring_all.unitResponses.Cluster';
-    mice = data.StimResponseFiring_all.unitResponses.MouseNum';
-    s = sprintf( '%1d%1d ', [mice;cids]);
-    data.StimResponseFiring_all.unitResponses.Cluster = str2num(s)';
-
-    StimResponseFiring_all = data.StimResponseFiring_all;
-
-    %filename = sprintf('M10-11-19-20_%s_UnitResponses', stimOrder.Properties.VariableNames{condition});
-    save(fullfile(files(i).folder, files(i).name), "StimResponseFiring_all")
-end
 
 %% STATS - to do
 
@@ -100,28 +81,107 @@ mousenr = 9; % M11
 %session = [3, 4]; % M11
 %session = [2, 5]; % M10
 %session = [5, 3]; % M8
-session = [4, 6]; % SxA, SOM M9
+%session = [4, 6]; % SxA, SOM M9
 
-OutPath = ['D:\DATA\Processed\M' num2str(mousenr, '%d') '\ResponseProperties'];
+clearvars
+
+OutPath = 'D:\DATA\Processed\M10-11-19-20';
 
 % load SxA data
-sessionFile = ['M' num2str(mousenr, '%.2d') '_S' num2str(session(1), '%.2d') '_*_ResponseProperties.mat']; % select based on stimulus type '_*.mat'
-stim_files = dir(fullfile(OutPath, sessionFile));
-dataS = load([stim_files.folder '\' stim_files.name]);
-unitResponses_SxA = dataS.StimResponseFiring.unitResponses;
+load('D:\DATA\Processed\M10-11-19-20\M10-11-19-20_PxA_post_UnitResponses.mat')
+StimResponseFiring_all_SxA = StimResponseFiring_all;
+unitResponses_SxA = StimResponseFiring_all.unitResponses;
+firingmean_SxA = firing_mean; % size: 5     9     4    24
+MouseNum_SxA = StimResponseFiring_all.MouseNum;
+session_SxA = StimResponseFiring_all.session;
+amplitudes_SxA = StimResponseFiring_all.amplitudes;
+frequencies_SxA = StimResponseFiring_all.frequencies;
+PostT_SxA = StimResponseFiring_all.PostT;
+PreT_SxA = StimResponseFiring_all.PreT;
+FSLmed_SxA = StimResponseFiring_all.FSLmed;
+FSLiqr_SxA = StimResponseFiring_all.FSLiqr;
+hvalue_SxA = StimResponseFiring_all.hvalue;
 
 % load pressure data
-sessionFile = ['M' num2str(mousenr, '%.2d') '_S' num2str(session(2), '%.2d') '_*_ResponseProperties.mat']; % select based on stimulus type '_*.mat'
-stim_files = dir(fullfile(OutPath, sessionFile));
-dataS = load([stim_files.folder '\' stim_files.name]);
-unitResponses_SOM = dataS.StimResponseFiring.unitResponses;
+load('D:\DATA\Processed\M10-11-19-20\M10-11-19-20_SOM_P_post_UnitResponses.mat')
+StimResponseFiring_all_SOM = StimResponseFiring_all;
+unitResponses_SOM = StimResponseFiring_all.unitResponses;
+firingmean_SOM = firing_mean; % size: 1     9     1    40
+MouseNum_SOM = StimResponseFiring_all.MouseNum;
+session_SOM = StimResponseFiring_all.session;
+amplitudes_SOM = StimResponseFiring_all.amplitudes;
+frequencies_SOM = StimResponseFiring_all.frequencies;
+PostT_SOM = StimResponseFiring_all.PostT;
+PreT_SOM = StimResponseFiring_all.PreT;
+FSLmed_SOM = StimResponseFiring_all.FSLmed;
+FSLiqr_SOM = StimResponseFiring_all.FSLiqr;
+hvalue_SOM = StimResponseFiring_all.hvalue;
 
-% combine tables
-unitResponses = joindata(unitResponses_SxA, unitResponses_SOM);
+% combine data
+unitResponses = joindata(unitResponses_SxA, unitResponses_SOM); % combine unit response table
 
-%include condition when saving
-filename = sprintf('M%.2i_S%.2i&S%.2i_UnitResponses', mousenr, session(1), session(2));
-save(fullfile(OutPath, filename), "unitResponses")
+MouseNum = [MouseNum_SOM, MouseNum_SxA]; % combine mousenr
+session = [session_SOM, session_SxA]; %combine session nr
+amplitudes = [amplitudes_SOM, amplitudes_SxA]; % combine amplitudes
+
+% combine freqs
+frequencies_SOM = [-Inf -Inf];
+frequencies_SOM(end+1:size(frequencies_SxA,1),:) = missing;
+frequencies_SOM(end+1:size(frequencies_SxA,1),:) = missing;
+frequencies = [frequencies_SOM, frequencies_SxA]; 
+
+% combine postT and preT
+PostT_SOM(end+1:size(PostT_SxA,1),:) = missing;
+PreT_SOM(end+1:size(PreT_SxA,1),:) = missing;
+PostT = [PostT_SOM, PostT_SxA];
+PreT = [PreT_SOM, PreT_SxA];
+
+% combine firing mean data
+temp = NaN(size(firingmean_SxA,1),size(firingmean_SOM,2),size(firingmean_SxA,3),size(firingmean_SOM,4)); % make temporary matrix in correct dimensions
+temp(1,1,1,:) = firingmean_SOM(1,1,1,:); % add control
+temp(1,2:end,3,:) = firingmean_SOM(1,2:end,1,:); % add som only
+firingmean_SOM = temp;
+firing_mean = cat(4,firingmean_SOM, firingmean_SxA);
+
+% combine FSLmed
+temp = NaN(size(FSLmed_SxA,1),size(FSLmed_SOM,2),size(FSLmed_SxA,3),size(FSLmed_SOM,4)); % make temporary matrix in correct dimensions
+temp(1,1,1,:) = FSLmed_SOM(1,1,1,:); % add control
+temp(1,2:end,3,:) = FSLmed_SOM(1,2:end,1,:); % add som only
+FSLmed_SOM = temp;
+FSLmed = cat(4,FSLmed_SOM, FSLmed_SxA);
+
+% combine FSLiqr
+temp = NaN(size(FSLiqr_SxA,1),size(FSLiqr_SOM,2),size(FSLiqr_SxA,3),size(FSLiqr_SOM,4)); % make temporary matrix in correct dimensions
+temp(1,1,1,:) = FSLiqr_SOM(1,1,1,:); % add control
+temp(1,2:end,3,:) = FSLiqr_SOM(1,2:end,1,:); % add som only
+FSLiqr_SOM = temp;
+FSLiqr = cat(4,FSLiqr_SOM, FSLiqr_SxA);
+
+% combine hval
+temp = NaN(size(hvalue_SxA,1),size(hvalue_SOM,2),size(hvalue_SxA,3),size(hvalue_SOM,4)); % make temporary matrix in correct dimensions
+temp(1,1,1,:) = hvalue_SOM(1,1,1,:); % add control
+temp(1,2:end,3,:) = hvalue_SOM(1,2:end,1,:); % add som only
+hvalue_SOM = temp;
+hvalue = cat(4,hvalue_SOM, hvalue_SxA);
+
+% save in struct
+StimResponseFiring_all.StimType = 'PxA_pre';
+StimResponseFiring_all.MouseNum = MouseNum;
+StimResponseFiring_all.session = session;
+StimResponseFiring_all.amplitudes = amplitudes;
+StimResponseFiring_all.frequencies = frequencies;
+StimResponseFiring_all.PreT = PreT;
+StimResponseFiring_all.PostT = PostT;
+StimResponseFiring_all.unitResponses = unitResponses;
+StimResponseFiring_all.firing_mean = firing_mean;
+StimResponseFiring_all.FSLmed = FSLmed;
+StimResponseFiring_all.FSLiqr = FSLiqr;
+StimResponseFiring_all.hvalue = hvalue;
+
+
+% include condition when saving
+filename = sprintf('M10-11-19-20_PxA_P_post_UnitResponses');
+save(fullfile(OutPath, filename), "firing_mean", "StimResponseFiring_all")
 
 %% OPTIONAL: Bandwith FRA analysis
 
@@ -129,7 +189,7 @@ OutPath = 'D:\DATA\Processed\M10\ICX';
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
 session = 4;
 
-[cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
+[cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
 
 
 if ~strcmp(stimuli_parameters.Par.Rec, 'FRA')
@@ -139,10 +199,13 @@ end
 FRA = FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath, 0, 0);
 
 %% parameters
-deltaInt = [0,10,20,30,40];
-uparamA = StimResponseFiring_all.amplitudes(:,1); % unique(stimuli_parameters.Stm.Intensity);
-uparamB = StimResponseFiring_all.frequencies(:,1); %unique(stimuli_parameters.Stm.Freq);
+uAmp = StimResponseFiring_all.amplitudes(:,1); % unique(stimuli_parameters.Stm.Intensity);
+uFreq = StimResponseFiring_all.frequencies(:,1); %unique(stimuli_parameters.Stm.Freq);
 NClu = length(StimResponseFiring_all.unitResponses.Cluster);  %length(cids);
+%NClu = length(selected_cids);
+StimResponseFiring = StimResponseFiring_all;
+
+deltaInt = [0,10,20,30,40];
 
 % initiate variables
 excBand = NaN(length(deltaInt), 2, NClu);
@@ -154,16 +217,19 @@ inhQ = NaN(length(deltaInt),NClu);
 CF = NaN(NClu,1);
 BF = NaN(NClu,1);
 BestFreqAmp = NaN(NClu,1);
-
+%
 for cluster = 1:NClu
+
+    % only for selected clusters
+    if
     spontRate = StimResponseFiring.firing_mean(1, 1, 1, cluster);
 
     % find best frequency (BF)
     [~,maxIdx] = max(StimResponseFiring.firing_mean(:, :, 1, cluster),[],'all','linear'); % find max firing rate change
     [maxRow, maxCol] = ind2sub(size(StimResponseFiring.firing_mean(:, :, 1, cluster)), maxIdx); % translate to position in matrix
     if StimResponseFiring.hvalue(maxRow, maxCol, cluster) % select from sig responses
-        BF(cluster) = uparamB(maxRow);
-        BestFreqAmp(cluster) = uparamA(maxCol);
+        BF(cluster) = uFreq(maxRow);
+        BestFreqAmp(cluster) = uAmp(maxCol);
     end
 
     % find minimum threshold from significant neurons
@@ -171,27 +237,27 @@ for cluster = 1:NClu
     if isempty(col)
         minThr = NaN;
     else
-        minThr = uparamA(min(col)); % minimal threshold
+        minThr = uAmp(min(col)); % minimal threshold
     end
 
     % find minimum threshold for all units
     %[row, col] = find(FRA.FRASR(:,:,1,cluster))
 
     %find charactristic frequency (CF)
-    CF(cluster) = mean(uparamB(row(col == min(col))));  
+    CF(cluster) = mean(uFreq(row(col == min(col))));  
 
     % bandwith
     for dInt = 1:length(deltaInt)
-        idx = find(uparamA == minThr + deltaInt(dInt)); % min threshold + delta
+        idx = find(uAmp == minThr + deltaInt(dInt)); % min threshold + delta
 
         excBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) >= spontRate) & (StimResponseFiring.hvalue(idx,:,cluster)==1);
         inhBandIdx = (StimResponseFiring.firing_mean(idx,:,1,cluster) <= spontRate) & (StimResponseFiring.hvalue(idx,:,cluster)==1);
 
         if(sum(excBandIdx)>0) % excitatory band
             band_start = find(excBandIdx,1,'first');
-            excBand(dInt,1, cluster) = sqrt(uparamB(band_start) * uparamB(band_start - 1)) ;
+            excBand(dInt,1, cluster) = sqrt(uFreq(band_start) * uFreq(band_start - 1)) ;
             band_end = find(excBandIdx,1,'last');
-            excBand(dInt,2, cluster) = sqrt(uparamB(band_end) * uparamB(band_end + 1)) ;
+            excBand(dInt,2, cluster) = sqrt(uFreq(band_end) * uFreq(band_end + 1)) ;
 
             excBW_oct(dInt, cluster) = log2(excBand(dInt,2,cluster) / excBand(dInt,1,cluster));
             excQ(dInt, cluster) = CF(cluster) / (excBand(dInt,2, cluster) - excBand(dInt,1, cluster));
@@ -199,9 +265,9 @@ for cluster = 1:NClu
 
         if(sum(inhBandIdx)>0) % inhibitory band
             band_start = find(inhBandIdx,1,'first');
-            inhBand(dInt, 1, cluster) = sqrt(uparamB(band_start) * uparamB(band_start - 1)) ;
+            inhBand(dInt, 1, cluster) = sqrt(uFreq(band_start) * uFreq(band_start - 1)) ;
             band_end = find(inhBandIdx, 1,'last');
-            inhBand(dInt, 2, cluster) = sqrt(uparamB(band_end) * uparamB(band_end + 1)) ;
+            inhBand(dInt, 2, cluster) = sqrt(uFreq(band_end) * uFreq(band_end + 1)) ;
 
             inhBW_oct(dInt, cluster) = log2(inhBand(dInt, 2, cluster) / inhBand(dInt, 1, cluster));
             inhQ(dInt, cluster) = CF(cluster) / (inhBand(dInt, 2, cluster) - inhBand(dInt, 1, cluster));
