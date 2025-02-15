@@ -185,20 +185,6 @@ save(fullfile(OutPath, filename), "firing_mean", "StimResponseFiring_all")
 
 %% OPTIONAL: Bandwith FRA analysis
 
-OutPath = 'D:\DATA\Processed\M10\ICX';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
-session = 4;
-
-[cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
-
-
-if ~strcmp(stimuli_parameters.Par.Rec, 'FRA')
-    error('non FRA session loaded')
-end
-
-FRA = FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath, 0, 0);
-
-%% parameters
 uAmp = StimResponseFiring_all.amplitudes(:,1); % unique(stimuli_parameters.Stm.Intensity);
 uFreq = StimResponseFiring_all.frequencies(:,1); %unique(stimuli_parameters.Stm.Freq);
 NClu = length(StimResponseFiring_all.unitResponses.Cluster);  %length(cids);
