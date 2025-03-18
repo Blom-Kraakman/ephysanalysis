@@ -1,9 +1,9 @@
 %% 1. load behavioural stimuli
 clearvars
 
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M13\'; % stimuli parameters
+BehaviorPath = 'D:\DATA\LaserVibrometer\P3\PiezoFlexors\M0\'; % stimuli parameters
 SoundPath = [BehaviorPath 'Sound recording\'];
-OutPath = 'D:\DATA\Processed\M13\Spectograms';
+OutPath = 'D:\DATA\Processed\LaserVibrometer';
 
 % make array with all relevant session numbers
 sound_file_list = dir(fullfile(SoundPath, '*_Sound.mat'));
@@ -11,8 +11,7 @@ sound_file_list = dir(fullfile(SoundPath, '*_Sound.mat'));
 % analyze sound spectogram for each session
 for session_file = 1:size(sound_file_list,1)
     
-    session = str2double(sound_file_list(session_file).name(6:7));
-
+    session = str2double(sound_file_list(session_file).name(5:6)); %6:7
     disp(['Analyzing session: ' sound_file_list(session_file).name])
 
     % load behaviour file
@@ -38,13 +37,12 @@ for session_file = 1:size(sound_file_list,1)
         %Select correct trials from Aud
         AudTemp = Aud;
         Aud = AudTemp(Stm.AudDur==0); % trials x samples
-
         % select non aud stim only tirals
         StmTemp = Stm(Stm.AudDur==0, :);
-    else
+    elseif strcmp(Par.Rec, 'SOM')
         StmTemp = Stm;
-        warning('check session type')
-        continue
+    else
+        error('invalid session type loaded')
     end
 
     % %% 2.2 select sound only trials from SxA
@@ -59,6 +57,12 @@ for session_file = 1:size(sound_file_list,1)
 
     % 3. Format Aud (cell array --> matrix)
     AudTemp = NaN(size(Aud,2), size(Aud{1},2));
+
+    % check if Aud contains all trials
+    if size(AudTemp,1) ~= size(StmTemp,1)
+        warning('aud file missing trials')
+        continue
+    end
 
     for i = 1:size(Aud,2)
         AudTemp(i,:) = Aud{i};
@@ -162,11 +166,13 @@ for session_file = 1:size(sound_file_list,1)
         hL.Position(1:2) = axPos(1:2); % move legend to position of extra axes
     end
 
-    if strcmp(Par.Rec, 'SxA') && strcmp(Par.SomatosensoryWaveform, 'UniSine')
+    if strcmp(Par.SomatosensoryWaveform, 'UniSine') % && strcmp(Par.Rec, 'SxA')
         figtitle = append('Actuator: ', StmTemp.Actuator(1,:), ', Waveform: ', StmTemp.Waveform(1,:));
         %sgtitle(['Actuator: ' StmTemp.Actuator(1,:) ', Waveform: ' StmTemp.Waveform(1,:)])
-    elseif strcmp(Par.Rec, 'SxA') && strcmp(Par.SomatosensoryWaveform, 'Square')
+    elseif strcmp(Par.SomatosensoryWaveform, 'Square') && strcmp(Par.Rec, 'SxA')
         figtitle = append('Ramp: ', num2str(StmTemp.SomRamp(1)), ', ms, Actuator: ', StmTemp.Actuator(1,:), ', Waveform: ', StmTemp.Waveform(1,:));
+    elseif strcmp(Par.SomatosensoryWaveform, 'Square') && strcmp(Par.Rec, 'SOM')
+        figtitle = append('Ramp: ', num2str(StmTemp.Ramp(1)), ', ms, Actuator: ', StmTemp.Actuator(1,:), ', Waveform: ', StmTemp.Waveform(1,:));
     end
 
     sgtitle(figtitle)

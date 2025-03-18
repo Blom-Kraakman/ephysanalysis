@@ -11,13 +11,13 @@ clearvars
 % setting directories
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M11\M11_2024-05-22_12-34-22\';
+recordingFolder = 'D:\DATA\EphysRecordings\P1\M21_2025-01-28_13-45-25_ICX\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M11\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M11\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M11'; % output directory
+%KSPath = 'D:\DATA\EphysRecordingsSorted\M11\'; % kilosort ephys data
+%BehaviorPath = 'D:\DATA\Behavioral Stimuli\M11\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\P1'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
 
@@ -107,3 +107,33 @@ end
 % % save
 % filename = sprintf('M16_ICX_MatchedUnits');
 % save(fullfile(OutPath, filename), "matchedUnits")
+
+%% rename mouse nr
+
+clearvars
+
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M3\'; % stimuli parameters
+SoundPath = [BehaviorPath 'Sound recording\'];
+%OutPath = 'D:\DATA\Processed\M23\Spectograms';
+% make array with all relevant session numbers
+sound_file_list = dir(fullfile(SoundPath, '*_Sound.mat'));
+stim_file_list = dir(fullfile(BehaviorPath, '*.mat'));
+
+% load behaviour file
+for session_file = 1:size(stim_file_list,1)
+    %sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+    %stim_file = dir(fullfile(BehaviorPath, sessionFile));
+    % load files
+    stimuli_parameters = load([stim_file_list(session_file).folder '\' stim_file_list(session_file).name], 'Stm', 'Par');
+    Stm = stimuli_parameters.Stm;
+    Par = stimuli_parameters.Par;
+
+    % rename in Par file
+    Par.MouseNum = num2str(23);
+
+    % rename in Stm file
+    Stm.MouseNum(:) = 23;
+
+    save([stim_file_list(session_file).folder '\' stim_file_list(session_file).name], 'Stm', 'Par'); % stimuli_parameters
+
+end

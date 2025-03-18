@@ -1,3 +1,23 @@
+% Parameters
+f = 10;        % Frequency in Hz
+Fs = 1000;     % Sampling frequency in Hz
+T = 0.5;       % Duration in seconds
+t = -0.2:1/Fs:0.7;  % Time vector from -0.2 to 0.7 seconds
+
+% Sine wave
+y = sin(2 * pi * f * t);
+
+% Unidirectional sine wave (offset by 1)
+y_unidirectional = (y + abs(min(y))) .* (t >= 0 & t <= T);
+
+% Adding stable line at 0 between -0.2 and 0 seconds, and between 0.5 and 0.7 seconds
+y_unidirectional(t < 0 | t > T) = 0;
+
+% Plotting
+figure;
+plot(t, y_unidirectional);
+
+
 %% define start/end cycle + cycle window
 % does not work well
 
@@ -643,9 +663,9 @@ saveas(gcf, fullfile(OutPath, figname));
 Waveform = 'BiSine';
 Fs = 30000;
 StimDur = 500;
-Amplitude = 1;
-SomFreq = 100;
-Ramp = 10;
+Amplitude = 0.5;
+SomFreq = 10;
+Ramp = 1;
 ISI = 1000;
 Offset = 0.1;
 
@@ -675,6 +695,7 @@ tt = [-flip(1:PrePostSamp)./Fs, tt, tt(end) + (1:PrePostSamp)./Fs];
 som_waveform = [zeros(1,PrePostSamp), som_waveform, zeros(1,PrePostSamp)];
 
 % plotting the waveform
+figure;
 plot(tt(1:length(som_waveform)),som_waveform+Offset);
 xlim([min(tt),max(tt)]);
 

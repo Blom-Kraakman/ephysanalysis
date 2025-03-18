@@ -32,9 +32,11 @@ if strcmp(stimuli_parameters.Par.Rec, 'FRA')
         ylabel('Stimulus frequency (kHz)')
 
         % save plot
+        if cids(cluster) == 290
         figname = sprintf('M%.2i_S%.2i_%s_cluster_%i_raster', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
+        end
 
     end
 end
@@ -177,7 +179,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
             Var = stimuli_parameters.Stm.Amplitude;
             yaxislabels = unique(stimuli_parameters.Stm.Amplitude);
-            yaxistext = 'Pressure (V)';
+            yaxistext = 'Pressure (mN)';
         elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
             Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
             yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
@@ -198,7 +200,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
 
         % format axis
         xlabel('Time (s)')
-        yticklabels(yaxislabels)
+        yticklabels([0 2 5 10 15 20 30 40 50])
         ylabel(yaxistext)
         %fig.FontSize = 11;
         title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
@@ -324,9 +326,93 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
 
 end
 
-% plot pressure %for multiple onset delays
+% plot SxA Square, only SO sessions
+if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
 
-if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') %%&& length(SOAdelays) > 2
+    % define shared x-lim parameters
+    preT  =  max(-str2double(stimuli_parameters.Par.SomatosensoryISI)/2000, -0.2);
+    postT = min((max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
+        + str2double(stimuli_parameters.Par.SomatosensoryISI)/2)/1000, 1.5);
+    xrange = [preT, postT];
+    binsize = 0.01;
+    start_aud = 0;
+    start_som = max(stimuli_parameters.Stm.SomAudSOA)/1000;
+    end_som = max(stimuli_parameters.Stm.SomAudSOA)/1000 + str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
+    end_aud = str2double(stimuli_parameters.Par.AuditoryStimTime)/1000;
+
+    % start_aud = 0;
+    % start_som = 0.25;
+    % end_som = 0.75;
+    % end_aud = 1;
+
+    xlinerange = [start_aud start_som end_som end_aud];
+
+    for cluster = 1:length(cids)
+
+        fig = figure;
+        ax = gca;
+
+        %fig = subplot(2,1,1); % rasterplot
+        set(gcf,'position',[500,150,900,700])
+
+        % make rasterplot
+        raster_color = [0, 0, 0];
+        raster_yinc = [];%1,1,1];
+
+        % define stimulus variable space
+        index = stimuli_parameters.Stm.AudDur == 0;
+        SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
+        Var = [SOM_Amp];
+        yaxislabels = [0 2 5 10 15 20 30 40 50];
+
+        %yaxislabels = unique(stimuli_parameters.Stm.Amplitude); %{'Control', 'Pressure only', 'Pressure + noise' 'Noise only'};
+        yaxistext = 'Pressure (mN)';
+        raster_yinc = [10,20,20];
+
+        % index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3) & (stimuli_parameters.Stm.AudIntensity ==45); % select only high pressure case
+        % 
+        % SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
+        % SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
+        % Var = [SOM_Hz, SOM_Amp];
+
+
+        % add delay to "SO","OO" if needed
+        idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
+        for ii = idx'
+            aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + start_som;
+        end
+
+
+        % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
+        % make rasterplot
+        [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(index, cluster), Var, raster_color, raster_yinc, 1);
+        yticks(YTick{1});
+        yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];        ylim(f,yrange);
+        xlim(f,xrange);
+
+        % add demarcation lines
+        xline(xlinerange) % on/off set
+        horizontalLine(YTickLim, ax) % between categories
+
+        % format axis
+        xlabel('Time (s)')
+        yticklabels(yaxislabels)
+        ylabel(yaxistext)
+        set(gca, 'FontSize', 16)
+        %fig.FontSize = 16;
+        title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+
+        %save figure
+        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+        saveas(fig, fullfile(OutPath, figname));
+    end
+
+end
+
+% plot pressure % to do: for multiple onset delays
+
+if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(SOAdelays) > 2
     
     SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA);
     AudIntensities = str2num(stimuli_parameters.Par.AuditoryIntensity);
@@ -406,10 +492,10 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
 
     end
 
-    %save figure
-    figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
-    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-    saveas(fig, fullfile(OutPath, figname));
+    % %save figure
+    % figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+    % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    % saveas(fig, fullfile(OutPath, figname));
 end
 
 
