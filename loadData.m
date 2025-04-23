@@ -1,11 +1,14 @@
-function [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring] = loadData(OutPath, session, BehaviorPath)
+function [cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring, clusterinfo] = loadData(OutPath, session, BehaviorPath)
 % load several data files, if they exist
+
+disp(['Loading session: ' num2str(session)])
 
 % load cluster unit info
 cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']); %.name;
 if ~isempty(cpos_file)
     cpos = load([OutPath '\' cpos_file.name]);
-    cids = cpos.clusterinfo.id';
+    clusterinfo = cpos.clusterinfo;
+    cids = clusterinfo.id';
 else
     cids = [];
     warning('no cluster details found')
@@ -38,8 +41,8 @@ end
 aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
 if ~isempty(aligned_spikes_files)
     aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
-    if isfield(aligned_spikes,"Srise")
-        disp("Srise/Sfall loaded from data file.")
+    if isfield(aligned_spikes, "Srise")
+        %disp("Srise/Sfall loaded from data file.")
         Srise = aligned_spikes.Srise;
         Sfall = aligned_spikes.Sfall;
     else

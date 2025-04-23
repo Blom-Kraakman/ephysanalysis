@@ -32,11 +32,10 @@ if strcmp(stimuli_parameters.Par.Rec, 'FRA')
         ylabel('Stimulus frequency (kHz)')
 
         % save plot
-        if cids(cluster) == 290
         figname = sprintf('M%.2i_S%.2i_%s_cluster_%i_raster', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
-        end
+
 
     end
 end
@@ -180,7 +179,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
             Var = stimuli_parameters.Stm.Amplitude;
             yaxislabels = unique(stimuli_parameters.Stm.Amplitude);
             yaxistext = 'Pressure (mN)';
-        elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
+        elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') || strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'BiSine')
             Var = [stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
             yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
             yaxistext = 'Vibrotactile stimulation (Hz)';
@@ -200,7 +199,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SOM')
 
         % format axis
         xlabel('Time (s)')
-        yticklabels([0 2 5 10 15 20 30 40 50])
+        yticklabels(yaxislabels)
         ylabel(yaxistext)
         %fig.FontSize = 11;
         title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])

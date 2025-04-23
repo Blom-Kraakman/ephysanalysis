@@ -1,4 +1,4 @@
-function [fig, channelpos] = plot_in_channel_map(KSPath, cpos)
+function [figa, figb, channelpos] = plot_in_channel_map(KSPath, cpos)
 
 channel_map = readNPY([KSPath 'channel_map.npy']);
 channel_positions = readNPY([KSPath 'channel_positions.npy']);
@@ -46,6 +46,7 @@ hold off;
 %fig = scatter(1:length(cids)/10, cpos.depth', ".", 'k');
 %xticks(unique(xcoords));
 
+figure;
 figb = scatter(channel_positions(idx,1), channel_positions(idx,2), '.k');
 %units = cpos.id';
 channelpos = [channel_positions(idx,1), channel_positions(idx,2), channel_map(idx)];
