@@ -2,14 +2,14 @@ function fig = SOMplotting(stimuli_parameters, aligned_spikes, cids, OutPath, sa
 
 % define shared x-lim parameters
 preT  = -0.2;
-postT = 1.2;
+postT = 0.7;
 xrange = [preT, postT];
 binsize = 0.01; %10ms
 
 start_stim = 0;
 end_stim = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-xlinerange = [start_stim 0.25 0.75 1]; %end_stim
-start_som = max(stimuli_parameters.Stm.SomAudSOA)/1000;
+xlinerange = [start_stim end_stim]; %end_stim
+%start_som = max(stimuli_parameters.Stm.SomAudSOA)/1000;
 
 
 % plot SOM data based on 'Location'
@@ -32,7 +32,8 @@ for cluster = 1:length(cids)
     for freq = 1:length(all_freqs)
 
         % initiate figure
-        fig = figure('position',[-918,294,520,370]);
+        %fig = figure('position',[-918,294,520,370]);
+        fig = figure;
         raster_fig = subplot(4,1,4); % rasterplot
 
         % define stimulus variable space
@@ -52,7 +53,9 @@ for cluster = 1:length(cids)
                 SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
                 Var = [SOM_Hz, SOM_Amp];
             elseif strcmp(condition, 'SO')
-                index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
+               % index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
+
+                index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3170) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
                 linecolor = '#52A3CF';
 
                 SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
@@ -135,6 +138,8 @@ for cluster = 1:length(cids)
         %StimOnset = 250;
         [som_waveform,tt_stim] = gensomwaveform('UniSine',500, Amplitude,all_freqs(freq),0,30000);
         plot(tt_stim+0.250,som_waveform, 'k', 'LineWidth',1); %hold(ax(1),'on');
+        % plot(tt_stim+0.250,som_waveform, 'k', 'LineWidth',1); %hold(ax(1),'on');
+
         %xlim()
         xlim(xrange)
         axis off
@@ -152,7 +157,7 @@ for cluster = 1:length(cids)
 
     end
 
-close all
+%close all
 end
 end
 
