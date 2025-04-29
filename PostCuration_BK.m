@@ -11,20 +11,20 @@ clearvars
 % setting directories
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\P1\M21_2025-01-28_13-45-25_ICX\';
+recordingFolder = 'D:\DATA\EphysRecordings\M24\M24_2025-04-09_13-08-27_ICX\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-%KSPath = 'D:\DATA\EphysRecordingsSorted\M11\'; % kilosort ephys data
-%BehaviorPath = 'D:\DATA\Behavioral Stimuli\M11\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\P1'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M24\10000-inf_1\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M24\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M24'; % output directory
 
-rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
+rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording. supressed if alignedspikes done to save time
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [1 10];
-skip_sessions = [];
+relevant_sessions = [1 16];
+skip_sessions = [1 2 3 4 5 6 7 8 9 10 11 14];
 
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13
 %relevant_sessions = [10 13]; %M13 ICX 1:6; ICC 10:13
@@ -67,35 +67,6 @@ end
 
 alignspikes(BehaviorPath, TTLPath, OutPath, spiketimes, relevant_sessions, skip_sessions, cids, sessions_TTLs, Fs);
 
-% ----------------------- FRA analysis & Plotting ----------------------- %%
-% output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
-
-close all
-
-% load FRA session(s) aligned spikes
-aligned_spikes_files = dir(fullfile(OutPath, '*FRA_AlignedSpikes.mat'));
-
-for file = 1:size(aligned_spikes_files, 1)
-
-    % load each FRA aligned spikes file
-    aligned_spikes = load([aligned_spikes_files(file).folder '\' aligned_spikes_files(file).name]);
-
-    % load corresponding stimuli file
-    session = aligned_spikes_files(file).name(6:7);
-    stim_files = dir(fullfile(BehaviorPath, ['*_S' session '_*.mat']));
-
-    if size(stim_files, 1) ~= 1 % check input
-        error('Mismatch between stimulus and aligned spikes file')
-    end
-
-    stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-
-    % FRA analysis saves heatmap figures
-    FSL = 0;
-    FRAanalysis(stimuli_parameters, aligned_spikes.SpkT, cids, OutPath, FSL);
-
-end
-
 %% optional: match units between session
 % 
 % OutPath = 'D:\DATA\Processed\M16'; % output directory
@@ -108,7 +79,7 @@ end
 % filename = sprintf('M16_ICX_MatchedUnits');
 % save(fullfile(OutPath, filename), "matchedUnits")
 
-%% rename mouse nr
+%% optional: rename mouse nr
 
 clearvars
 

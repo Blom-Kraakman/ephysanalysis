@@ -20,12 +20,11 @@ clearvars
 
 close all
 
-OutPath = 'D:\DATA\Processed\M19\ICX';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M19';
+OutPath = 'D:\DATA\Processed\M21'; % output directory
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M21\'; % stimuli parameters
 
 % load FRA session(s) aligned spikes
 aligned_spikes_files = dir(fullfile(OutPath, '*FRA_AlignedSpikes.mat'));
-
 
 for file = 1:size(aligned_spikes_files, 1)
 

@@ -208,41 +208,98 @@ fig = SOMplotting(stimuli_parameters, aligned_spikes, cidtoplot, OutPath, savepl
 [figa, figb, channelpos] = plot_in_channel_map(KSPath, clusterinfo);
 
 
-%% --------- Single unit raster - in progress --------- %%
+%% --------- Single unit raster - (1 stimulus, different sessions) --------- %%
 % plot raster of several sessions of specific stimulus combination
-% TO DO: ADD DIFF SESSIONS TOGETHER
-
 
 % define shared x-lim parameters
 preT  = -0.2;
 postT = 0.7;
-xrange = [preT, postT];
 
+% select stimuli
+amp = 0.3170; % 0.3170, 0.1270
+freq = 20;
 
+% select sessions
+sessions = [14, 15, 16]; % in order of plotting
+cids = loadData(OutPath, sessions(1), BehaviorPath);
+
+SOM_Freq = [];
+SOM_Amp = [];
+sessions_var = [];
+taligned_spikes = [];
+
+% organize variables (Var) and aligned spikes
+for session = 1:length(sessions) %each session
+
+    % load data
+    [~, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~, ~] = loadData(OutPath, sessions(session), BehaviorPath);
+
+    % select groups for histogram
+    %OO = (stimuli_parameters.Stm.SomFreq == 0) & (stimuli_parameters.Stm.Amplitude == amp); % control condition index
+    %SO = (stimuli_parameters.Stm.SomFreq == freq) & (stimuli_parameters.Stm.Amplitude == amp); % experimental condition index
+
+    % define stimulus variable space
+    %index = (stimuli_parameters.Stm.SomFreq == freq) & (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
+    index = (stimuli_parameters.Stm.SomFreq == freq | stimuli_parameters.Stm.SomFreq == 0) & (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
+
+    %linecolor = '#52A3CF';
+
+    tSOM_Freq = stimuli_parameters.Stm.SomFreq(index);
+    %tSOM_Amp = stimuli_parameters.Stm.Amplitude(index);
+    %Var = [SOM_Hz, SOM_Amp];
+    % append Var
+    SOM_Freq = [SOM_Freq; tSOM_Freq];
+    %SOM_Amp = [SOM_Amp; tSOM_Amp];
+    sessions_var = [sessions_var; (repmat(sessions(session), length(tSOM_Freq), 1))];
+
+    % append aligned_spikes
+    taligned_spikes = [taligned_spikes; aligned_spikes(index, :)];
+
+end
+
+% rasterplot format: general figure formatting variables
 start_stim = 0;
 end_stim = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
 xlinerange = [start_stim end_stim];
+xrange = [preT, postT];
 
+% make raster plot for each unit
 for cluster = 1:length(cids)
 
-    fig = figure;
-    ax = gca;
+    % plot both in 1 figure
+    figure; hold on
+    ax0 = gca;
+    Var = [sessions_var, SOM_Freq];
 
-    % for each session
-    % define stimulus variable space
+    [f, YTick, ~, ~, ~, YTickLim] = plotraster(gca, taligned_spikes(:, cluster), Var, [0, 0, 0], [10, 10], 1);
+    yticks(YTick{2});
+    yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
+    ylim(f,yrange);
+    xlim(f,xrange);
 
-    index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3170) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
-    linecolor = '#52A3CF';
+    % add demarcation lines
+    xline(xlinerange) % on/off set
+    horizontalLine(YTickLim, ax0) % between categories
 
-    SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
-    SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
-    %Var = [SOM_Hz, SOM_Amp];
-    Var = [SOM_Hz, sessions];
+    % format axis
+    xlabel('Time (s)')
+    yticklabels({'loc 1', 'loc 1', 'loc 2', 'loc 2', 'loc 3', 'loc 3'})
+    ylabel('stimulation location')
+    %fig.FontSize = 11;
+    title(['Cluster ' num2str(cids(cluster))])
 
-    % [f, YTick, YTickLab] = plotraster(gca, aligned_spikes(:, 1), Var, [0, 0, 0], [], 1);
-    % make rasterplot
-    [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(:, cluster), Var, [0, 0, 0], [], 1);
-    yticks(YTick{1});
+    hold off
+
+    % plot experimental and control conditions in seperate subplots
+    figure; hold on
+    ax = subplot(2,1,1);
+    Var = [SOM_Freq, sessions_var];
+
+
+    % make experimental condition rasterplot
+    [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, taligned_spikes((SOM_Freq == freq), cluster), Var(SOM_Freq == freq,:), [0, 0, 0], [], 1);
+
+    yticks(YTick{2});
     yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
     ylim(f,yrange);
     xlim(f,xrange);
@@ -252,16 +309,51 @@ for cluster = 1:length(cids)
     horizontalLine(YTickLim, ax) % between categories
 
     % format axis
-    xlabel('Time (s)')
-    yticklabels(yaxislabels)
-    ylabel(yaxistext)
+    %xlabel('Time (s)')
+    yticklabels({'loc 1', 'loc 2', 'loc 3'})
+    ylabel('stimulation location')
     %fig.FontSize = 11;
-    title(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
+    title(['Cluster ' num2str(cids(cluster))])
+
+    % make control condition rasterplot
+    ax2 = subplot(2,1,2);
+    [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax2, taligned_spikes((SOM_Freq == 0), cluster), Var(SOM_Freq == 0,:), [0, 0, 0], [], 1);
+
+    yticks(YTick{2});
+    yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
+    ylim(f,yrange);
+    xlim(f,xrange);
+
+    % add demarcation lines
+    xline(xlinerange) % on/off set
+    horizontalLine(YTickLim, ax2) % between categories
+
+    % format axis
+    %xlabel('Time (s)')
+    yticklabels({'loc 1', 'loc 2', 'loc 3'})
+    ylabel('stimulation location')
+    xlabel('Time (s)')
 
     % save plot
-    figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
-    saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-    saveas(fig, fullfile(OutPath, figname));
+    %figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+    %saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    %saveas(fig, fullfile(OutPath, figname));
 
     hold off
+end
+
+%% ----------------------- LOCAL FUNCTIONS ----------------------- %%
+function horizontalLine(YTickLim, fig)
+
+    for i = 1:size(YTickLim,1)
+        yline(fig,YTickLim(i,1)-3,':k');
+        yline(fig,YTickLim(i,2)+3,':k');
+    end
+
+    % % box
+    % x = -0.2;w=1;
+    % for i = 1:size(YTickLim,1)
+    %     r(i) = rectangle(fig,'Position',[x,YTickLim(i,1)-0.5,w,YTickLim(i,2)-YTickLim(i,1)+1],...
+    %         'FaceColor',[0,0,0,0],'EdgeColor','none');
+    % end
 end
