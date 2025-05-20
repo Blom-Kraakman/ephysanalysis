@@ -1,4 +1,4 @@
-function fig = SOMplotting(stimuli_parameters, aligned_spikes, cids, OutPath, saveplots, condition)
+function fig = SOMplotting(stimuli_parameters, aligned_spikes, cidstoplot, cids, OutPath, saveplots, condition)
 
 % define shared x-lim parameters
 preT  = -0.2;
@@ -12,8 +12,8 @@ xlinerange = [start_stim end_stim]; %end_stim
 %start_som = max(stimuli_parameters.Stm.SomAudSOA)/1000;
 
 
-% plot SOM data based on 'Location'
-for cluster = 1:length(cids)
+% plot SOM data
+for cluster = 1:length(cidstoplot)
 
     % % add delay to "SO","OO" if needed
     % idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
@@ -22,6 +22,7 @@ for cluster = 1:length(cids)
     % end
 
     if cids(cluster)
+        cid_idx = find(cidstoplot(cluster) == cids);
 
         %fig = figure;
         %ax = gca;
@@ -43,6 +44,12 @@ for cluster = 1:length(cids)
             yaxislabels = unique(stimuli_parameters.Stm.Amplitude);
             yaxistext = 'Pressure (V)';
             linecolor = 'k';
+        elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'BiSine')
+            index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 1); % select only high pressure case
+            linecolor = '#52A3CF';
+            SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
+            SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
+            Var = [SOM_Hz, SOM_Amp];
         elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine')
             % define condition and shift alignspikes if needed
             if strcmp(condition, 'SA')
@@ -54,7 +61,6 @@ for cluster = 1:length(cids)
                 Var = [SOM_Hz, SOM_Amp];
             elseif strcmp(condition, 'SO')
                % index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
-
                 index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3170) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
                 linecolor = '#52A3CF';
 
@@ -86,7 +92,7 @@ for cluster = 1:length(cids)
 
         % [f, YTick, YTickLab, varargout] = plotraster(fig, aligned_spikes(:, cluster), Var, [0, 0, 0], [15 30], 1);
         % make rasterplot
-        [f, YTick, ~, ~, ~, YTickLim] = plotraster(raster_fig, aligned_spikes(index, cluster), Var, [0, 0, 0], [], 1);
+        [f, YTick, ~, ~, ~, YTickLim] = plotraster(raster_fig, aligned_spikes(index, cid_idx), Var, [0, 0, 0], [], 1);
         %yticks(YTick{2});
         yticks([1 20]);
         yrange = [min(YTick{end}) - 1, max(YTick{end}) + 1]; % 5 ipv 15
@@ -118,7 +124,7 @@ for cluster = 1:length(cids)
         %plot(edges(1:end-1),((N/sum(SOM_Amp_low))/binsize),'Color', '#00636C','LineWidth',1)
 
         hold on
-        [N, edges] = histcounts(vertcat(aligned_spikes{SOM_Amp_high, cluster}), preT:binsize:postT);
+        [N, edges] = histcounts(vertcat(aligned_spikes{SOM_Amp_high, cid_idx}), preT:binsize:postT);
         plot(edges(1:end-1),((N/sum(SOM_Amp_high))/binsize),'Color', linecolor,'LineWidth',2)
         hold off
 
@@ -128,16 +134,16 @@ for cluster = 1:length(cids)
         ylabel('Spike rate (Hz)')
         psth_fig.FontSize = 11;
         xlim(psth_fig,xrange);
-        ylim(psth_fig, [0, 320])
+        ylim(psth_fig, [0, 200])
         xline(xlinerange) % on/off set
         xticklabels(psth_fig, {[]})
 
         % plot sine wave
         subplot(4,1,1)
         Amplitude = 5;
-        %StimOnset = 250;
+        StimOnset = 0; %0.250;
         [som_waveform,tt_stim] = gensomwaveform('UniSine',500, Amplitude,all_freqs(freq),0,30000);
-        plot(tt_stim+0.250,som_waveform, 'k', 'LineWidth',1); %hold(ax(1),'on');
+        plot(tt_stim+StimOnset,som_waveform, 'k', 'LineWidth',1); %hold(ax(1),'on');
         % plot(tt_stim+0.250,som_waveform, 'k', 'LineWidth',1); %hold(ax(1),'on');
 
         %xlim()
@@ -149,7 +155,7 @@ for cluster = 1:length(cids)
         % save plot
         if saveplots
             figname = sprintf('M%.2i_S%.2i_%s_cluster_%i_%iHz_%s', ...
-                str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster), all_freqs(freq), condition);
+                str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cid_idx), all_freqs(freq), condition);
             saveas(gcf, fullfile(OutPath, [figname '.jpg']));
             saveas(fig, fullfile(OutPath, figname));
         end

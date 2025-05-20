@@ -4,14 +4,15 @@
 close all
 clearvars
 
-KSPath = 'D:\DATA\EphysRecordingsSorted\M20\ICX\'; % kilosort ephys data
-OutPath = 'D:\DATA\Processed\M20\ICX'; % output directory
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20\'; % stimuli parameters
+KSPath = 'D:\DATA\EphysRecordingsSorted\M24\10000-inf\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M24\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M24'; % output directory
 
-session = 3;
+session = 15;
 [cids, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, onsetDelay, ~, clusterinfo] = loadData(OutPath, session, BehaviorPath);
 
 %% add spacing where needed
+% never needed anymore, automatically done with loadData.m
 
 idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
 for cluster = 1:length(cids)
@@ -25,9 +26,10 @@ end
 % currently plots raster + psth of each vibration freq seperatly
 
 close all
-%OutPath = 'D:\DATA\Processed\M10'; % output directory
 condition = 'SO';
-fig = SOMplotting(stimuli_parameters, aligned_spikes, cids, OutPath, 0, condition);
+saveplots = 0;
+cidstoplot = [229, 390, 401];
+fig = SOMplotting(stimuli_parameters, aligned_spikes, cidstoplot, cids, OutPath, saveplots, condition);
 
 %% cluster selection new
 %stimOrder = readtable('D:\DATA\Processed\M12-16_stimOrder.csv');
@@ -71,7 +73,7 @@ PxA_SOM = [10 17]; % [19 32]; % selected cids
 % raster plot of single units
 % saves figures to OutPath
 
-for session = 2 %relevant_sessions(1):relevant_sessions(2)
+for session = relevant_sessions(1):relevant_sessions(2)
     % load corresponsing files
     [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
 
@@ -428,9 +430,9 @@ end
 %% ------------------- dataQuantification Plotting ------------------- %%
 % plot aligned spikes from PostCuration_BK output files
 
-OutPath = 'D:\DATA\Processed\M10';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
-session = 2;
+%OutPath = 'D:\DATA\Processed\M10';
+%BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
+%session = 2;
 [~, ~, ~, ~, ~, ~, ~, StimResponseFiring] = loadData(OutPath, session, BehaviorPath);
 
 %% -------------------------- PLOTTING START -------------------------- %%
@@ -902,7 +904,7 @@ nInt = length(uInt);
 data = [StimResponseFiring_all.firing_mean(1,1,1,:); StimResponseFiring_all.firing_mean(2:end,1,2,:)];
 data = squeeze(data)'; % cids x naudint
 FRnoise_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
-FRnoise_nonresp_mean = mean(data(nonresp_cids_idx,:), 'omitnan');
+%FRnoise_nonresp_mean = mean(data(nonresp_cids_idx,:), 'omitnan');
 
 %plot figure
 figure;
@@ -914,23 +916,23 @@ plot(uInt, FRnoise_resp_mean, 'Color',  "#c21069", 'LineWidth', 3)
 %errorbar(uAmp, FRpressure_med, FRpressure_iqr, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 
 % plot selection sound vibrotac responsive units
-plot(uInt, data(nonresp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
-plot(uInt, FRnoise_nonresp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
+%plot(uInt, data(nonresp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
+%plot(uInt, FRnoise_nonresp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
 
 % format figure
 set(gca,'fontsize',16)
 ylabel('\Delta Firing rate (spikes/s)')
 xlabel('Broadband noise intensity (dB SPL)')
 xticks(uInt)
-xticklabels({'-Inf', '15', '30', '45', '60'});
-ylim([-5 140])
-
-figname = sprintf('M10-11-19-20_noise tuning curve_%s_rep-vs-nonrep', StimResponseFiring_all.StimType);
+xticklabels({'0', '15', '30', '45', '60'});
+ylim([-5 85])
+ 
+figname = sprintf('M10-11-19-20_noise tuning curve_%s_resp_pre', StimResponseFiring_all.StimType);
 saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
 saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
 
 
-% format data
+%% format data
 FRnoise_selected_mean = mean(data(selected_cids_idx,:), 'omitnan');
 FRnoise_nonselected_mean = mean(data(~selected_cids_idx,:), 'omitnan');
 
@@ -999,7 +1001,7 @@ nmN = length(umN);
 data = [StimResponseFiring_all.firing_mean(1,1,1,:), StimResponseFiring_all.firing_mean(1,2:end,3,:)];
 data = squeeze(data)'; % cids x namp
 FRpressure_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
-FRpressure_nonresp_mean = mean(data(nonresp_cids_idx,:), 'omitnan');
+%FRpressure_nonresp_mean = mean(data(nonresp_cids_idx,:), 'omitnan');
 
 %% plot figure
 figure;
@@ -1016,8 +1018,8 @@ ylim([-3 30])
 set(gca,'fontsize', 16)
 ylabel('\Delta Firing rate (spikes/s)')
 xlabel('Stimulus strength (mN)')
-
-figname = sprintf('M10-11-19-20_pressure tuning curve_%s_resp-vs-nonresp', StimResponseFiring_all.StimType);
+ 
+figname = sprintf('M10-11-19-20_pressure tuning curve_%s_resp', StimResponseFiring_all.StimType);
 saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
 saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
 
@@ -1050,44 +1052,70 @@ saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg'])
 %% linegraph: vibrotac tuning curves
 
 % variables
-uFreq = [8.9;10;20;50;100;200;300;400]; %uFreq = unique(stimuli_parameters.Stm.SomFreq);
+%uFreq = [8.9;10;20;50;100;200;300;400]; 
+uFreq = unique(stimuli_parameters.Stm.SomFreq);
+uFreq(1) = 8.9;
 
-% format data 
-data = [StimResponseFiring_all.firing_mean(1,1,1,:); StimResponseFiring_all.firing_mean(2:8,3,3,:)]; % freq (high pressure) x cids
-data = squeeze(data)'; % cids x freq (high pressure)
-resp_cids_idx = 20;
-% different groups to plot
-FRvibrotac_mean_resp = mean(data(resp_cids_idx,:), "omitnan");
-FRvibrotac_mean_nonresp = mean(data(nonresp_cids_idx,:), "omitnan");
+% format data
+resp_cids_idx = [19, 44, 42]; %44; %229:19, 390:42, 401:44
+colors = {'#000000', '#66bfeb', '#17a4ec', '#0774ad', '#004266'};
+%colors = [[0 0 0], [0 0 0], [0 0 0], [0 0 0], [0 0 0]];
 
-% plot
-fig= figure;
-fig.Position = [100, 100, 544,584];
-hold on
+fig = figure;
 
-plot(uFreq, data(resp_cids_idx,:), 'Color',  "#8BC9E8", 'LineWidth', 3)
-plot(uFreq, FRvibrotac_mean_resp, 'Color',  "#52A3CF", 'LineWidth', 3)
+for j = 1:3
+    subplot(1,3, j)
+    if j == 1
+        ylabel('\Delta Firing rate (spikes/s)')
+    elseif j == 2
+        xlabel('Vibrotactile frequency (Hz)')
 
-%plot(uFreq, data(nonresp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
-%plot(uFreq, FRvibrotac_mean_nonresp, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
-%errorbar(uFreq, FRvibrotac_mean_c, FRvibrotac_std_c, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
+    end
+        xticklabels({'', '10', '', '', '100', '', '', '', '', '', '', '', '', '1000'})
+        xlim([0 1000])
 
-ax = gca;
-ylim([-2 50])
-ylabel('\Delta Firing rate (spikes/s)')
-xlabel('Vibrotactile frequency (Hz)')
-set(ax,'fontsize',18)
-xticklabels({'0', '10', '20', '50', '100', '200', '300', '400'})
-ax.XScale = 'log';
-xticks(uFreq)
-xticklabels({'', '10', '20', '50', '100', '200', '300', '400'})
-xlim([0 400])
+    for i = 2:length(StimResponseFiring.amplitudes)
+        data = [StimResponseFiring.firing_mean(1,1,1,resp_cids_idx(j)); StimResponseFiring.firing_mean(2:end,i,1,resp_cids_idx(j))]; % freq (high pressure) x cids
+        data = squeeze(data)'; % cids x freqs (high pressure)
+
+        % different groups to plot
+        %FRvibrotac_mean_resp = mean(data(resp_cids_idx,:), "omitnan");
+        %FRvibrotac_mean_nonresp = mean(data(nonresp_cids_idx,:), "omitnan");
+        %colors = ['k', 'b', 'r'];
+        % plot
+        %fig.Position = [100, 100, 544,584];
+        hold on
+
+        plot(uFreq, data(:,:), 'Color', colors{i}, 'LineWidth', 3)
+
+        %plot(uFreq, data(resp_cids_idx(i),:), 'Color',  "#8BC9E8", 'LineWidth', 3)
+        %plot(uFreq, FRvibrotac_mean_resp, 'Color',  "#52A3CF", 'LineWidth', 3)
+        %plot(uFreq, data(nonresp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
+        %plot(uFreq, FRvibrotac_mean_nonresp, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
+        %errorbar(uFreq, FRvibrotac_mean_c, FRvibrotac_std_c, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
+
+        ax = gca;
+        ylim([-1 21])
+        set(ax,'fontsize',18)
+        %xticklabels({'0', '10', '20', '50', '100', '200', '300', '400'})
+        ax.XScale = 'log';
+        xticks(uFreq)
+        %xticklabels({'', '10', '20', '50', '100', '200', '300', '400'})
+        %ylabel('\Delta Firing rate (spikes/s)')
+        %xlabel('Vibrotactile frequency (Hz)')
+        %xlim([0 400])
+        %legend
+        %title(cids(resp_cids_idx))
+
+        %figname = sprintf('M10-11-19-20_vibrotactile tuning curve_%s_resp_%i', StimResponseFiring_all.StimType, cids(20));
+        %saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
+        %saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
 
 
-figname = sprintf('M10-11-19-20_vibrotactile tuning curve_%s_resp_%i', StimResponseFiring_all.StimType, cids(20));
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
-
+    end
+end
+%legend(num2str(cids(resp_cids_idx)))
+legend(num2str(StimResponseFiring.amplitudes(2:end)), 'Location', 'best')
 hold off
 
 %% different groups to plot

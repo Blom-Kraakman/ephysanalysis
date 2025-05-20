@@ -68,6 +68,11 @@ for cluster = 1:NClu
                     control = stimuli_parameters.Stm.Amplitude == 0;
                     baseline = stimulusRate(control,cluster);
                     stim_evoked = stimulusRate(index,cluster);
+                elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'BiSine') %vibrotac (piezo)
+                    index = (stimuli_parameters.Stm.Amplitude == uparamA(amp)) & (stimuli_parameters.Stm.SomFreq == uparamB(freq));
+                    control = (stimuli_parameters.Stm.Amplitude == 0) & (stimuli_parameters.Stm.SomFreq == 0);
+                    baseline = stimulusRate(control,cluster);
+                    stim_evoked = stimulusRate(index,cluster);
                 end
             elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % multimodal, vibrotac
                 control = strcmp(stimuli_parameters.Stm.MMType, 'OO');
