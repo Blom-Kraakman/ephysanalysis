@@ -342,6 +342,66 @@ for cluster = 1:length(cids)
     hold off
 end
 
+
+%% --------- Population PSTH - (1 stimulus combination, 1 sessions) --------- %%
+
+% DATA & PARAMETER SELECTION
+session = 14;
+[cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
+cidstoplot = cids; % select units of interest
+
+% PSTH parameters
+preT  = -0.2;
+postT = 0.7;
+xrange = [preT, postT];
+binsize = 0.02;
+
+freq = 20;
+amp = 0.3170;
+
+index = (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.SomFreq == freq);
+
+% ANALYSIS
+for cluster = 1:length(cidstoplot)
+    [N, edges] = histcounts(vertcat(aligned_spikes{index, cluster}), preT:binsize:postT);
+
+    spikecounts(cluster, :) = N; % cluster x bin
+    bin_edges(cluster, :) = edges;
+end
+
+% baseline subtraction on spikecounts
+bin_center = edges(1:end-1)+0.5*binsize;
+baseline = spikecounts(:,bin_center<0); %200ms baseline
+spikecounts = spikecounts - mean(baseline,2); % units x bins
+
+% normalize spikecounts into PSTH = sum spike counts / (number events * bin size)
+tPSTH(:,:) = spikecounts / (size(aligned_spikes(index, cluster), 1) * binsize); % cluster x bins x conditions
+
+% PLOTTING
+figure;
+sgtitle([' Stimulation location: ' stimuli_parameters.Par.SomatosensoryLocation])
+
+% individual traces
+%subplot(2,1,1)
+plot(bin_center,tPSTH)
+xlabel('Time (s)')
+ylabel('\Delta Firing rate (spikes/s)')
+hold on;
+plot(bin_center,mean(tPSTH,1), 'k', 'LineWidth', 2.5)
+ax1 = gca;
+ylim(ax1, [0 60])
+ax1.FontSize = 16;
+
+% avg PSTH
+%subplot(2,1,1)
+%plot(bin_center,mean(tPSTH,1), 'k', 'LineWidth', 1)
+%title('mean PSTH')
+%xlabel('Time (s)')
+%ylabel('\Delta Firing rate (spikes/s)')
+%xline(xlinerange) % on/off set
+%legend('control', 'sound only', 'vibrotactile only', 'multimodal', 'Location', 'northeast')
+
 %% ----------------------- LOCAL FUNCTIONS ----------------------- %%
 function horizontalLine(YTickLim, fig)
 
