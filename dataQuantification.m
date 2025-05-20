@@ -20,8 +20,8 @@ clearvars
 
 close all
 
-OutPath = 'D:\DATA\Processed\M21'; % output directory
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M21\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M26\postCA'; % output directory
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M26\'; % stimuli parameters
 
 % load FRA session(s) aligned spikes
 aligned_spikes_files = dir(fullfile(OutPath, '*FRA_AlignedSpikes.mat'));
@@ -46,19 +46,19 @@ for file = 1:size(aligned_spikes_files, 1)
 end
 
 %% quantitative analysis
-
+clearvars
 %set paths
-mousenr = 10;
-OutPath = 'D:\DATA\Processed\M10\ICX';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10';
+mousenr = 24;
+OutPath = 'D:\DATA\Processed\M24';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M24';
 
-sessions = [1 2 3 4 5 6 7 8 9 10];% M10
+%sessions = [1 2 3 4 5 6 7 8 9 10];% M10
 %sessions = [1 2 3 4 5 6 7 8 9 10];% M11
 %sessions = [1 2 6 7 8 9 10 11 12 13 14 15 16]; % M19 all sessions to be analyzed 
 %sessions = [1 2 3 4 5 6 7 8 9 10 11 12];% M20
+sessions = [15, 16];
 
-
-for session = 6%1:length(sessions)
+for session = 1:2 %1:length(sessions)
     if isempty(dir([OutPath '\*_S' num2str(sessions(session),'%02i') '*_ResponseProperties.mat']))
         dataQuantification_analysis(mousenr, OutPath, BehaviorPath, sessions(session))
     else
@@ -72,6 +72,139 @@ fn = 'M10-11-19-20';
 
 dataQuantification_poolDatasets(stimOrder, fn)
 
+
+%% TO DO: cycle analysis
+% define analysis window - FR/vibrotactile cycle
+% analysis window dependent on cylce
+% number of data points dependent on cycle
+
+OutPath = 'D:\DATA\Processed\M20\ICX';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20';
+
+% load data
+[~, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, 3, BehaviorPath);
+freqs = unique(stimuli_parameters.Stm.SomFreq);
+% max size matrix
+minwindow = max(freqs)/1000;
+minwindow * max(stimuli_parameters.Stm.SomDur)/1000;
+
+if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') % && strcmp(stimuli_parameters.Par.Rec, "SxA")
+    for freq = 1:length(freqs)
+        PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
+        PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
+
+        firingrate(aligned_spikes, PreT, PostT)
+    end
+end
+
+%% CYCLE QUANTIFICATION - IN PROGRESS
+
+OutPath = 'D:\DATA\Processed\M20\ICX';
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20';
+
+% load data
+[cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, 3, BehaviorPath);
+
+% Example cell array structure: rows (trials), columns (neurons)
+spikeTimes = aligned_spikes;
+
+% Define fixed stimulus duration (in seconds)
+stimulusDuration = max(stimuli_parameters.Stm.SomDur)/1000; % 500 ms
+
+% Initialize result cell array
+[nTrials, clusters] = size(spikeTimes);
+spikeCountsPerCycle = cell(nTrials, clusters);
+
+% Loop through neurons first
+for cluster = 1:clusters
+    for trial = 1:nTrials
+        freq = stimuli_parameters.Stm.SomFreq(trial); % Get stimulus frequency per trial
+
+        % Define cycle edges based on stimulus duration
+        if freq == 0 % one bin for full stimulus
+            cycleEdges = [0, stimulusDuration]; 
+        else
+            cycleDuration = 1 / freq; % cycle duration
+            cycleEdges = 0:cycleDuration:stimulusDuration;
+        end
+
+        spikes = spikeTimes{trial, cluster}; % extract spike times
+        [N, edges] = histcounts(vertcat(aligned_spikes{SA, cluster}), preT:binsize:postT); % SA
+
+        if ~isempty(spikes) % Handle empty spike cases
+            spikeCountsPerCycle{trial, cluster} = histcounts(spikes, cycleEdges); % Count spikes per cycle
+            % histcounts(vertcat(aligned_spikes{SA, cluster}), preT:binsize:postT); % SA
+        else
+            spikeCountsPerCycle{trial, cluster} = zeros(1, length(cycleEdges) - 1); % Fill with zeros if no spikes
+        end
+    end
+end
+
+close all
+
+ufreqs = unique(stimuli_parameters.Stm.SomFreq);
+
+for cluster = 1:clusters
+    % figure per cluster with all conditions
+    figure;
+    numSubplots = length(ufreqs);
+
+    for freqIdx = 1:length(ufreqs)
+        freq = ufreqs(freqIdx);
+        subplot(numSubplots, 1, freqIdx); % Arrange subplots in a vertical layout
+        hold on;
+
+        % Find trials for this frequency
+        %trialIndices = find(stimuli_parameters.Stm.SomFreq == freq & stimuli_parameters.Stm.Var25 == 3);
+        if freq == 0
+            %continue
+            trialIndices = find((stimuli_parameters.Stm.Var25 == 1));
+        else
+            trialIndices = find((stimuli_parameters.Stm.Amplitude ~= 0.1) & (stimuli_parameters.Stm.SomFreq == freq) & (stimuli_parameters.Stm.Var25 == 3));
+        end
+
+        % Loop through trials of the current stimulus frequency
+        for i = 1:length(trialIndices)
+            trialIdx = trialIndices(i);
+            spikeCounts(:,1) = spikeCountsPerCycle{trialIdx, cluster};
+            plot(1:length(spikeCounts), spikeCounts, '-o');
+
+        end
+
+        %plot(1:length(spikeCounts), sum(spikeCountsPerCycle{trialIndices, cluster}), 'k-o');
+
+        xlabel('Cycle Index');
+        ylabel('Spike Count');
+        title(sprintf('%d Hz', freq));
+
+    end
+
+    sgtitle(['Cluster ' num2str(cids(cluster))])
+    hold off;
+
+end
+
+
+
+%% Example cell array containing spike times (in seconds)
+spikeTimes = { [0.02, 0.04, 0.07, 0.12], [0.03, 0.06, 0.09, 0.15] }; 
+
+% Define stimulus frequency (in Hz)
+freq = 50; 
+cycleDuration = 1 / freq;  % Duration of one cycle in seconds
+
+% Initialize result array
+spikeCountsPerCycle = cell(size(spikeTimes));
+
+% Loop through each cell in the array
+for i = 1:numel(spikeTimes)
+    spikes = spikeTimes{i}; % Extract spike times for this trial
+    cycleEdges = 0:cycleDuration:max(spikes) + cycleDuration; % Define cycle boundaries
+    spikeCountsPerCycle{i} = histcounts(spikes, cycleEdges); % Count spikes per cycle
+end
+
+% Display results
+disp(spikeCountsPerCycle);
 
 %% STATS - to do
 
@@ -261,8 +394,9 @@ for cluster = 1:NClu
     end
 end
 
+%% ----------------- Characterizing periodic effects ----------------- %%
 
-%% OPTIONAL: ISI characterization
+%% OPTION 1: ISI characterization
 % for vibrotactile and AM
 
 % load relevant data
@@ -356,8 +490,43 @@ for cluster = 1:length(StimResponseFiring.cids)
     end
 end
 
-
-
-
-
 clear trial trials cluster clusters sel stimOn_ISIwindow stimOff_ISIwindow taligned tspikeISI ttspikeISI
+
+
+%% OPTION 2: dataQuantification_TemporalCoding.m
+
+session = 2;
+
+[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
+
+all_freqs = unique(stimuli_parameters.Stm.SomFreq);
+amp = 0.3;
+nClusters = length(cids);
+cluster = find(cids == 441);
+
+for freq = 1:length(all_freqs)
+    
+    index = strcmp(stimuli_parameters.Stm.MMType, "SO") & (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == amp);
+    if sum(index) == 0
+        continue
+    end
+
+    SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
+
+    Mf = unique(SOM_Hz);
+    % ~~~ parameters for analysis ~~
+    StimDur = 0.5; %s
+    % StimDur = 1/Mf; % 1/Mf = 1 cycle
+    SkipVal = 0;
+    SkipMethod = '';
+    nBins = 24;
+    % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    % calculation
+    [CycT] = CycTimes(aligned_spikes(index, cluster),StimDur, Mf,SkipVal, SkipMethod);
+    [Vs,Ph,Ray] = calcVS(CycT); % vector strength calculation
+
+    % get Ph (phase) and plot
+
+end
