@@ -108,9 +108,9 @@ BehaviorPath = 'V:\Data\InVivoEphys\Blom\BehavioralStimuli\M20';
 cluster = 11;
 spikeTimes = aligned_spikes(:,cluster);
 
-SomFreq = 20;
+SomFreq = 50;
 Amplitude = 0.3;
-MMType = "SO";
+for MMType = ["SO","SA"]
 SomDelay = 0.5;
 s_idx =     stimuli_parameters.Stm.SomFreq == SomFreq & ...
             stimuli_parameters.Stm.Amplitude == Amplitude & ...
@@ -141,7 +141,7 @@ StimDur = 0.001*stim.SomDur;
 % 1) get cycle times
 
 Mf = SomFreq;
-Delay=15e-3;
+Delay=13e-3;
 [CycT,edges] = CycTimesPerCycle(SpkT,StimDur, Mf,Delay);
 
 % 2) Sum the number of elements in each column of CycT
@@ -150,18 +150,31 @@ NCyc = size(CycT,2);
 NumSpikesPerCyc = cellfun(@numel, CycT);
 avgNumSpikesPerCyc = mean(NumSpikesPerCyc,1);
     % display
-    ax1 = subplot(2,1,1);
+    ncols = 5;
+    % plot stimlus
+    ax0 = subplot(ncols,1,1);
+    tt = 0:0.001:StimDur;
+    stim_waveform = (1-cos(2*pi*SomFreq.*tt));
+    plot(ax0,tt,stim_waveform,'k-')
+    xlim(ax0,xRange)
+    
+
+    ax1 = subplot(ncols,1,[2 3]);
     binCenters = 0.5.*(edges(1:end-1) + edges(2:end));
     hold off
+    
+    % plot bin count
     yyaxis(ax1,'left')
     plot(ax1,binCenters,NStim.*avgNumSpikesPerCyc,'x-'); hold on;
     xline(ax1,edges,'--','Color',[.7,.7,.7])
     xlim(ax1,xRange)
     period = 1/SomFreq;
+
+    % plot PSTH
     hist_edges = xRange(1):(min(0.2*period,0.005)):(max(StimDur,xRange(2)));
     histogram(ax1,vertcat(SpkT{:}),hist_edges)
     ylabel(ax1,'Number of spikes')
-    hold off
+
 
 % 3) latency
 meanLatencyPerCyc   =   nan(1,NCyc);
@@ -196,7 +209,7 @@ for m = 1:NCyc
 end
     % display
     alpha = 0.05;
-    ax2 = subplot(2,1,2);
+    ax2 = subplot(ncols,1,[4 5]);
     yyaxis(ax2,'left')
     hold(ax2,"off")
     plot(ax2,binCenters,VSPerCycle,'o-')
@@ -220,6 +233,7 @@ end
             '    Amp: ', num2str(Amplitude,'%.1f V'), ...
             newline,...
             '    Analysis delay: ',num2str(Delay*1000,'%d ms')])
+end
 %%
 % Example cell array structure: rows (trials), columns (neurons)
 spikeTimes = aligned_spikes;
