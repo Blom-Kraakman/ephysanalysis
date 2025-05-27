@@ -17,6 +17,11 @@ end
 % load behaviour files
 sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
 stim_files = dir(fullfile(BehaviorPath, sessionFile));
+stim_files = stim_files(~contains({stim_files.name},'Sound.mat')); % remove sound files
+if length(stim_files) > 1
+    warning('More than one stim file found. Using first one.')
+    stim_files = stim_files(1);
+end
 stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')

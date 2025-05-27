@@ -99,12 +99,128 @@ end
 
 %% CYCLE QUANTIFICATION - IN PROGRESS
 
-OutPath = 'D:\DATA\Processed\M20\ICX';
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M20';
+OutPath = 'V:\Data\ProcessedData\Blom\Processed\M20\ICX';
+BehaviorPath = 'V:\Data\InVivoEphys\Blom\BehavioralStimuli\M20';
 
 % load data
 [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, 3, BehaviorPath);
+%%
+cluster = 11;
+spikeTimes = aligned_spikes(:,cluster);
 
+SomFreq = 20;
+Amplitude = 0.3;
+MMType = "SO";
+SomDelay = 0.5;
+s_idx =     stimuli_parameters.Stm.SomFreq == SomFreq & ...
+            stimuli_parameters.Stm.Amplitude == Amplitude & ...
+            strcmp(stimuli_parameters.Stm.MMType, MMType);
+
+SpkT = spikeTimes(s_idx);
+if strcmp(MMType,'SA')
+    for ii = 1:length(SpkT)
+        SpkT{ii} = SpkT{ii} - SomDelay;
+    end
+end
+stim = stimuli_parameters.Stm(s_idx,:);
+stim = stim(1,:);
+StimDur = 0.001*stim.SomDur;
+
+    % prepare for display
+    switch MMType
+        case "SA"
+            fig = figure(2);
+        case "SO"
+            fig = figure(1);
+        otherwise
+            fig = figure(3);
+    end
+    clf(fig)
+    xRange = [-0.1,StimDur+0.2];
+
+% 1) get cycle times
+
+Mf = SomFreq;
+Delay=15e-3;
+[CycT,edges] = CycTimesPerCycle(SpkT,StimDur, Mf,Delay);
+
+% 2) Sum the number of elements in each column of CycT
+NStim = size(CycT,1);
+NCyc = size(CycT,2);
+NumSpikesPerCyc = cellfun(@numel, CycT);
+avgNumSpikesPerCyc = mean(NumSpikesPerCyc,1);
+    % display
+    ax1 = subplot(2,1,1);
+    binCenters = 0.5.*(edges(1:end-1) + edges(2:end));
+    hold off
+    yyaxis(ax1,'left')
+    plot(ax1,binCenters,NStim.*avgNumSpikesPerCyc,'x-'); hold on;
+    xline(ax1,edges,'--','Color',[.7,.7,.7])
+    xlim(ax1,xRange)
+    period = 1/SomFreq;
+    hist_edges = xRange(1):(min(0.2*period,0.005)):(max(StimDur,xRange(2)));
+    histogram(ax1,vertcat(SpkT{:}),hist_edges)
+    ylabel(ax1,'Number of spikes')
+    hold off
+
+% 3) latency
+meanLatencyPerCyc   =   nan(1,NCyc);
+stdLatencyPerCyc    =   nan(1,NCyc);
+for cyc_idx = 1:NCyc
+    tSpk = vertcat(CycT{:,cyc_idx});
+    meanLatencyPerCyc(cyc_idx) = mean(tSpk);
+    stdLatencyPerCyc(cyc_idx) = std(tSpk);
+end
+    % display
+    hold(ax1,'on');
+    yyaxis(ax1,'right')
+    plot(ax1,meanLatencyPerCyc,stdLatencyPerCyc*1000,'s:k')
+    ylabel(ax1,'Latency jitter (ms)')
+    ylim(ax1,[0,inf])
+    hold(ax1,'off');
+   
+% 4) Vector strength
+% Normalize all values in CycT: subtract edges(m) and divide by period
+period = 1 / SomFreq;
+CycT_norm = CycT;
+for n = 1:NStim
+    for m = 1:NCyc
+        CycT_norm{n,m} = (CycT{n,m} - edges(m)) / period;
+    end
+end
+VSPerCycle = nan(1,NCyc);
+PhasePerCycle = nan(1,NCyc);
+RayleighPerCycle = nan(1,NCyc);
+for m = 1:NCyc
+    [VSPerCycle(m),PhasePerCycle(m),RayleighPerCycle(m)] = calcVS(CycT_norm(:,m));
+end
+    % display
+    alpha = 0.05;
+    ax2 = subplot(2,1,2);
+    yyaxis(ax2,'left')
+    hold(ax2,"off")
+    plot(ax2,binCenters,VSPerCycle,'o-')
+    hold(ax2,"on")
+    scatter(ax2,binCenters(RayleighPerCycle<alpha),VSPerCycle(RayleighPerCycle<alpha),'o','filled')
+    hold(ax2,"off")
+    ylabel("Vector strength")
+    ylim(ax2,[0,1])
+
+    yyaxis(ax2,'right')
+    plot(ax2,binCenters,PhasePerCycle)
+    ylabel("Phase (cycle - Delay)")
+    ylim(ax2,[0,1])
+    xline(ax2,edges,'--','Color',[.7,.7,.7])
+    xlim(ax2,xRange)
+
+    sgtitle(['Cluster ', num2str(cids(cluster)), ...
+            newline,...
+            '    Condition: ',char(MMType), ...
+            '    Freq: ', num2str(SomFreq,'%d Hz'), ...
+            '    Amp: ', num2str(Amplitude,'%.1f V'), ...
+            newline,...
+            '    Analysis delay: ',num2str(Delay*1000,'%d ms')])
+%%
 % Example cell array structure: rows (trials), columns (neurons)
 spikeTimes = aligned_spikes;
 
