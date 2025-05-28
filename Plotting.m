@@ -1402,13 +1402,15 @@ sgtitle('Combined Scatter Plot and Bar Graph');
 %vibrotac_resp_units = StimResponseFiring.unitResponses.SO;
 %multi_resp_units = (StimResponseFiring.unitResponses.SA) | (StimResponseFiring.unitResponses.OA & StimResponseFiring.unitResponses.SO);
 %resp_units = [276, 277, 290, 303, 306];
+cids = StimResponseFiring_all.unitResponses.Cluster;
+resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Initialize the figure
 figure;
 
 % Subplot 1: Scatter plot
-subplot(2, 1, 1); % 2 rows, 1 column, 1st subplot
+subplot(3, 2, 1:2); % 2 rows, 1 column, 1st subplot
 hold on;
 x_axis = 1:length(cids(index));
 logYTicks = [10 100 1000];
@@ -1437,7 +1439,7 @@ title('FSL pressure per unit');
 hold off;
 
 % Subplot 2: Bar graph
-subplot(2, 1, 2); % 2 rows, 1 column, 2nd subplot
+subplot(3, 2, 3:4); % 2 rows, 1 column, 2nd subplot
 hold on;
 
 % Replace Inf with NaN
@@ -1464,6 +1466,50 @@ yticks(logYTicks);
 yticklabels(logYTicks);
 legend("mean", "median")
 title('Mean FSL over pressure intensities');
+hold off;
+
+
+% Subplot 3: Line plot showing trends over pressure intensities
+subplot(3,2,5)
+hold on;
+
+% Plot line graph for all clusters
+for cluster_idx = 1:size(data, 2)
+    %plot(data(:, cluster_idx), '-o');
+    plot(StimResponseFiring_all.amplitudes(:,1)', data(:, cluster_idx), '-o');
+
+end
+
+% Customize line graph
+xlabel('Pressure (V)');
+ylabel('Median FSL (ms)');
+title('FSL over pressure intensities');
+%legend(arrayfun(@num2str, cids(index), 'UniformOutput', false))
+set(gca, 'YScale', 'log');
+yticks(logYTicks);
+yticklabels(logYTicks);
+hold off;
+
+% Subplot 4: zoom-in from subplot 3
+subplot(3,2,6)
+hold on;
+
+% Plot line graph for all clusters
+for cluster_idx = 1:size(data, 2)
+    %plot(data(:, cluster_idx), '-o');
+    plot(StimResponseFiring_all.amplitudes(:,1)', data(:, cluster_idx), '-o');
+
+end
+
+% Customize line graph
+xlabel('Pressure (V)');
+ylabel('Median FSL (ms)');
+title('FSL over pressure intensities (zoom-in, normal scale)');
+%legend(arrayfun(@num2str, cids(index), 'UniformOutput', false))
+%set(gca, 'YScale', 'log');
+%yticks(logYTicks);
+%yticklabels(logYTicks);
+ylim([0 50])
 hold off;
 
 %% ----------- FSL plotting pressure x sound ----------- %%
@@ -1507,13 +1553,13 @@ uInt = StimResponseFiring_all.frequencies(:,end);
 
 fontsize = 14;
 
-% make heatmap of FSL for each unit
+% FSL per unit
 for cluster = 1:length(resp_cids)
     %figure('Position',[100,100,1800,500]);
     figure
     colormap('parula'); % Choose a color map
 
-    % FSL
+    % Figure 1: FSL heatmap
     imagesc(data(:,:, cluster))
     cb = colorbar(gca, 'eastoutside');
     cb.Label.String = 'FSL (ms)';
@@ -1523,10 +1569,35 @@ for cluster = 1:length(resp_cids)
     ylabel('bbn intensity (dB SPL)')
     set(gca,'fontsize',fontsize)
     title(['FSL cluster: ' num2str(resp_cids(cluster))])
+
+    % Figure 2: FSL line graph
+    figure
+    for int = 1:size(data,1)
+        plot(StimResponseFiring_all.amplitudes(:,1), data(int,:, cluster))
+        hold on
+    end
+
+
+    % Customize line graph
+    ylabel('Mean FSL (ms)');
+    %xticks(1:size(data,2));
+    %xticklabels(num2str(StimResponseFiring_all.amplitudes(:,end)));
+    set(gca, 'YScale', 'log');
+    yticks(logYTicks);
+    yticklabels(logYTicks);
+    %legend(arrayfun(@num2str, cids(index), 'UniformOutput', false))
+    % set(gca, 'YDir', 'normal', 'XTick',1:length(umN),'XTickLabel',umN','YTick',1:length(uInt),'YTicklabel',uInt, 'ColorScale','log')
+    xlabel('pressure intensity (mN)')
+    % set(gca,'fontsize',fontsize)
+    %legend(arrayfun(@num2str, StimResponseFiring_all.amplitudes, 'UniformOutput', false))
+    legend(num2str(StimResponseFiring_all.frequencies(:,end)))
+    title(['FSL cluster: ' num2str(resp_cids(cluster))])
+
+    hold off;
+
 end
 
-% make heatmap of median FSL
-
+% Figure 3: make heatmap of median FSL
 figure
 colormap('parula'); % Choose a color map
 
@@ -1543,6 +1614,7 @@ set(gca,'fontsize',fontsize)
 title('median FSL')
 
 
+
 %% ----------- FSL plotting bbn intensity ----------- %%
 
 %[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring, clusterinfo] = loadData(OutPath, session, BehaviorPath);
@@ -1552,13 +1624,13 @@ title('median FSL')
 %vibrotac_resp_units = StimResponseFiring.unitResponses.SO;
 %multi_resp_units = (StimResponseFiring.unitResponses.SA) | (StimResponseFiring.unitResponses.OA & StimResponseFiring.unitResponses.SO);
 %resp_units = [276, 277, 290, 303, 306];
-index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
-%index(:) = 1;
+resp_index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
+index(:) = 1;
 % Initialize the figure
 figure;
 
 % Subplot 1: Scatter plot
-subplot(2, 1, 1); % 2 rows, 1 column, 1st subplot
+subplot(3, 1, 1); % 2 rows, 1 column, 1st subplot
 hold on;
 x_axis = 1:length(cids(index));
 logYTicks = [10 100 1000];
@@ -1587,7 +1659,7 @@ title('FSL pressure per unit');
 hold off;
 
 % Subplot 2: Bar graph
-subplot(2, 1, 2); % 2 rows, 1 column, 2nd subplot
+subplot(3, 1, 2); % 2 rows, 1 column, 2nd subplot
 hold on;
 
 % Replace Inf with NaN
@@ -1601,7 +1673,10 @@ bar(median(data, 2, "omitmissing"), 'FaceAlpha', 0.6); % med FR of all responsiv
 % Add scatter points to bar graph
 x = repmat((1:(size(data,1)))', 1, size(data, 2));
 for i = 1:size(data,1)
-    swarmchart(x(i,:), data(i,:), 20, 'k', 'filled', 'XJitterWidth', 0.4);
+   % swarmchart(x(i,:), data(i,resp_index), 20, 'r', 'filled', 'XJitterWidth', 0.4);
+    swarmchart(x(i,~resp_index), data(i,~resp_index), 20, 'k', 'filled', 'XJitterWidth', 0.4);
+        swarmchart(x(i,resp_index), data(i,resp_index), 20, 'g', 'filled', 'XJitterWidth', 0.4);
+
 end
 
 % Customize bar graph
@@ -1614,6 +1689,34 @@ yticks(logYTicks);
 yticklabels(logYTicks);
 legend("mean", "median")
 title('Mean FSL over pressure intensities');
+hold off;
+
+% Subplot 3: Line plot showing trends over pressure intensities
+subplot(3,1,3)
+hold on;
+
+% Plot line graph for all clusters
+for cluster_idx = 1:size(data, 2)
+    %plot(data(:, cluster_idx), '-o');
+    if resp_index(cluster_idx)
+        plot(1:size(data,1), data(:, cluster_idx), 'g-o');
+
+    else
+        plot(1:size(data,1), data(:, cluster_idx), 'k-o');
+    end
+
+end
+
+% Customize line graph
+xlabel('BBN intensity (dB SPL)');
+ylabel('Mean FSL (ms)');
+xticks(1:size(data,1));
+xticklabels(num2str(StimResponseFiring_all.frequencies(:,end)));
+set(gca, 'YScale', 'log');
+yticks(logYTicks);
+yticklabels(logYTicks);
+title('Mean FSL over pressure intensities');
+%legend(arrayfun(@num2str, cids(index), 'UniformOutput', false))
 hold off;
 
 %% quantify reactive units
