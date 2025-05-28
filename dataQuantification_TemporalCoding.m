@@ -8,97 +8,104 @@
 clearvars
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\';
+recordingFolder = 'D:\DATA\EphysRecordings\M10\M10_2024-05-21_12-34-07\';
 %acfeedbackPath = [recordingFolder 'Record Node 108\experiment1\recording1\continuous\Intan-100.Rhythm Data-B'];
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 %messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
 %rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
-KSPath = 'D:\DATA\EphysRecordingsSorted\M08\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M8\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M8'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M10\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M10\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M10\ICX'; % output directory
 
 Fs = 30000; % sampling freq
 
 %% select which session to analyse
-session = 4;
+session = 2;
 
-% load unit info
-cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
-cpos = load([OutPath '\' cpos_file]);
-cids = cpos.cpos.id';
+[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
 
-% load corresponsing files
-sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
-stim_files = dir(fullfile(BehaviorPath, sessionFile));
-stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
 
-aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
-aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
-if isfield(aligned_spikes,"Srise")
-    disp("Srise/Sfall loaded from data file.")
-    Srise = aligned_spikes.Srise;
-    Sfall = aligned_spikes.Sfall;
-end
-aligned_spikes = aligned_spikes.SpkT;
+% % load unit info
+% cpos_file = dir([OutPath '\*_InfoGoodUnits.mat']).name;
+% cpos = load([OutPath '\' cpos_file]);
+% cids = cpos.cpos.id';
+% 
+% % load corresponsing files
+% sessionFile = ['\*_S' num2str(session, '%.2d') '_*.mat'];
+% stim_files = dir(fullfile(BehaviorPath, sessionFile));
+% stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
+% 
+% aligned_spikes_files = dir(fullfile(OutPath, sessionFile));
+% aligned_spikes = load([aligned_spikes_files.folder '\' aligned_spikes_files.name]);
+% if isfield(aligned_spikes,"Srise")
+%     disp("Srise/Sfall loaded from data file.")
+%     Srise = aligned_spikes.Srise;
+%     Sfall = aligned_spikes.Sfall;
+% end
+% aligned_spikes = aligned_spikes.SpkT;
+% 
+% % load sessions details
+% TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
+% sessions_TTLs = load([OutPath '\' TTLs_file]);
 
-% load sessions details
-TTLs_file = dir([OutPath '\*_OE_TTLs.mat']).name;
-sessions_TTLs = load([OutPath '\' TTLs_file]);
-
-%% Kilosort: post-curation unit extraction
-% needed to get Srise...
-rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
-relevant_sessions = [1 11]; % M8
-skip_sessions = 10; % M8
-[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, skip_sessions, rec_samples, sessions_TTLs.sessions_TTLs, Fs, OutPath);
-
-%% select TTLs of session 4
-nTrials = size(aligned_spikes, 1);
-%nClusters = size(aligned_spikes, 2);
-nClusters = 1;
-NStim = 1;
-
-% get TTL on and off for a session
-stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
-for file = 1:9
-
-    stimuli_parameters_temp = load([stim_files(file).folder '\' stim_files(file).name]);
-
-    disp(NStim);
-
-    % session to plot
-    if ismember(str2double(stimuli_parameters_temp.Par.Set), session)
-        % keep Srise and Sfall withing boundaries
-        tSrise = Srise(NStim: (NStim + size(stimuli_parameters_temp.Stm, 1)-1));
-        tSfall = Sfall(NStim: (NStim + size(stimuli_parameters_temp.Stm, 1)-1));
-    end
-
-    % update cummulative stimuli
-    NStim = NStim + size(stimuli_parameters_temp.Stm, 1);
-
-end
-clearvars("stimuli_parameters_temp")
+% %% Kilosort: post-curation unit extraction - no longer needed
+% % needed to get Srise...
+% %rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording
+% %relevant_sessions = [1 11]; % M8
+% %skip_sessions = 10; % M8
+% %[spiketimes, cids, Srise, Sfall] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, skip_sessions, rec_samples, sessions_TTLs.sessions_TTLs, Fs, OutPath);
+% 
+% % select TTLs of session 4 - no longer needed
+% % needed if Srise containing TTL on from all sessions
+% nTrials = size(aligned_spikes, 1);
+% %nClusters = size(aligned_spikes, 2);
+% nClusters = 1;
+% NStim = 1;
+% 
+% % get TTL on and off for a session
+% stim_files = dir(fullfile(BehaviorPath, '\*.mat'));
+% for file = 1:9
+% 
+%     stimuli_parameters_temp = load([stim_files(file).folder '\' stim_files(file).name]);
+% 
+%     disp(NStim);
+% 
+%     % session to plot
+%     if ismember(str2double(stimuli_parameters_temp.Par.Set), session)
+%         % keep Srise and Sfall withing boundaries
+%         tSrise = Srise(NStim: (NStim + size(stimuli_parameters_temp.Stm, 1)-1));
+%         tSfall = Sfall(NStim: (NStim + size(stimuli_parameters_temp.Stm, 1)-1));
+%     end
+% 
+%     % update cummulative stimuli
+%     NStim = NStim + size(stimuli_parameters_temp.Stm, 1);
+% 
+% end
+% clearvars("stimuli_parameters_temp")
 
 %% get and plot analog signal
 
 % read and save into variable
-fid = fopen('D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 108\experiment1\recording1\continuous\Intan-100.Rhythm Data-B\continuous.dat');
+fid = fopen('D:\DATA\EphysRecordings\M10\M10_2024-05-21_12-34-07\Record Node 108\experiment1\recording1\continuous\Intan-100.Rhythm Data-B\continuous.dat');
 gain = 10 / 2^16; % V/bit; estimated +/- 5V / 16-bit
 analog_trace = gain*double(fread(fid, '*int16'));
-analog_samples = readNPY('D:\DATA\EphysRecordings\M8\M08_2024-02-27_12-29-52\Record Node 108\experiment1\recording1\continuous\Intan-100.Rhythm Data-B\sample_numbers.npy');
+analog_samples = readNPY('D:\DATA\EphysRecordings\M10\M10_2024-05-21_12-34-07\Record Node 108\experiment1\recording1\continuous\Intan-100.Rhythm Data-B\sample_numbers.npy');
+
 % --- warning: assuming there are no pauses within the analog recording ---
-tSriseIdx = tSrise - analog_samples(1) + 1;
-tSfallIdx = tSfall - analog_samples(1) + 1;
+%tSriseIdx = Srise - analog_samples(1) + 1;
+%tSfallIdx = Sfall - analog_samples(1) + 1;
+
+tSriseIdx = Srise - double(analog_samples(1)) + 1;
+tSfallIdx = Sfall - double(analog_samples(1)) + 1;
 %% ABW --- Start
 
 % ~~~ select subset of data for testing ~~~
 all_freqs = unique(stimuli_parameters.Stm.SomFreq);
-amp = 0.1;
+amp = 0.3;
 nClusters = length(cids);
-cluster = 1; % cluster index
-cluster = find(cids == 331); %find(cids == 331) % find(cids == 184)
-freq = find(all_freqs == 10);
+cluster = find(cids == 441);
+%freq = find(all_freqs == 10);
 % ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 nCol = 4;
@@ -112,7 +119,11 @@ nRow = 4;
     for freq = 1:length(all_freqs)
         figure;
 
-        index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == amp);
+        index = strcmp(stimuli_parameters.Stm.MMType, "SO") & (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == amp);
+        if sum(index) == 0
+            continue
+        end
+
         SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
         Var = SOM_Hz;
         yaxistext = [num2str(all_freqs(freq)) ' Hz'];
@@ -125,16 +136,17 @@ nRow = 4;
         % get analogue signal
         PreT = 0.25; PostT = .75; %s
         PreT_samp = -round(PreT*Fs);
+        
         PostT_samp = round(PostT*Fs);
         trialon  = double(tSriseIdx(index));
         trialoff = double(tSfallIdx(index));
         
         tt = (PreT_samp:PostT_samp) ./ Fs;
-        motorSignal = double(analog_trace(trialon + (PreT_samp:PostT_samp)));
+        motorSignal = double(analog_trace(trialon + (PreT_samp:PostT_samp))); %40x30001
         ax2 = subplot(nRow,nCol,[1,nCol-1]);
         hold(ax2,"off");
-        plot(ax2,tt,motorSignal','Color',[.5,.5,.5]);hold(ax2,"on");
-        plot(ax2,tt,mean(motorSignal,1),'Color','k');hold(ax2,"off");
+        plot(ax2,tt,motorSignal','Color',[.5,.5,.5]); hold(ax2,"on");
+        plot(ax2,tt,mean(motorSignal,1),'Color','k'); hold(ax2,"off");
         linkaxes([f,ax2],'x');
         xlim(ax2,[-PreT,PostT])
         xlabel(f,"Time (s)")
@@ -154,7 +166,7 @@ nBins = 24;
 
 % calculation
 [CycT] = CycTimes(aligned_spikes(index, cluster),StimDur, Mf,SkipVal, SkipMethod);
-[Vs,Ph,Ray] = calcVS(CycT);
+[Vs,Ph,Ray] = calcVS(CycT); % vector strength calculation
 
 % plotting
 ax_cycHistPol = subplot(nRow,nCol,[nCol,nCol+nRow],polaraxes);
@@ -176,7 +188,7 @@ title(ax_cycHistCat,...
 
 
 sgtitle([num2str(Mf),' Hz   ', num2str(amp),' V',' - ', 'unit ',num2str(cids(cluster))])
-    %end
-end
+    end
+%end
 
 % ABW --- End

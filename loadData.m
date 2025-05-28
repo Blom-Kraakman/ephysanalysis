@@ -83,7 +83,7 @@ else
     StimResponseFiring = [];
 end
 
-% add delay to "SO"
+% return delay between stim type onset
 if strcmp(stimuli_parameters.Par.Rec, 'SxA')
     onsetDelay = stimuli_parameters.Stm.SomAudSOA./1000;
     onsetDelay(isnan(stimuli_parameters.Stm.SomAudSOA)) = 0;

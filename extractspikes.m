@@ -51,7 +51,7 @@ for cluster = 1:length(cids)
     % end
 end
 
-filename = sprintf('M%.2i_S%02d-%02d_InfoGoodUnits', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(2));
+filename = sprintf('M%.2i_S%02d-%02d_InfoGoodUnits', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(end));
 save(fullfile(OutPath, filename), "clusterinfo") %clusterinto variables: unit id, channel, depth, avg firing rate, nr spikes;
 
 fprintf('unit extraction done\n');

@@ -1,9 +1,9 @@
 %% 1. load behavioural stimuli
 clearvars
 
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M22\'; % stimuli parameters
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M26\'; % stimuli parameters
 SoundPath = [BehaviorPath 'Sound recording\'];
-OutPath = 'D:\DATA\Processed\M22\Spectograms';
+OutPath = 'D:\DATA\Processed\M26\Spectograms';
 
 % make array with all relevant session numbers
 sound_file_list = dir(fullfile(SoundPath, '*_Sound.mat'));
@@ -112,14 +112,14 @@ end
 
 disp("spectogram analysis done")
 
-%% 5. plotting
+% 5. plotting
 
 % load data
-clearvars
+%clearvars
 
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M22\'; % stimuli parameters
-SoundPath = [BehaviorPath 'Sound recording\'];
-OutPath = 'D:\DATA\Processed\M22\Spectograms';
+% BehaviorPath = 'D:\DATA\Behavioral Stimuli\M25\'; % stimuli parameters
+% SoundPath = [BehaviorPath 'Sound recording\'];
+% OutPath = 'D:\DATA\Processed\M25\Spectograms';
 
 % make array with all relevant session numbers
 sound_file_list = dir(fullfile(SoundPath, '*_Sound.mat'));
@@ -237,43 +237,43 @@ for session_file = 1:size(sound_file_list,1)
     saveas(gcf,fullfile(OutPath, [filename,'_spectogram']), 'png')
     close(gcf)
 
-    % plot individual subset
-    figure('Position',[10,10,1400,900]);
-    stimToPlot = [1,4:4:size(Stm,1)];
-    nToPlot = length(stimToPlot)+1;
-    clim = [-110,-60]; % color limit
-    freqRange = [0,10];%kHz
-    dBRange_pow = [-Inf,Inf];
-    tRange = [0,0.6];
-
-    nRows = floor(sqrt(nToPlot));
-    nCols = ceil(nToPlot / nRows);
-
-    for ii = 1:nToPlot
-        ax1 = subplot(nRows,nCols,ii);
-        yyaxis(ax1,'left')
-        if ii < nToPlot
-            idx = stimToPlot(ii);
-            imagesc(t,f./1000,squeeze(10*log10(ps_all(:,:,idx))),clim)
-            title([num2str(Stm.Rep(idx),'Rep: %d ')])
-        else
-            imagesc(t,f./1000,squeeze(10*log10(ps_mean(:,:,1))),clim)
-            title(['mean'])
-        end
-        ax1.YDir = 'normal';
-        ylim(freqRange);
-        ylabel(ax1,'Frequency (kHz)')
-        xlabel(ax1,'Time (s)')
-    end
-
-    sgtitle(figtitle)
-
-    saveas(gcf,fullfile(OutPath, [filename,'_spectogram_trials']), 'png')
-    %saveas(gcf,[filename,'_spectogram_trials.png'])
+    % % plot individual subset
+    % figure('Position',[10,10,1400,900]);
+    % stimToPlot = [1,4:4:size(Stm,1)];
+    % nToPlot = length(stimToPlot)+1;
+    % clim = [-110,-60]; % color limit
+    % freqRange = [0,10];%kHz
+    % dBRange_pow = [-Inf,Inf];
+    % tRange = [0,0.6];
+    % 
+    % nRows = floor(sqrt(nToPlot));
+    % nCols = ceil(nToPlot / nRows);
+    % 
+    % for ii = 1:nToPlot
+    %     ax1 = subplot(nRows,nCols,ii);
+    %     yyaxis(ax1,'left')
+    %     if ii < nToPlot
+    %         idx = stimToPlot(ii);
+    %         imagesc(t,f./1000,squeeze(10*log10(ps_all(:,:,idx))),clim)
+    %         title([num2str(Stm.Rep(idx),'Rep: %d ')])
+    %     else
+    %         imagesc(t,f./1000,squeeze(10*log10(ps_mean(:,:,1))),clim)
+    %         title(['mean'])
+    %     end
+    %     ax1.YDir = 'normal';
+    %     ylim(freqRange);
+    %     ylabel(ax1,'Frequency (kHz)')
+    %     xlabel(ax1,'Time (s)')
+    % end
+    % 
+    % sgtitle(figtitle)
+    % 
+    % saveas(gcf,fullfile(OutPath, [filename,'_spectogram_trials']), 'png')
+    % %saveas(gcf,[filename,'_spectogram_trials.png'])
 
     close all
 
-    disp('Spectogram analysis done')
+
     % %% plot all individual
     % stimToPlot = 1:numTrials;
     % nToPlot = length(stimToPlot);
@@ -303,6 +303,8 @@ for session_file = 1:size(sound_file_list,1)
     %     sgtitle(['freq: ' num2str(UStim.SomFreq(stimSet)) ', amp: ' num2str(UStim.Amplitude(stimSet))])
     % end
 end
+
+disp('Spectogram figures done')
 
 %% flag outliers - UNDER CONSTRUCTION
 % Calculate instantaneous power

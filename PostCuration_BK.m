@@ -11,20 +11,20 @@ clearvars
 % setting directories
 
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M24\M24_2025-04-09_13-08-27_ICX\';
+recordingFolder = 'D:\DATA\EphysRecordings\M27\M27_2025-05-27_12-26-52\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M24\10000-inf_1\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M24\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M24'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M27\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M27\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M27'; % output directory
 
 rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording. supressed if alignedspikes done to save time
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [1 16];
-skip_sessions = [1 2 3 4 5 6 7 8 9 10 11 14];
+relevant_sessions = [1 15];
+skip_sessions = [];
 
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13
 %relevant_sessions = [10 13]; %M13 ICX 1:6; ICC 10:13
@@ -61,7 +61,7 @@ end
 % to add: load if previously saved
 [spiketimes, cids] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, Fs, OutPath);
 
-% align spikes
+%% align spikes
 % saves aligned spikes with corresponding stimulus onset and offset timings
 % spike times in sec, Srise & Sfall in samples
 
