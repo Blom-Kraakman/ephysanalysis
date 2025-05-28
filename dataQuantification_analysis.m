@@ -10,7 +10,7 @@ MouseNum = repmat(animal,[length(cids'),1]);
 unitResponses = table(MouseNum, cids');
 unitResponses.Properties.VariableNames = {'MouseNum', 'Cluster'};
 
-% define analysis window
+% define analysis window - entire stimulus period
 if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') % && strcmp(stimuli_parameters.Par.Rec, "SxA")
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
@@ -20,6 +20,9 @@ elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') % && strcm
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
     %PostT = 0.1; % best way to capture onset stimulus
+elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'BiSine')
+    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
+    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
 elseif strcmp(stimuli_parameters.Par.Rec, "AMn")
     if max(stimuli_parameters.Stm.Md)
         PreT = str2double(stimuli_parameters.Par.AMPreTime)/1000;
@@ -38,6 +41,7 @@ end
 
 % calculate firing rate (Hz) in time window
 %[baselineRate, stimulusRate] = firingrate(aligned_spikes, PreT, PostT, onsetDelay);
+
 % format
 PostT = repmat(PostT, size(aligned_spikes,1),1);
 PreT = repmat(PreT, size(aligned_spikes,1),1);
