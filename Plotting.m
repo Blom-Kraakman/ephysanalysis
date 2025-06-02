@@ -4,11 +4,11 @@
 close all
 clearvars
 
-KSPath = 'D:\DATA\EphysRecordingsSorted\M24\10000-inf\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M24\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M24'; % output directory
+KSPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\EphysRecordingsSorted\M19\ICX\'; % kilosort ephys data
+BehaviorPath = '\\store\department\neuw\shared\Aaron Wong\Data\InVivoEphys\Blom\BehavioralStimuli\M19\'; % stimuli parameters
+OutPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M19\ICX'; % output directory
 
-session = 15;
+session = 17;
 [cids, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, onsetDelay, ~, clusterinfo] = loadData(OutPath, session, BehaviorPath);
 
 %% add spacing where needed
@@ -1327,6 +1327,8 @@ ax.XScale = 'log';
 %% ----------- FSL plotting vibrotac x sound ----------- %%
 
 % select responsive units
+cids = StimResponseFiring_all.unitResponses.Cluster;
+resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Initialize the figure
@@ -1344,7 +1346,8 @@ sound = squeeze(StimResponseFiring_all.FSLmed(1,1,2,index)) * 1000;
 vibrotac = squeeze(StimResponseFiring_all.FSLmed(8,3,3,index)) * 1000; % 0.3V 10Hz
 multi = squeeze(StimResponseFiring_all.FSLmed(8,3,4,index)) * 1000; % 0.3V 10Hz
 
-% Make scatter plot
+% Figure 1: all units, specific stimulus combination
+% Subplot 1: Make scatter plot
 scatter(x_axis, control, 'k');
 scatter(x_axis, sound, 'r');
 scatter(x_axis, vibrotac, 'b');
@@ -1392,6 +1395,172 @@ hold off;
 
 % Adjust layout (optional)
 sgtitle('Combined Scatter Plot and Bar Graph');
+
+%%
+% Select responsive units
+cids = StimResponseFiring_all.unitResponses.Cluster;
+resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
+index = ismember(cids, resp_cids);
+
+% Define stimulation frequencies
+stim_frequencies = StimResponseFiring_all.frequencies(:, 1);
+num_freq = numel(stim_frequencies);
+
+% Select data to plot
+control = squeeze(StimResponseFiring_all.FSLmed(1,1,1,index)) * 1000;
+vibrotac = squeeze(StimResponseFiring_all.FSLmed(2:end,3,3,index)) * 1000; % Multiple frequencies
+
+% Replace Inf with NaN
+data = [control'; vibrotac];
+data(isinf(data)) = NaN;
+
+% Initialize figure with subplots
+figure;
+logYTicks = [10 100 1000];
+
+% Subplot 1: Scatter plot for individual units
+subplot(2,1,1);
+hold on;
+
+for i = 1:size(data,1)
+        plot(1:num_freq, data(:,i), '-o');
+
+end
+
+% Set axis properties
+xlabel('Stimulation Frequency (Hz)');
+ylabel('Median FSL (ms)');
+xticklabels(stim_frequencies')
+set(gca, 'YScale', 'log');
+yticks(logYTicks);
+yticklabels(logYTicks);
+title('FSL over stimulation frequencies');
+hold off;
+
+% Subplot 2: Bar graph with mean FSL across conditions
+subplot(2,1,2);
+hold on;
+
+% Compute mean FSL per frequency
+%mean_FSL = mean(data, 2, 'omitnan');
+
+% Plot bar graph
+bar(mean(data, 2, "omitnan")); % Avg FR of all responsive units
+
+% Add scatter points to bar graph
+x = repmat((1:(size(data,1)))', 1, size(data, 2));
+for i = 1:size(data,1)
+    swarmchart(x(i,:), data(i,:), 20, 'k', 'filled', 'XJitterWidth', 0.4);
+end
+
+% Customize graph appearance
+xlabel('Stimulation Frequency (Hz)');
+ylabel('Mean FSL (ms)');
+xticklabels([0; stim_frequencies])
+set(gca, 'YScale', 'log');
+yticks(logYTicks);
+yticklabels(logYTicks);
+title('Mean FSL over stimulation frequencies');
+
+hold off;
+
+%%
+
+% Select responsive units
+cids = StimResponseFiring_all.unitResponses.Cluster;
+resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
+index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
+
+% Define stimulation frequencies
+stim_frequencies = StimResponseFiring_all.frequencies(:, 1);
+
+% Initialize figure
+figure;
+
+% Subplot 1: Scatter plot for individual units
+subplot(2, 1, 1);
+hold on;
+x_axis = 1:length(stim_frequencies);
+
+% Select data to plot
+control = squeeze(StimResponseFiring_all.FSLmed(1,1,1,index)) * 1000;
+vibrotac = squeeze(StimResponseFiring_all.FSLmed(2:end,3,3,index)) * 1000; % 0.3V 10Hz
+%multi = squeeze(StimResponseFiring_all.FSLmed(8,3,4,index)) * 1000; % 0.3V 10Hz
+
+% Replace Inf with NaN
+data = [control'; vibrotac];
+data(isinf(data)) = NaN;
+
+figure
+hold on
+for i = 1:size(data,1)
+    scatter(x_axis, data(:, i), 'filled');
+end
+
+% Set axis properties
+xlabel('Cluster');
+ylabel('Median FSL (ms)');
+xticks(1:cids(index));
+xticklabels(cids(index));
+set(gca, 'YScale', 'log');
+title('FSL Scatter Plot Across Stimulation Frequencies');
+hold off;
+
+
+% Compute Mean FSL across units
+mean_FSL = mean(data, 2, 'omitnan'); % Omit NaN values for accurate averaging
+
+% Initialize figure for bar graph
+figure;
+hold on;
+
+% Bar graph with mean FSL per condition
+bar(mean_FSL);
+
+% Add individual data points using a swarm plot
+x = repmat((1:length(mean_FSL))', 1, size(data, 2));
+for i = 1:length(mean_FSL)
+    swarmchart(x(i,:), data(i,:), 20, 'k', 'filled', 'XJitterWidth', 0.4);
+end
+
+% Customize graph appearance
+xlabel('Stimulation Condition');
+ylabel('Mean FSL (ms)');
+xticks(1:length(mean_FSL));
+xticklabels({'Control', 'Vibrotac Frequencies'}); % Adjust as needed based on conditions
+set(gca, 'YScale', 'log'); % Log scale for clarity
+title('Mean FSL Across Stimulation Conditions');
+
+hold off;
+
+%% Subplot 2: Bar graph of mean FSL across frequencies
+subplot(2, 1, 2);
+hold on;
+
+% Replace Inf with NaN
+fsl_data(isinf(fsl_data)) = NaN;
+
+% Bar graph for means
+bar(mean(fsl_data, 2, 'omitnan'));
+
+% Add individual scatter points to bar graph
+x = repmat((1:num_freq)', 1, size(fsl_data, 2));
+for i = 1:num_freq
+    swarmchart(x(i, :), fsl_data(i, :), 20, 'k', 'filled', 'XJitterWidth', 0.4);
+end
+
+% Customize bar graph
+xlabel('Stimulation Frequency');
+ylabel('Mean FSL (ms)');
+xticks(1:num_freq);
+xticklabels(arrayfun(@(x) sprintf('%d Hz', x), stim_frequencies, 'UniformOutput', false));
+set(gca, 'YScale', 'log');
+title('Mean FSL Across Frequencies');
+hold off;
+
+% Adjust layout (optional)
+sgtitle('Comparison of FSL Across Stimulation Frequencies');
+
 
 %% ----------- FSL plotting pressure ----------- %%
 
@@ -1521,6 +1690,8 @@ hold off;
 %vibrotac_resp_units = StimResponseFiring.unitResponses.SO;
 %multi_resp_units = (StimResponseFiring.unitResponses.SA) | (StimResponseFiring.unitResponses.OA & StimResponseFiring.unitResponses.SO);
 %resp_units = [276, 277, 290, 303, 306];
+cids = StimResponseFiring_all.unitResponses.Cluster;
+resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Initialize the figure
@@ -1570,11 +1741,13 @@ for cluster = 1:length(resp_cids)
     set(gca,'fontsize',fontsize)
     title(['FSL cluster: ' num2str(resp_cids(cluster))])
 
+    close gcf
+
     % Figure 2: FSL line graph
     figure
+    hold on
     for int = 1:size(data,1)
         plot(StimResponseFiring_all.amplitudes(:,1), data(int,:, cluster))
-        hold on
     end
 
 
@@ -1583,10 +1756,9 @@ for cluster = 1:length(resp_cids)
     %xticks(1:size(data,2));
     %xticklabels(num2str(StimResponseFiring_all.amplitudes(:,end)));
     set(gca, 'YScale', 'log');
+    ylim([0 1100])
     yticks(logYTicks);
     yticklabels(logYTicks);
-    %legend(arrayfun(@num2str, cids(index), 'UniformOutput', false))
-    % set(gca, 'YDir', 'normal', 'XTick',1:length(umN),'XTickLabel',umN','YTick',1:length(uInt),'YTicklabel',uInt, 'ColorScale','log')
     xlabel('pressure intensity (mN)')
     % set(gca,'fontsize',fontsize)
     %legend(arrayfun(@num2str, StimResponseFiring_all.amplitudes, 'UniformOutput', false))
