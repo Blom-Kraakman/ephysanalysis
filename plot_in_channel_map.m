@@ -49,10 +49,12 @@ hold off;
 figure;
 figb = scatter(channel_positions(idx,1), channel_positions(idx,2), '.k');
 %units = cpos.id';
-channelpos = [channel_positions(idx,1), channel_positions(idx,2), channel_map(idx)];
-for unit_to_plot = 1:length(channelpos)
-    index = cpos.channel == channelpos(unit_to_plot, 3);
-    text(channelpos(index,1)+1, channelpos(index,2),num2str(cpos.id(index)))
+channelpos = [channel_positions(idx,1), channel_positions(idx,2), channel_map(idx)]; %x-coords, y-coords, ch nr
+
+for unit_to_plot = 1:length(cpos.id)
+    channel_idx = find(channel_map == cpos.channel(unit_to_plot));
+    %index = cpos.channel == channelpos(unit_to_plot, 3);
+    text(channel_positions(channel_idx,1), channel_positions(channel_idx,2),num2str(cpos.id(unit_to_plot)))
 end
 
 title('Channel map')
@@ -60,6 +62,6 @@ ylabel('Relative depth')
 figb.SizeData = 100;
 fontsize(13,"points")
 axis square
-xlim([-10 30])
+xlim([-10 200])
 
 end
