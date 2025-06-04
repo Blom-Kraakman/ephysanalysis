@@ -63,5 +63,10 @@ figb.SizeData = 100;
 fontsize(13,"points")
 axis square
 xlim([-10 200])
+xticks([18.5 168.5])
+xticklabels({'shank A' 'shank B'})
+%xticks(unique(xcoords));
+
+
 
 end
