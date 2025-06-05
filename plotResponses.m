@@ -327,7 +327,7 @@ end
 
 % plot SxA Square, only SO sessions
 % TO DO: plot only OA
-if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')
+if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(str2num(stimuli_parameters.Par.SomAudSOA)) <= 2
 
     % define shared x-lim parameters
     preT  =  max(-str2double(stimuli_parameters.Par.SomatosensoryISI)/2000, -0.2);
@@ -406,97 +406,157 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
         figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(fig, fullfile(OutPath, figname));
+
+        % TO DO: make OA figure
     end
 
 end
 
-% % plot pressure % to do: for multiple onset delays
-% 
-% if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(SOAdelays) > 2
-% 
-%     SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA);
-%     AudIntensities = str2num(stimuli_parameters.Par.AuditoryIntensity);
-%     % replace NaNs with 0 in stimuli_parameters.Stm.SomAudSOA
-%     index = isnan(stimuli_parameters.Stm.SomAudSOA);
-%     stimuli_parameters.Stm.SomAudSOA(index) = 0;
-% 
-%     % define shared x-lim parameters
-%     preT  =  max(-str2double(stimuli_parameters.Par.SomatosensoryISI)/2000, -0.1);
-%     postT = 0.35;%min((max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
-%         %+ str2double(stimuli_parameters.Par.SomatosensoryISI)/2)/1000, 0.3);
-%     xrange = [preT, postT];
-%     binsize = 0.01;
-%     start_aud = 0;
-%     start_som = max(stimuli_parameters.Stm.SomAudSOA)/1000;
-%     end_som = max(stimuli_parameters.Stm.SomAudSOA)/1000 + str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-%     end_aud = str2double(stimuli_parameters.Par.AuditoryStimTime)/1000;
-% 
-%     % vertical lines to note onset and offset of stimuli
-%     xlinerange = [start_aud start_som end_som end_aud];
-% 
-%     for cluster = 1:length(cids)
-% 
-%         %add delay to "SO","OO" if needed
-%         idx = find(ismember(stimuli_parameters.Stm.MMType,["SO","OO"]));
-%         for ii = idx'
-%             aligned_spikes{ii,cluster} = aligned_spikes{ii,cluster} + start_som;
-%         end
-% 
-%         for j = 1:length(SOAdelays)
-%             %idx = find(ismember(stimuli_parameters.Stm.MMType,"SA"));
-%             if SOAdelays(j) < 0
-%                 idx = find(stimuli_parameters.Stm.SomAudSOA == SOAdelays(j));
-%                 for jj = idx'
-%                     aligned_spikes{jj,cluster} = aligned_spikes{jj,cluster} + (SOAdelays(j)/1000);
-%                 end
-%             end
-%         end
-% 
-%         fig = figure;
-%         ax = gca;
-%         set(gcf,'position',[500,150,900,700])
-% 
-%         % make subplot per Audintensity
-%         for plotpos = 1:length(AudIntensities)
-% 
-%             ax = subplot(2,2,plotpos); % rasterplot
-%             idx = stimuli_parameters.Stm.AudIntensity == AudIntensities(plotpos);
-% 
-%             % define stimulus variable space
-%             raster_color = [0, 0, 0];
-%             raster_yinc = [];%1,1,1];
-%             Var = [stimuli_parameters.Stm.Var25(idx), stimuli_parameters.Stm.SomAudSOA(idx), stimuli_parameters.Stm.AudIntensity(idx), stimuli_parameters.Stm.Amplitude(idx)];
-%             %yaxislabels = {'Control', 'Pressure only', 'Pressure + noise' 'Noise only'};
-%             yaxistext = 'Pressure (V)';
-%             raster_yinc = [10,20,20,20];
-% 
-%             % make rasterplot
-%             [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(idx, 1), Var, raster_color, raster_yinc, 1);
-%             yticks(YTick{1});
-%             yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];        ylim(f,yrange);
-%             xlim(f,xrange);
-% 
-%             % add demarcation lines
-%             xline(xlinerange) % on/off set
-%             %horizontalLine(YTickLim, ax) % between categories
-% 
-%             % format axis
-%             xlabel('Time (s)')
-%             %yticklabels(yaxislabels)
-%             %ylabel(yaxistext)
-%             ax.FontSize = 11;
-%             title(['BBN intensity: ' num2str(AudIntensities(plotpos)) ' (dB SPL)'])
-% 
-%         end
-%         sgtitle(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
-% 
-%     end
-% 
-%     % %save figure
-%     % figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
-%     % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
-%     % saveas(fig, fullfile(OutPath, figname));
-% end
+% plot pressure % to do: for multiple onset delays
+
+if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(str2num(stimuli_parameters.Par.SomAudSOA)) > 2
+
+    SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA); % +: sound leading, -: som leading
+AudIntensities = str2num(stimuli_parameters.Par.AuditoryIntensity);
+SomIntensities = str2num(stimuli_parameters.Par.SomatosensoryAmplitude);
+Nan_index = isnan(stimuli_parameters.Stm.SomAudSOA); % replace NaNs (non SxA trials) At with 0 in stimuli_parameters.Stm.SomAudSOA
+stimuli_parameters.Stm.SomAudSOA(Nan_index) = 0;
+
+% define shared x-lim parameters
+preT  =  -0.25;
+postT = 0.35;
+xrange = [preT, postT];
+
+start_aud = zeros(length(stimuli_parameters.Stm.SomAudSOA), 1); %(stimuli_parameters.Stm.SomAudSOA)/1000;
+start_som = (stimuli_parameters.Stm.SomAudSOA)/1000;
+end_aud = start_aud + (stimuli_parameters.Stm.AudDur/1000);
+end_som = start_som + (stimuli_parameters.Stm.SomDur/1000);
+
+% vertical lines to note onset and offset of stimuli
+xlinerange = [start_aud end_aud start_som end_som];
+conditions = {'OO' 'OA' 'SO' 'SA'};
+
+for cluster = 1:length(cids)
+
+    figure;
+    hold on
+    set(gcf,'position',[60,600,900,300])
+    sgtitle(['Cluster ' num2str(cids(cluster))]);
+
+    for condition = 1:3
+        ax = subplot(1,3,condition);
+
+        % Data selection
+        idx = stimuli_parameters.Stm.Var25 == condition;
+
+        % Define stimulus variable space
+        raster_color = [0, 0, 0];
+        raster_yinc = [10,20,20,20];
+        Var = [stimuli_parameters.Stm.AudIntensity(idx), stimuli_parameters.Stm.Amplitude(idx)];
+
+        % Make raster plot
+        [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(idx, cluster), Var, raster_color, raster_yinc, 1);
+
+        % Y-axis layout
+        if strcmp(conditions(condition), 'OO')
+            YTicklevel = YTick{1};
+            yaxislabels =  {'0'};
+            yaxistext = 'control';
+        elseif strcmp(conditions(condition), 'OA')
+            YTicklevel = YTick{1};
+            yaxislabels = string(AudIntensities);
+            yaxistext = 'dB SPL';
+        elseif strcmp(conditions(condition), 'SO')
+            YTicklevel = YTick{2};
+            yaxislabels = SomIntensities*0.158*1000;
+            yaxistext = 'mN';
+        end
+
+        yticks(YTicklevel);
+        ylim(f, [min(YTick{end}) - 15, max(YTick{end}) + 15]);
+        xlim(f, xrange);
+
+        % Add demarcation lines
+        xlines = [0 0.1];
+        xline(ax, xlines); % Sound onset/offset
+
+        % Format axis
+        xlabel('Time (s)');
+        yticklabels(yaxislabels);
+        ylabel(yaxistext);
+        ax.FontSize = 11;
+        title(conditions{condition})
+
+    end
+    
+    clear idx
+    hold off
+
+    %  make 1 fig for condition SA
+    figure;
+    hold on
+    ax = gca;
+    set(gcf,'position',[500,150,900,700])
+    sgtitle(['Cluster ' num2str(cids(cluster)) ' ' conditions{4}]);
+
+    for plotpos = 1:length(SOAdelays)
+        ax = subplot(3,3,plotpos); % rasterplot
+
+        % Data selection
+        idx = (stimuli_parameters.Stm.SomAudSOA == SOAdelays(plotpos) & stimuli_parameters.Stm.Var25 == 4);
+
+        if ~sum(idx)
+            continue
+        end
+
+        % Align to sound
+        if SOAdelays(plotpos) < 0
+            alignment_idx = find(stimuli_parameters.Stm.SomAudSOA == SOAdelays(plotpos));
+            for jj = alignment_idx'
+                aligned_spikes{jj,cluster} = aligned_spikes{jj,cluster} + (SOAdelays(plotpos)/1000);
+            end
+        end
+
+        % Define stimulus variable space
+        raster_color = [0, 0, 0];
+        raster_yinc = [10,20,20,20];
+        Var = [stimuli_parameters.Stm.Var25(idx), stimuli_parameters.Stm.SomAudSOA(idx), stimuli_parameters.Stm.AudIntensity(idx), stimuli_parameters.Stm.Amplitude(idx)];
+
+        % Make raster plot
+        [f, YTick, ~, ~, ~, YTickLim] = plotraster(ax, aligned_spikes(idx, cluster), Var, raster_color, raster_yinc, 1);
+
+        % Y-axis layout
+        yticks(YTick{3});
+        yaxislabels = string(AudIntensities);
+        yaxistext = 'dB SPL';
+
+        ylim(f, [min(YTick{end}) - 15, max(YTick{end}) + 15]);
+        xlim(f, xrange);
+
+        % Add demarcation lines
+        xlines = max(xlinerange(idx,:));
+        xline(xlines(1:2), 'r'); % Sound onset/offset
+        xline(xlines(3:4), 'b'); % Somatosensory onset/offset
+
+        % Format axis
+        xlabel('Time (s)');
+        yticklabels(yaxislabels);
+        ylabel(yaxistext);
+        ax.FontSize = 9;
+        title([num2str(SOAdelays(plotpos)) ' ms'])
+
+        hold off
+
+    end
+
+end
+   
+    % % %save figures
+    % % figname = sprintf('M%.2i_S%.2i_%s_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+    % % saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+    % % saveas(fig, fullfile(OutPath, figname));
+
+end
 
 
 end %fcn end
