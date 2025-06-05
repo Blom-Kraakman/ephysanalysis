@@ -1,4 +1,15 @@
-function [Srise, Sfall] = getTrialTTLs(tsessions_TTLs, TTL_states, TTL_samples, TTL_words)
+function [Srise, Sfall] = getTrialTTLs(tsessions_TTLs, TTLPath)
+
+% load TTL data % TO DO: check if TTL data all same size
+TTL_samples = readNPY([TTLPath 'sample_numbers.npy']); % sample nr all recorded TTLs
+TTL_states = readNPY([TTLPath 'states.npy']);
+TTL_words = readNPY([TTLPath 'full_words.npy']);
+
+% remove camera TTLs
+index = (abs(TTL_states) == 8);
+TTL_states(index) = [];
+TTL_samples(index) = [];
+TTL_words(index) = [];
 
 % define start and end of session
 if tsessions_TTLs(1,2) == 1 && tsessions_TTLs(2,2) == 0

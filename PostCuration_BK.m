@@ -10,20 +10,27 @@ clearvars
 % TODO: parse out mouse number and recording site to avoid mistakes when
 % setting directories
 
+% % set directories
+% recordingFolder = 'D:\DATA\EphysRecordings\M27\M27_2025-05-27_12-26-52\';
+% recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
+% TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
+% messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
+% KSPath = 'D:\DATA\EphysRecordingsSorted\M27\'; % kilosort ephys data
+% BehaviorPath = 'D:\DATA\Behavioral Stimuli\M27\'; % stimuli parameters
+% OutPath = 'D:\DATA\Processed\M27'; % output directory
+
 % set directories
-recordingFolder = 'D:\DATA\EphysRecordings\M27\M27_2025-05-27_12-26-52\';
+recordingFolder = '\\store\department\neuw\shared\Aaron Wong\Data\InVivoEphys\Blom\EphysRecordings\M19\M19_2024-12-17_11-39-47_ICX\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = 'D:\DATA\EphysRecordingsSorted\M27\'; % kilosort ephys data
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M27\'; % stimuli parameters
-OutPath = 'D:\DATA\Processed\M27'; % output directory
-
-rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording. supressed if alignedspikes done to save time
+KSPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\EphysRecordingsSorted\M19\ICX\'; % kilosort ephys data
+BehaviorPath = '\\store\department\neuw\shared\Aaron Wong\Data\InVivoEphys\Blom\BehavioralStimuli\M19\'; % stimuli parameters
+OutPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M19\ICX_test'; % output directory
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [1 15];
+relevant_sessions = [1 17];
 skip_sessions = [];
 
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13
@@ -58,14 +65,73 @@ end
 % IronClust: post-curation unit extraction [spiketimes, cids,cpos] = ircGoodClusters(spiketimecsv,clusterqualitycsv);
 % spike extraction from curated units
 
-% to add: load if previously saved
-[spiketimes, cids] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, Fs, OutPath);
+%  --- NEW ---
+% loads data if previously saved
+% saves cids and spike times in seperate files
+spiketimes_file = dir([OutPath '\*_SpikeTimes.mat']);
+if isempty(spiketimes_file)
+    rec_samples = readNPY([recPath 'sample_numbers.npy']); % sample nr whole recording. supressed if alignedspikes done to save time
+    [spiketimes, ~] = extractspikes(BehaviorPath, KSPath, TTLPath, relevant_sessions, rec_samples, Fs, OutPath);
+    disp('spiketimes and single cluster details saved')
+else
+    spiketimesdata = load([OutPath '\' spiketimes_file.name]);
+    spiketimes = spiketimesdata.spiketimes;
+    disp('spiketimes.mat loaded from saved files')
+end
 
 %% align spikes
 % saves aligned spikes with corresponding stimulus onset and offset timings
 % spike times in sec, Srise & Sfall in samples
 
-alignspikes(BehaviorPath, TTLPath, OutPath, spiketimes, relevant_sessions, skip_sessions, cids, sessions_TTLs, Fs);
+% NEW: seperated function to call when analysing data instead of saving
+
+% LOAD DATA
+session = 2;
+[cids, stimuli_parameters, ~, ~, ~, sessions_TTLs, ~, ~, ~] = loadData(OutPath, 2, BehaviorPath); % TODO: aligned spikes in data loading
+NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
+disp(['Stimuli in session: ' num2str(NStim)])
+
+% NEWL select correct analysis window and
+% if strcmp(stimuli_parameters.Par.Rec, 'SOM')
+%     PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
+%     PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
+%     % -- NEW -- %
+% elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % TO TEST
+%     if length(str2num(stimuli_parameters.SomAudSOA)) > 2 % multiple SOA delays
+%         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
+%         % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
+%         PostT = (min(str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryStimTime) + max(stimuli_parameters.Stm.SomAudSOA) ...
+%             , str2double(stimuli_parameters.Par.SomatosensoryISI)/2));
+%     else
+%         % -- %
+%         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
+%         % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
+%         PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
+%             + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
+%     end
+% elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
+%     PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
+%     PostT = str2double(stimuli_parameters.Par.FRAPostTime);
+% elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
+%     PreT = (str2double(stimuli_parameters.Par.AMPreTime) + (str2double(stimuli_parameters.Par.AMPostTime)/4));
+%     PostT = (str2double(stimuli_parameters.Par.AMStimTime) + (str2double(stimuli_parameters.Par.AMPostTime)/2));
+% end
+PreT = 200; %ms
+PostT = 300;
+
+% NEW: select only the required part of sessions_TTLs
+tsessions_TTLs = sessions_TTLs(sessions_TTLs(:,1) == session, :);
+% NEW: seperated generation of Srise from spike alignment to control moment to align to
+[Srise, ~] = getTrialTTLs(tsessions_TTLs, TTLPath);
+Srise = double(Srise);
+
+aligned_spikes = alignspikes(spiketimes, cids, Srise, NStim, PreT, PostT, Fs);
+
+%% align spikes
+% saves aligned spikes with corresponding stimulus onset and offset timings
+% spike times in sec, Srise & Sfall in samples
+
+Copy_of_alignspikes(BehaviorPath, TTLPath, OutPath, spiketimes, relevant_sessions, skip_sessions, cids, sessions_TTLs, Fs);
 
 %% optional: match units between session
 % 

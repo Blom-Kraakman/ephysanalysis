@@ -52,8 +52,8 @@ for cluster = 1:length(cids)
 end
 filename = sprintf('M%.2i_S%02d-%02d', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(end));
 %filename = sprintf('M%.2i_S%02d-%02d_InfoGoodUnits', str2double(stimuli_parameters.Par.MouseNum), relevant_sessions(1), relevant_sessions(end));
-save(fullfile(OutPath, filename, '_InfoGoodUnits'), "clusterinfo") %clusterinto variables: unit id, channel, depth, avg firing rate, nr spikes;
-save(fullfile(OutPath, filename, '_SpikeTimes'), "spiketimes") % save extracted spikes times
+save(fullfile(OutPath, [filename, '_InfoGoodUnits']), "clusterinfo") %clusterinto variables: unit id, channel, depth, avg firing rate, nr spikes;
+save(fullfile(OutPath, [filename, '_SpikeTimes']), "spiketimes") % save extracted spikes times
 
 fprintf('unit extraction done\n');
 
