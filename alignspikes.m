@@ -53,11 +53,20 @@ for file = relevant_sessions(1):relevant_sessions(2)
     if strcmp(stimuli_parameters.Par.Rec, 'SOM')
         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
         PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
-    elseif strcmp(stimuli_parameters.Par.Rec, 'SxA')
-        PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
-        % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
-        PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
-            + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
+    % -- NEW -- %
+    elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % TO TEST
+        if length(str2num(stimuli_parameters.SomAudSOA)) > 2 % multiple SOA delays
+            PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
+            % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
+            PostT = (min(str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryStimTime) + max(stimuli_parameters.Stm.SomAudSOA) ...
+                , str2double(stimuli_parameters.Par.SomatosensoryISI)/2));
+        else
+    % -- % 
+            PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
+            % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
+            PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
+                + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
+        end
     elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
         PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
         PostT = str2double(stimuli_parameters.Par.FRAPostTime);
