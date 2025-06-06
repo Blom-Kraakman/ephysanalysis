@@ -82,50 +82,51 @@ end
 %% align spikes
 % saves aligned spikes with corresponding stimulus onset and offset timings
 % spike times in sec, Srise & Sfall in samples
+% NEW: seperated function to call when aligning data
 
-% NEW: seperated function to call when analysing data instead of saving
+alignedspikes_file = dir([OutPath '\*_SpikeTimes.mat']);
+if isempty(alignedspikes_file)
 
-% LOAD DATA
-session = 2;
-[cids, stimuli_parameters, ~, ~, ~, sessions_TTLs, ~, ~, ~] = loadData(OutPath, 2, BehaviorPath); % TODO: aligned spikes in data loading
-NStim = size(stimuli_parameters.Stm, 1); % nr trials to align per stim session
-disp(['Stimuli in session: ' num2str(NStim)])
+    for session = relevant_sessions(1):relevant_sessions(2)
+        
+        % skip earlier stim files not in rec session
+        if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions) || ~ismember(str2double(stimuli_parameters.Par.Set), relevant_sessions(1):relevant_sessions(2))
+            continue
+        else
+            [~, stimuli_parameters, ~, ~, ~, sessions_TTLs, ~, ~, ~] = loadData(OutPath, session, BehaviorPath); % load data
+            disp(['Aligning session: ' num2str(file)])
+        end
 
-% NEWL select correct analysis window and
-% if strcmp(stimuli_parameters.Par.Rec, 'SOM')
-%     PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
-%     PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
-%     % -- NEW -- %
-% elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % TO TEST
-%     if length(str2num(stimuli_parameters.SomAudSOA)) > 2 % multiple SOA delays
-%         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
-%         % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
-%         PostT = (min(str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryStimTime) + max(stimuli_parameters.Stm.SomAudSOA) ...
-%             , str2double(stimuli_parameters.Par.SomatosensoryISI)/2));
-%     else
-%         % -- %
-%         PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
-%         % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
-%         PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
-%             + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
-%     end
-% elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
-%     PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
-%     PostT = str2double(stimuli_parameters.Par.FRAPostTime);
-% elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
-%     PreT = (str2double(stimuli_parameters.Par.AMPreTime) + (str2double(stimuli_parameters.Par.AMPostTime)/4));
-%     PostT = (str2double(stimuli_parameters.Par.AMStimTime) + (str2double(stimuli_parameters.Par.AMPostTime)/2));
-% end
-PreT = 200; %ms
-PostT = 300;
+        % NEW: seperated generation of Srise from spike alignment to control moment to align to
+        tsessions_TTLs = sessions_TTLs(sessions_TTLs(:,1) == session, :); % select only the required part
+        [Srise, ~] = getTrialTTLs(tsessions_TTLs, TTLPath);
+        Srise = double(Srise); % contains sample onset trial
+        AudRise = [];
+        SomRise = [];
 
-% NEW: select only the required part of sessions_TTLs
-tsessions_TTLs = sessions_TTLs(sessions_TTLs(:,1) == session, :);
-% NEW: seperated generation of Srise from spike alignment to control moment to align to
-[Srise, ~] = getTrialTTLs(tsessions_TTLs, TTLPath);
-Srise = double(Srise);
+        % Align multimodal sessions to both stimuli
+        if strcmp(stimuli_parameters.Par.Rec, 'SxA')
+            AudRise = Srise; % align multimodal trials to sound onset
+            sa_idx = stimuli_parameters.Stm.Var25==4 & ...
+                stimuli_parameters.Stm.SomAudSOA < 0;
+            AudRise(sa_idx) = Srise(sa_idx) + round(abs(stimuli_parameters.Stm.SomAudSOA(sa_idx)) ./ Fs);
+            alignspikes(spiketimes, size(spiketimes, 1), AudRise, stimuli_parameters, Fs);
 
-aligned_spikes = alignspikes(spiketimes, cids, Srise, NStim, PreT, PostT, Fs);
+            SomRise = Srise; % align multimodal trials to som onset
+            sa_idx = stimuli_parameters.Stm.Var25==4 & ...
+                stimuli_parameters.Stm.SomAudSOA > 0;
+            SomRise(sa_idx) = Srise(sa_idx) + round(abs(stimuli_parameters.Stm.SomAudSOA(sa_idx)) ./ Fs);
+            alignspikes(spiketimes, size(spiketimes, 1), SomRise, stimuli_parameters, Fs);
+        else
+            alignspikes(spiketimes, size(spiketimes, 1), Srise, stimuli_parameters, Fs);
+        end
+
+        % save spike alignment
+        filename = sprintf('M%.2i_S%.2i_%s_AlignedSpikes', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
+        save(fullfile(OutPath, filename), "aligned_spikes","Srise","AudRise","SomRise")
+        clearvars("sa_idx")
+    end
+end
 
 %% align spikes
 % saves aligned spikes with corresponding stimulus onset and offset timings

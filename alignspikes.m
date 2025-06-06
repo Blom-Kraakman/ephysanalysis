@@ -1,4 +1,4 @@
-function [aligned_spikes] = alignspikes(spiketimes, cids, Srise, NStim, PreT, PostT, Fs)
+function [aligned_spikes] = alignspikes(spiketimes, cids, Srise, stimuli_parameters, Fs)
 % align spikes
 % INPUT - spiketimes (cell array, 1 cell: timestamp of spike for 1 unit),
 % TTLs (vector), stimulus parameters (struct)
@@ -11,14 +11,46 @@ if isempty(spiketimes) || isempty(cids)
     error('Input arguments missing. Extract spikes first.')
 elseif isempty(Srise)
     error('Input arguments missing. Define Srise first.')
-elseif isempty(PreT) || isempty(PostT)
-    error('Input arguments missing. Define alignement window.')
+elseif isempty(stimuli_parameters)
+    error('Stimuli parameters file missing.')
 end
 
 % check if all trials have TTL
+NStim =  size(stimuli_parameters.Stm, 1);
 if NStim ~= size(Srise)
     error('Length Srise and NStim do not correspond')
+else
+    disp(['Stimuli in session: ' num2str(NStim)])
 end
+
+disp(['Aligning session: ' num2str(file)]) % feedback to user
+
+% select correct analysis window
+if strcmp(stimuli_parameters.Par.Rec, 'SOM')
+    PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
+    PostT = (str2double(stimuli_parameters.Par.SomatosensoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/4); % amount of msec. to include after Sfall;
+    % -- NEW -- %
+elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % TO TEST
+    if length(str2num(stimuli_parameters.SomAudSOA)) > 2 % multiple SOA delays
+        PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
+        % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
+        PostT = (min(str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryStimTime) + max(stimuli_parameters.Stm.SomAudSOA) ...
+            , str2double(stimuli_parameters.Par.SomatosensoryISI)/2));
+    else
+        % -- %
+        PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/2;
+        % PostT = (str2double(stimuli_parameters.Par.AuditoryStimTime) + str2double(stimuli_parameters.Par.SomatosensoryISI)/2);
+        PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
+            + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
+    end
+elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
+    PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
+    PostT = str2double(stimuli_parameters.Par.FRAPostTime);
+elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
+    PreT = (str2double(stimuli_parameters.Par.AMPreTime) + (str2double(stimuli_parameters.Par.AMPostTime)/4));
+    PostT = (str2double(stimuli_parameters.Par.AMStimTime) + (str2double(stimuli_parameters.Par.AMPostTime)/2));
+end
+
 
 % initialize variables (does nothing currently)
 SpkT = [];

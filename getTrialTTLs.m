@@ -30,7 +30,10 @@ disp([' start sample: ' num2str(session_start)])
 disp([' end sample: ' num2str(session_end)])
 disp([' total session related samples: ' num2str(size(tTTL_states, 1))])
 
-% keep only session specific TTLs, gives 1 when either and both stim (2: aud, 16(2^4): som) are on/high
+% keep only session specific TTLs, gives 1 when either and both stim are on/high
+    % Auditory TTL2: 2 = 2^(2-1)
+    % Somatosensory TTL5: 16 = 2^(5-1)
+    % Camera TTL8: 128 = 2^(8-1) 
 stim_on = bitand(tTTL_words, (2+16)) > 0; % numbers depend on session type
 stim_rise = [true; diff(stim_on) > 0];
 stim_fall = [false; diff(stim_on) < 0];
