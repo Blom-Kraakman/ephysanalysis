@@ -91,11 +91,15 @@ for session = relevant_sessions(1):relevant_sessions(2)
     [~, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
 
     % skip earlier stim files not in rec session
+    if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions) || ~ismember(str2double(stimuli_parameters.Par.Set), relevant_sessions(1):relevant_sessions(2))
+        continue
+    end
+
+    % align only if not previously done
     if isempty(dir([OutPath '\*_' sprintf('S%.2d_' , 4) '*_AlignedSpikes.mat' ]))
         disp(['Aligning session: ' num2str(session)])
-    elseif ismember(str2double(stimuli_parameters.Par.Set), skip_sessions) || ~ismember(str2double(stimuli_parameters.Par.Set), relevant_sessions(1):relevant_sessions(2))
-        continue
     else
+        disp('Session previously aligned')
         continue
     end
 
