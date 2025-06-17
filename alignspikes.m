@@ -23,8 +23,6 @@ else
     disp(['Stimuli in session: ' num2str(NStim)])
 end
 
-disp(['Aligning session: ' num2str(file)]) % feedback to user
-
 % select correct analysis window
 if strcmp(stimuli_parameters.Par.Rec, 'SOM')
     PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
@@ -43,7 +41,7 @@ elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % TO TEST
         PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
             + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
     end
-elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
+elseif strcmp(stimuli_parameters.Par.Rec, 'FRA') || strcmp(stimuli_parameters.Par.Rec, 'Opt') || strcmp(stimuli_parameters.Par.Rec, 'OptoFRA')
     PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
     PostT = str2double(stimuli_parameters.Par.FRAPostTime);
 elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
