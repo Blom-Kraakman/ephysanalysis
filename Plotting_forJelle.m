@@ -402,6 +402,182 @@ ax1.FontSize = 16;
 %xline(xlinerange) % on/off set
 %legend('control', 'sound only', 'vibrotactile only', 'multimodal', 'Location', 'northeast')
 
+%% PSTH heatmap of all units - pressure & vibrotactile
+% TO DO: CHANGE FOR JELLE
+
+% DATA SELECTION
+resp_cids = [194 180]; % vibrotac and/or pressure responsive, exclusively with earplug
+mice_nr = [21 22 23 24 27]; % mice to plot data from
+session_nr = [2 2 2 2 2]; % session nr, same order as mice
+
+% PARAMETERS
+preT  = -0.2;
+postT = 0.7;
+binsize = 0.01; %10ms bins
+PSTHt = [];
+PSTH = [];
+stimonset = 0; %find(edges == 0);
+stimoffset = 0.5; %find(edges == 0.5);
+
+amp = 0.3; % 0 0.1 0.3
+freq = 50; % 10 20 50 100 200 ... 600
+all_cids = [];
+
+% ANALYSIS
+for mouse = 1:length(mice_nr)
+
+    clear tPSTH
+
+    % load in correct data file
+    mousestr = num2str(mice_nr(mouse));
+    OutPath = ['D:\DATA\Processed\M' mousestr '\ICX']; % change paths
+    BehaviorPath = ['D:\DATA\Behavioral Stimuli\M', mousestr]; % change paths
+    session = session_nr(mouse);
+    [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
+    % calculate PSTH per condition
+    dataidx = (stimuli_parameters.Stm.Amplitude == amp) & (stimuli_parameters.Stm.SomFreq == freq);
+
+    if ~sum(dataidx)
+        warning('no data selected')
+        continue
+    end
+
+    %for each cluster: spike count per bin
+    clear spikecounts bin_edges
+
+    for cluster = 1:length(cids)
+        [N, edges] = histcounts(vertcat(aligned_spikes{dataidx, cluster}), preT:binsize:postT);
+        spikecounts(cluster, :) = N;
+        bin_edges(cluster, :) = edges;
+    end
+
+    bin_center = edges(1:end-1)+0.5*binsize;
+
+    % baseline subtraction on spikecounts
+    baseline = spikecounts(:,bin_center<0); %200ms baseline
+    spikecounts = spikecounts - mean(baseline,2); % units x bins
+
+    % normalize spikecounts into PSTH = sum spike counts / (number events * bin size)
+    tPSTH(:,:) = spikecounts / (size(aligned_spikes(dataidx, cluster), 1) * binsize); % cluster x bins
+
+    % concatinate PSTH over all mice
+    PSTHt = cat(1,PSTHt,tPSTH);
+
+    all_cids = [all_cids, cids];
+
+end
+
+close all
+
+% select PSTH units to analyse
+clusters_to_plot_idx = ismember(all_cids, resp_cids);
+PSTH(:,:) = PSTHt(clusters_to_plot_idx,:);
+
+% sort PSTH based on strongest response
+if ~exist('I', 'var')
+    [~, I] = sort(mean(PSTH(:,bin_center > stimonset & bin_center < stimoffset, 3),2), 1); % avg stimperiod firing during vibrotac only
+end
+
+% select correct PSTH part, for plotting
+toplot = PSTH(I,:);
+
+% plot individual + mean PSTH traces
+figure;
+subplot(2,1,1);
+plot(bin_center,toplot)
+title('individual traces')
+ylabel('\Delta Firing rate (spikes/s)')
+xlabel('time (sec)')
+
+subplot(2,1,2);
+plot(bin_center,mean(toplot,1), 'k', 'LineWidth', 1)
+title('mean PSTH')
+ylabel('\Delta Firing rate (spikes/s)')
+xlabel('time (sec)')
+
+sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
+
+%     figname = sprintf('M21-22-23-24-27_PSTH_%s_%s', conditions{condition}, StimResponseFiring_all.StimType);
+%     saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', figname));
+%     saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', [figname '.jpg']));
+% close(gcf)
+
+% plot avg PSTH above heatmap
+figure('position',[-1611,418,880,565]);
+fig = tiledlayout(3,1);
+t1 = nexttile(1);
+plot(bin_center,mean(toplot,1), 'k', 'LineWidth', 1.25)
+
+%plot heatmap
+t2 = nexttile([2 1]);
+imagesc(edges, (1:sum(clusters_to_plot_idx)), toplot)
+
+% FORMAT FIGURE
+fontsize = 16;
+t1.YLim = [-2 100];
+clim([-5 250])
+t2.YTick = [1,size(toplot,1)];
+t2.YTickLabel = {num2str(size(toplot,1)), '1'};
+xlim(t1, [-0.2 1.2])
+xlim(t2, [-0.2 1.2])
+sgtitle(['Condition: ' conditions{condition} ' (' num2str(freq) 'Hz, ' num2str(amp) 'V)'])
+
+ylabel(t1, '\Delta spikes/s')
+xlabel(fig, 'Time (s)', 'fontsize',fontsize);
+set(t1,'fontsize',fontsize)
+ylabel(t2, 'units')
+set(t2,'fontsize',fontsize, 'TickDir','out')
+colormap('hot'); % Choose a color map
+cb = colorbar(gca);
+cb.Label.String = '\Delta spike/sec';
+cb.FontSize = fontsize;
+
+% figname = sprintf('M21-22-23-24-27_PSTH_heatmap_%s_%s', conditions{condition},StimResponseFiring_all.StimType);
+% saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', figname));
+% saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', [figname '.jpg']));
+
+%% linegraph: plot broadband noise (bbn) for multiple animals
+
+close all
+
+% PARAMETERS
+uInt = StimResponseFiring_all.amplitudes(:,1); % [0 15 30 45 60];
+uInt(isinf(uInt)) = 0; % replace -Inf with 0
+nInt = length(uInt);
+
+% DATA SELECTION
+resp_cids = [194 180]; % vibrotac and/or pressure responsive, exclusively with earplug
+all_cids = StimResponseFiring_all.unitResponses.Cluster; 
+resp_cids_idx = ismember(all_cids, resp_cids);
+
+data = squeeze(firing_mean)'; % cids x naudint
+FRnoise_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
+%FRnoise_nonresp_mean = mean(data(nonresp_cids_idx,:), 'omitnan');
+
+% PLOTTING
+figure;
+hold on
+
+% plot selection non sound vibrotac responsive units
+plot(uInt, data(resp_cids_idx,:), 'Color',  "#e06ca5", 'LineWidth', 0.1)
+plot(uInt, FRnoise_resp_mean, 'Color',  "#c21069", 'LineWidth', 3)
+%errorbar(uAmp, FRpressure_med, FRpressure_iqr, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
+
+% plot selection sound vibrotac responsive units
+%plot(uInt, data(nonresp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
+%plot(uInt, FRnoise_nonresp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
+
+% FORMAT FIGURE
+set(gca,'fontsize', 16)
+ylabel('\Delta Firing rate (spikes/s)')
+xlabel('Broadband noise intensity (dB SPL)')
+ylim([-5 85])
+ 
+% figname = sprintf('M10-11-19-20_noise tuning curve_%s', StimResponseFiring_all.StimType);
+% saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
+% saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
+
 %% ----------------------- LOCAL FUNCTIONS ----------------------- %%
 function horizontalLine(YTickLim, fig)
 
