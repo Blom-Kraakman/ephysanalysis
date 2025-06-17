@@ -1,4 +1,4 @@
-function [aligned_spikes] = alignspikes(spiketimes, cids, Srise, stimuli_parameters, Fs)
+function [SpkT] = alignspikes(spiketimes, cids, Srise, stimuli_parameters, Fs)
 % align spikes
 % INPUT - spiketimes (cell array, 1 cell: timestamp of spike for 1 unit),
 % TTLs (vector), stimulus parameters (struct)
@@ -52,10 +52,10 @@ end
 
 % initialize variables (does nothing currently)
 SpkT = [];
-aligned_spikes = {}; % nStim x Ncids
+%aligned_spikes = {}; % nStim x Ncids
 
 % actual spike alignment done here
-for cluster = 1:length(cids)
+for cluster = 1:cids
 
     % pre-allocate output cell array
     tSpkT = cell(NStim, 1);
@@ -73,7 +73,7 @@ for cluster = 1:length(cids)
 
 end
 
-aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
+%aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
 fprintf('spike alignment done\n');
 
 end
