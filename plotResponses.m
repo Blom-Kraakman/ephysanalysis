@@ -6,6 +6,35 @@ if isempty(aligned_spikes) || isempty (stimuli_parameters) % to add: look for sa
     error('no file found')
 end
 
+% plot Opto alignment
+if strcmp(stimuli_parameters.Par.Rec, 'Opt')
+    for cluster = 1:length(cids)
+
+        fig = figure;
+        ax = gca;
+
+        % make rasterplot
+        Var =  [stimuli_parameters.Stm.LEDDur];
+        [f, YTick, YTickLab, varargout] = plotraster(ax, aligned_spikes(:, cluster), Var, [0,0,0], [], 1);
+        yticks(YTick{1});
+        yrange = [min(YTick{end}) - 15, max(YTick{end}) + 15];
+        ylim(f,yrange);
+        yticklabels(unique(stimuli_parameters.Stm.LEDDur));
+        xlim(f,[-.1,.19]);
+
+        set(gcf,'position',[-1000,300,600,400])
+
+        % format and save
+        sgtitle(['Opto response (unit ' num2str(cids(cluster)) ')' ])
+        xlabel('Time (s)')
+        ylabel('LED duration (ms)')
+        figname = sprintf('M%.2i_S%.2i_%s_cluster_%i_raster', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+        saveas(gcf, fullfile(OutPath, [figname '.jpg']));
+        saveas(fig, fullfile(OutPath, figname));
+
+    end
+end
+
 % plot FRA data
 if strcmp(stimuli_parameters.Par.Rec, 'FRA')
     for cluster = 1:length(cids)
