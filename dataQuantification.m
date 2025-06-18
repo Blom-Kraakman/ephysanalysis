@@ -67,7 +67,6 @@ for session = 1:2 %1:length(sessions)
 end
 %% Pool datasets across mice
 stimOrder = readtable('D:\DATA\Processed\M10-11-19-20_stimOrder.csv');
-stimOrder.AM_pre(2) = NaN; % discard M11 AM session, wrong params
 fn = 'M10-11-19-20';
 
 dataQuantification_poolDatasets(stimOrder, fn)
