@@ -42,13 +42,14 @@ for condition = 2:(size(stimOrder, 2))
             FSLmed_data = dataS.StimResponseFiring.FSLmed;
             FSLiqr_data = dataS.StimResponseFiring.FSLiqr;
             hval_data = dataS.StimResponseFiring.hvalue;
+            
             tPre_T = dataS.StimResponseFiring.PreT;
             tPost_T = dataS.StimResponseFiring.PostT;
             ufreqs = dataS.StimResponseFiring.frequencies;
             uamps = dataS.StimResponseFiring.amplitudes;
 
         else
-            
+
             % adjust data matrix per animal to accomodate difference in dimensions
             if str2num(dataS.StimResponseFiring.MouseNum) == 27
                 firing_data = dataS.StimResponseFiring.firing_mean(1:8, 2:3,:,:);
@@ -69,6 +70,9 @@ for condition = 2:(size(stimOrder, 2))
             end
 
             ufreqs = dataS.StimResponseFiring.frequencies(1:8);
+            tPre_T = dataS.StimResponseFiring.PreT(1);
+            tPost_T = dataS.StimResponseFiring.PostT(1);
+
         end
 
         % add to matrix
