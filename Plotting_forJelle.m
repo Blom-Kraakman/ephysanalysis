@@ -537,41 +537,85 @@ cb.FontSize = fontsize;
 % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', figname));
 % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20', [figname '.jpg']));
 
-%% linegraph: plot broadband noise (bbn) for multiple animals
+%% linegraph: plot BBN stimulus response intensity for multiple animals
 
 close all
 
-% PARAMETERS
+% PARAMETERS BBN
 uInt = StimResponseFiring_all.amplitudes(:,1); % [0 15 30 45 60];
 uInt(isinf(uInt)) = 0; % replace -Inf with 0
 nInt = length(uInt);
 
 % DATA SELECTION
-resp_cids = [194 180]; % vibrotac and/or pressure responsive, exclusively with earplug
+resp_cids = [194 180]; % tactile pressure responsive
+aud_resp_cids = [307 199]; % sound only pressure responsive
 all_cids = StimResponseFiring_all.unitResponses.Cluster; 
 resp_cids_idx = ismember(all_cids, resp_cids);
+aud_resp_cids_idx = ismember(all_cids, aud_resp_cids);
 
 data = squeeze(firing_mean)'; % cids x naudint
 FRnoise_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
-%FRnoise_nonresp_mean = mean(data(nonresp_cids_idx,:), 'omitnan');
+FRnoise_aud_resp_mean = mean(data(aud_resp_cids_idx,:), 'omitnan');
 
 % PLOTTING
 figure;
 hold on
 
-% plot selection non sound vibrotac responsive units
+% plot selection tactile responsive units
 plot(uInt, data(resp_cids_idx,:), 'Color',  "#e06ca5", 'LineWidth', 0.1)
 plot(uInt, FRnoise_resp_mean, 'Color',  "#c21069", 'LineWidth', 3)
-%errorbar(uAmp, FRpressure_med, FRpressure_iqr, 'k', 'linestyle', 'none', 'LineWidth', 0.5);
 
-% plot selection sound vibrotac responsive units
-%plot(uInt, data(nonresp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
-%plot(uInt, FRnoise_nonresp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
+% plot selection sound only responsive units
+plot(uInt, data(aud_resp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
+plot(uInt, FRnoise_aud_resp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
 
 % FORMAT FIGURE
 set(gca,'fontsize', 16)
 ylabel('\Delta Firing rate (spikes/s)')
 xlabel('Broadband noise intensity (dB SPL)')
+ylim([-5 85])
+ 
+% figname = sprintf('M10-11-19-20_noise tuning curve_%s', StimResponseFiring_all.StimType);
+% saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
+% saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
+
+%% linegraph: plot vibrotactile stimulus response intensity for multiple animals
+
+close all
+
+% PARAMETERS VIBROTACTILE
+uAmp = StimResponseFiring_all.amplitudes(:,1);
+uFreq = StimResponseFiring_all.frequencies(:,1);
+nAmp = length(uAmp);
+nFreq = length(uAmp);
+
+% DATA SELECTION
+resp_cids = [194 180]; % tactile pressure responsive
+aud_resp_cids = [307 199]; % sound only pressure responsive
+all_cids = StimResponseFiring_all.unitResponses.Cluster; 
+resp_cids_idx = ismember(all_cids, resp_cids);
+aud_resp_cids_idx = ismember(all_cids, aud_resp_cids);
+
+data = squeeze(firing_mean)'; % cids x naudint
+FRnoise_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
+FRnoise_aud_resp_mean = mean(data(aud_resp_cids_idx,:), 'omitnan');
+
+% PLOTTING
+figure;
+hold on
+
+% plot selection tactile responsive units
+plot(uFreq, data(resp_cids_idx,:), 'Color',  "#e06ca5", 'LineWidth', 0.1)
+plot(uFreq, FRnoise_resp_mean, 'Color',  "#c21069", 'LineWidth', 3)
+
+% plot selection sound only responsive units
+plot(uFreq, data(aud_resp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
+plot(uFreq, FRnoise_aud_resp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
+
+% FORMAT FIGURE
+set(gca,'fontsize', 16)
+ylabel('\Delta Firing rate (spikes/s)')
+xlabel('Vibrotactile stimulation frequency (Hz)')
 ylim([-5 85])
  
 % figname = sprintf('M10-11-19-20_noise tuning curve_%s', StimResponseFiring_all.StimType);
