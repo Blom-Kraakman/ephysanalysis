@@ -586,17 +586,19 @@ close all
 % PARAMETERS VIBROTACTILE
 uAmp = StimResponseFiring_all.amplitudes(:,1);
 uFreq = StimResponseFiring_all.frequencies(:,1);
+umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
 nAmp = length(uAmp);
 nFreq = length(uAmp);
 
 % DATA SELECTION
-resp_cids = [194 180]; % tactile pressure responsive
-aud_resp_cids = [307 199]; % sound only pressure responsive
+resp_cids = [21194 22322]; % tactile pressure responsive
+aud_resp_cids = [22307 23199]; % sound only pressure responsive
 all_cids = StimResponseFiring_all.unitResponses.Cluster; 
 resp_cids_idx = ismember(all_cids, resp_cids);
 aud_resp_cids_idx = ismember(all_cids, aud_resp_cids);
 
-data = squeeze(firing_mean)'; % cids x naudint
+data = squeeze(StimResponseFiring_all.firing_mean(:,2,:,:))'; % cids x naudint
+
 FRnoise_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
 FRnoise_aud_resp_mean = mean(data(aud_resp_cids_idx,:), 'omitnan');
 
@@ -605,8 +607,8 @@ figure;
 hold on
 
 % plot selection tactile responsive units
-plot(uFreq, data(resp_cids_idx,:), 'Color',  "#e06ca5", 'LineWidth', 0.1)
-plot(uFreq, FRnoise_resp_mean, 'Color',  "#c21069", 'LineWidth', 3)
+plot(uFreq, data(resp_cids_idx,:), 'Color', "#8BC9E8", 'LineWidth', 0.1)
+plot(uFreq, FRnoise_resp_mean, 'Color', "#3FA2D4", 'LineWidth', 3)
 
 % plot selection sound only responsive units
 plot(uFreq, data(aud_resp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
@@ -614,13 +616,81 @@ plot(uFreq, FRnoise_aud_resp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
 
 % FORMAT FIGURE
 set(gca,'fontsize', 16)
+ax = gca;
+xlim([10 400]);
 ylabel('\Delta Firing rate (spikes/s)')
-xlabel('Vibrotactile stimulation frequency (Hz)')
-ylim([-5 85])
+xlabel('Vibrotactile frequency (Hz)')
+xticks([0 10 20 50 100 200 400])
+ax.XScale = 'log';
+
  
 % figname = sprintf('M10-11-19-20_noise tuning curve_%s', StimResponseFiring_all.StimType);
 % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
 % saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
+
+%% linegraph: plot vibrotactile stimulus response intensity for multiple animals & multiple stimuli locations
+
+close all
+
+SOMsessions = find(contains(stimOrder.Properties.VariableNames, 'SOM'));
+
+% CELL SELECTION
+resp_cids = [21194 22322]; % tactile pressure responsive
+aud_resp_cids = [22307 23199]; % sound only pressure responsive
+
+% initiate figure
+figure;
+hold on
+
+% load file based on stimOrder headers
+for session = SOMsessions
+
+    % load the correct stimuli type data
+    sessionname = stimOrder.Properties.VariableNames{session};
+    sessionFile = ['*_' stimOrder.Properties.VariableNames{session} '_UnitResponses.mat']; % select based on stimulus type '_*.mat'
+    stim_files = dir(fullfile(OutPath, sessionFile));
+    dataS = load([stim_files.folder '\' stim_files.name]);
+    StimResponseFiring_all = dataS.StimResponseFiring_all;
+
+    if session == 3 % hardcoded for now
+        % PARAMETERS VIBROTACTILE
+        uAmp = StimResponseFiring_all.amplitudes(:,1);
+        uFreq = StimResponseFiring_all.frequencies(:,1);
+        umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+        %nAmp = length(uAmp);
+        %nFreq = length(uAmp);
+
+        % DATA SELECTION
+        all_cids = StimResponseFiring_all.unitResponses.Cluster;
+        resp_cids_idx = ismember(all_cids, resp_cids);
+        aud_resp_cids_idx = ismember(all_cids, aud_resp_cids);
+
+    end
+
+    data = squeeze(StimResponseFiring_all.firing_mean(:,2,:,:))'; % cids x naudint
+
+    FRnoise_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
+    FRnoise_aud_resp_mean = mean(data(aud_resp_cids_idx,:), 'omitnan');
+
+    % plot selection tactile responsive units
+    plot(uFreq, data(resp_cids_idx,:), 'Color', "#8BC9E8", 'LineWidth', 0.1)
+    plot(uFreq, FRnoise_resp_mean, 'Color', "#3FA2D4", 'LineWidth', 3)
+
+    % plot selection sound only responsive units
+    plot(uFreq, data(aud_resp_cids_idx,:), 'Color', [0.5, 0.5, 0.5], 'LineWidth', 0.1)
+    plot(uFreq, FRnoise_aud_resp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
+
+end
+
+% FORMAT FIGURE
+set(gca,'fontsize', 16)
+ax = gca;
+xlim([10 400]);
+ylabel('\Delta Firing rate (spikes/s)')
+xlabel('Vibrotactile frequency (Hz)')
+xticks([0 10 20 50 100 200 400])
+ax.XScale = 'log';
+
 
 %% ----------------------- LOCAL FUNCTIONS ----------------------- %%
 function horizontalLine(YTickLim, fig)
