@@ -36,6 +36,7 @@ for condition = 2:(size(stimOrder, 2))
         stim_files = dir(fullfile(OutPath, sessionFile));
         dataS = load([stim_files.folder '\' stim_files.name]);
 
+
         % firing mean, FSL and h-val per stimulus combination
         if strcmp(stimOrder.Properties.VariableNames{condition}, 'AM')
             firing_data = dataS.StimResponseFiring.firing_mean;
@@ -50,6 +51,12 @@ for condition = 2:(size(stimOrder, 2))
 
         else
 
+            % initiate & fill with NaN
+            firing_data = NaN(8, 2, 1, length(dataS.StimResponseFiring.cids));
+            FSLmed_data = NaN(8, 2, 1, length(dataS.StimResponseFiring.cids));
+            FSLiqr_data = NaN(8, 2, 1, length(dataS.StimResponseFiring.cids));
+            hval_data = NaN(8, 2, length(dataS.StimResponseFiring.cids));
+
             % adjust data matrix per animal to accomodate difference in dimensions
             if str2num(dataS.StimResponseFiring.MouseNum) == 27
                 firing_data = dataS.StimResponseFiring.firing_mean(1:8, 2:3,:,:);
@@ -61,15 +68,29 @@ for condition = 2:(size(stimOrder, 2))
                 hval_data = dataS.StimResponseFiring.hvalue(1:8, 2:3,:,:);
                 hval_data(1,:,:,:) = repmat(dataS.StimResponseFiring.hvalue(1,1,:,:),1,2);
                 uamps = dataS.StimResponseFiring.amplitudes(dataS.StimResponseFiring.amplitudes > 0);
+
+                ufreqs = dataS.StimResponseFiring.frequencies(1:8);
+
+            elseif str2num(dataS.StimResponseFiring.MouseNum) == 24 && contains(stimOrder.Properties.VariableNames{condition}, 'Thigh')
+                firing_data(2:8,:,:,:) = dataS.StimResponseFiring.firing_mean(1:7, :,:,:);
+                FSLmed_data(2:8,:,:,:) = dataS.StimResponseFiring.FSLmed(1:7, :,:,:);
+                FSLiqr_data(2:8,:,:,:) = dataS.StimResponseFiring.FSLiqr(1:7, :,:,:);
+                hval_data(2:8,:,:,:) = dataS.StimResponseFiring.hvalue(1:7, :,:,:);
+
+                uamps = dataS.StimResponseFiring.amplitudes;
+                ufreqs = [NaN; dataS.StimResponseFiring.frequencies(1:7)];
+
             else
                 firing_data = dataS.StimResponseFiring.firing_mean(1:8, :,:,:);
                 FSLmed_data = dataS.StimResponseFiring.FSLmed(1:8, :,:,:);
                 FSLiqr_data = dataS.StimResponseFiring.FSLiqr(1:8, :,:,:);
                 hval_data = dataS.StimResponseFiring.hvalue(1:8, :,:,:);
+
                 uamps = dataS.StimResponseFiring.amplitudes;
+                ufreqs = dataS.StimResponseFiring.frequencies(1:8);
+
             end
 
-            ufreqs = dataS.StimResponseFiring.frequencies(1:8);
             tPre_T = dataS.StimResponseFiring.PreT(1);
             tPost_T = dataS.StimResponseFiring.PostT(1);
 
@@ -90,13 +111,15 @@ for condition = 2:(size(stimOrder, 2))
         frequencies_all = cat(2, frequencies_all, ufreqs);
         PreT_all = cat(2, PreT_all, tPre_T);
         PostT_all = cat(2, PostT_all, tPost_T);
+
+
     end
 
     % add mousenum as prefix to unit nr to make unique
     cids = unitResponses_all.Cluster';
     mice = unitResponses_all.MouseNum';
     newcids = sprintf( '%1d%1d ', [mice;cids]);
-    unitResponses_all.Cluster = str2num(newcids)';
+    unitResponses_all.Cluster = cids';
     unitResponses_all.NewCluster = str2num(newcids)';
 
     StimResponseFiring_all.StimType = stimOrder.Properties.VariableNames{condition};
