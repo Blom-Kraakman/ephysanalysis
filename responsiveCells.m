@@ -44,8 +44,10 @@ for cluster = 1:NClu
         for amp = 1:nparamA
             % session specific parameters
             if strcmp(stimuli_parameters.Par.Rec, 'AMn') && max(stimuli_parameters.Stm.Mf) == 0 % bbnoise
-                index = tAmp == uparamA(amp);
-                control = tAmp == uparamA(1);
+                %index = tAmp == uparamA(amp);
+                %control = tAmp == uparamA(1);
+                index = stimuli_parameters.Stm.Intensity == uparamA(amp);
+                control = stimuli_parameters.Stm.Intensity == uparamA(1);
                 baseline = stimulusRate(control,cluster);
                 stim_evoked = stimulusRate(index,cluster);
             elseif strcmp(stimuli_parameters.Par.Rec, 'AMn') && max(stimuli_parameters.Stm.Mf) ~= 0 % AM noise

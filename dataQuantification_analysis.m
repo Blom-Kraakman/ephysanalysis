@@ -17,9 +17,14 @@ if strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'UniSine') % && strcmp(s
     %PostT = 0.25; % captures initial noise period & half of vibrotac (in noise) period
     %PostT = 0.5; % whole vibrotac + dual mode period
 elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') % && strcmp(stimuli_parameters.Par.Rec, "SOM")
-    PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
-    PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
-    %PostT = 0.1; % best way to capture onset stimulus
+    if strcmp(stimuli_parameters.Par.Rec, 'SxA') && length(str2num(stimuli_parameters.Par.SomAudSOA)) > 2
+        PreT = 0.1;
+        PostT = 0.13;
+    else
+        PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
+        PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
+        %PostT = 0.1; % best way to capture onset stimulus
+    end
 elseif strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'BiSine')
     PreT = (str2double(stimuli_parameters.Par.SomatosensoryISI)/3)/1000; % baseline period
     PostT = str2double(stimuli_parameters.Par.SomatosensoryStimTime)/1000;
