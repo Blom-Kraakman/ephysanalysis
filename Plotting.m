@@ -73,14 +73,9 @@ PxA_SOM = [10 17]; % [19 32]; % selected cids
 % raster plot of single units
 % saves figures to OutPath
 
-for session = relevant_sessions(1):relevant_sessions(2)
-    % load corresponsing files
-    [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+close all
+plotResponses(stimuli_parameters, aligned_spikes, cids, OutPath);
 
-    plotResponses(stimuli_parameters, aligned_spikes, cids, OutPath);
-
-    %close all
-end
 
 %% plot single unit - in use
 % raster plot + PSTH
@@ -1003,7 +998,7 @@ data = squeeze(data)'; % cids x namp
 FRpressure_resp_mean = mean(data(resp_cids_idx,:), 'omitnan');
 %FRpressure_nonresp_mean = mean(data(nonresp_cids_idx,:), 'omitnan');
 
-%% plot figure
+% plot figure
 figure;
 hold on
 plot(umN, data(resp_cids_idx,:), 'Color',  "#44AA99", 'LineWidth', 0.1)
@@ -1575,6 +1570,10 @@ cids = StimResponseFiring_all.unitResponses.Cluster;
 resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
+% Select data to plot
+control = squeeze(StimResponseFiring_all.FSLmed(1,1,1,index)) * 1000;
+pressure = squeeze(StimResponseFiring_all.FSLmed(1,2:end,3,index)) * 1000;
+
 % Initialize the figure
 figure;
 
@@ -1583,10 +1582,6 @@ subplot(3, 2, 1:2); % 2 rows, 1 column, 1st subplot
 hold on;
 x_axis = 1:length(cids(index));
 logYTicks = [10 100 1000];
-
-% Select data to plot
-control = squeeze(StimResponseFiring_all.FSLmed(1,1,1,index)) * 1000;
-pressure = squeeze(StimResponseFiring_all.FSLmed(1,2:end,3,index)) * 1000;
 
 % Make scatter plot
 scatter(x_axis, control, 'k', "filled");
@@ -1681,9 +1676,50 @@ title('FSL over pressure intensities (zoom-in, normal scale)');
 ylim([0 50])
 hold off;
 
-%% ----------- FSL plotting pressure x sound ----------- %%
+%% ----------- FSL pressure line --------------%%
 
-%[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring, clusterinfo] = loadData(OutPath, session, BehaviorPath);
+% unit selection
+cids = StimResponseFiring_all.unitResponses.Cluster;
+resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
+index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
+
+% Select data to plot
+control = squeeze(StimResponseFiring_all.FSLmed(1,1,1,index)) * 1000;
+pressure = squeeze(StimResponseFiring_all.FSLmed(1,2:end,3,index)) * 1000;
+logYTicks = [10 20 50 100 1000];
+
+figure;
+hold on;
+
+% Remove non responsive units
+data = [control'; pressure];
+data = data(:,~all(isinf(data)));
+
+% X-axis values (pressure intensities)
+% variables
+uInt = StimResponseFiring_all.amplitudes(:,1)';
+umN = round((uInt * 0.158)*1000); %0.158N/V callibation
+
+% Plot median line
+plot(umN, median(data, 2), '-o', 'LineWidth', 5, 'Color', "#267165");
+
+% Add scatter points to show individual data
+x = repmat(umN', 1, size(data, 2));
+for i = 1:size(data,1)
+    swarmchart(x(i,:), data(i,:), 30, 'k', 'filled');
+end
+
+% Customize plot
+xlabel('Stimulus strength (mN)');
+ylabel('First spike latency (ms)');
+set(gca,'fontsize',18)
+xticks(umN);
+set(gca, 'YScale', 'log');
+yticks(logYTicks);
+yticklabels(logYTicks);
+
+%% ----------- FSL plotting pressure x sound ----------- %%
+% heatmaps & line graph per unit
 
 %responsive units
 %sound_resp_units = StimResponseFiring.unitResponses.OA;
@@ -1694,6 +1730,24 @@ cids = StimResponseFiring_all.unitResponses.Cluster;
 resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
+
+% Replace Inf with NaN
+tdata = StimResponseFiring_all.FSLmed;
+tdata(isinf(tdata)) = NaN;
+% initiate data and fill
+data = NaN(size(tdata, 1), size(tdata, 2), sum(index));
+data(1,1,:) = tdata(1,1,1,index) * 1000;
+data(2:end, 1, :) = tdata(2:end,1,2,index) * 1000;
+data(1, 2:end, :) = tdata(1,2:end,3,index) * 1000;
+data(2:end, 2:end, :) = tdata(2:end,2:end,4,index) * 1000;
+
+% variables
+uAmp = unique(StimResponseFiring_all.amplitudes)';
+umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+uInt = StimResponseFiring_all.frequencies(:,end);
+
+fontsize = 14;
+
 % Initialize the figure
 figure; hold on;
 
@@ -1702,27 +1756,6 @@ figure; hold on;
 x_axis = 1:length(cids(index));
 logYTicks = [10 100 1000];
 
-% Replace Inf with NaN
-tdata = StimResponseFiring_all.FSLmed;
-tdata(isinf(tdata)) = NaN;
-% initiate data and fill
-data = NaN(size(tdata, 1), size(tdata, 2), sum(index));
-%data(1,1,:) = tdata(1,1,1,:);
-data(1,1,:) = tdata(1,1,1,index) * 1000;
-data(2:end, 1, :) = tdata(2:end,1,2,index) * 1000;
-data(1, 2:end, :) = tdata(1,2:end,3,index) * 1000;
-data(2:end, 2:end, :) = tdata(2:end,2:end,4,index) * 1000;
-
-% Plot bar graph
-%bar(mean(data, 2, "omitnan"), 'FaceAlpha', 0.6); % Avg FR of all responsive units
-%bar(median(data, 2, "omitmissing"), 'FaceAlpha', 0.6); % med FR of all responsive units
-
-% variables
-uAmp = unique(StimResponseFiring_all.amplitudes)';
-umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
-uInt = StimResponseFiring_all.frequencies(:,end);
-
-fontsize = 14;
 
 % FSL per unit
 for cluster = 1:length(resp_cids)
@@ -1785,7 +1818,227 @@ ylabel('bbn intensity (dB SPL)')
 set(gca,'fontsize',fontsize)
 title('median FSL')
 
+%% ----------- FSL plotting pressure x sound ----------- %%
+% line graph for all units
 
+% unit selection
+cids = StimResponseFiring_all.unitResponses.Cluster;
+%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
+resp_cids = [19153,19265,19296,20277,20290,20303,20306];
+
+index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
+
+% variables
+uAmp = unique(StimResponseFiring_all.amplitudes)';
+umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+uInt = StimResponseFiring_all.frequencies(:,end);
+
+% select data
+tdata = StimResponseFiring_all.FSLmed;
+data = NaN(size(tdata, 1), size(tdata, 2), sum(index)); % initiate data and fill
+data(1,1,:) = tdata(1,1,1,index) * 1000;
+data(2:end, 1, :) = tdata(2:end,1,2,index) * 1000;
+data(1, 2:end, :) = tdata(1,2:end,3,index) * 1000;
+data(2:end, 2:end, :) = tdata(2:end,2:end,4,index) * 1000;
+
+% Remove non responsive units
+data = data(:,:,~(all(isnan(data) | isinf(data), [1 2])));
+
+% median FSL
+fsl_median = median(data, 3); % size: [length(uInt) x length(umN)]
+fsl_median(fsl_median > 100) = Inf;
+
+figure;
+hold on;
+
+% Plot each BBN intensity as a separate line
+colors = ([0 0 0;...
+    0.6549019607843137 0.615686274509804 0.9254901960784314;...
+    0.592156862745098 0.43137254901960786 0.8196078431372549; ...
+    0.42745098039215684	0.27450980392156865	0.6313725490196078; ...
+    0.24705882352941178	0.1568627450980392	0.3058823529411765]); % Distinct colors for each line
+
+for i = 1:length(uInt)
+    plot(umN, fsl_median(i,:), '-o', ...
+        'LineWidth', 3, ...
+        'Color', colors(i,:), ...
+        'MarkerFaceColor', colors(i,:), ...
+        'DisplayName', sprintf('%d dB SPL', uInt(i)));
+end
+
+
+plot(umN, fsl_median(1,:), '-o', ...
+        'LineWidth', 3, ...
+        'Color', colors(1,:), ...
+        'MarkerFaceColor', colors(i,:), ...
+        'DisplayName', sprintf('%d dB SPL', uInt(i)));
+
+% Customize axes and labels
+xlabel('Pressure intensity (mN)');
+ylabel('Median first spike latency (ms)');
+xticks(umN);
+logYTicks = [10 20 30 40 50];
+yticks(logYTicks);
+yticklabels(logYTicks);
+set(gca, 'YScale', 'log', 'FontSize', 18);
+ylim([14 50]);
+hold off;
+
+%% ----------- delta FR plotting pressure x sound ----------- %%
+% line graph for all units
+
+% unit selection
+cids = StimResponseFiring_all.unitResponses.Cluster;
+%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
+resp_cids = [19153,19265,19296,20277,20290,20303,20306];
+
+index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
+
+% variables
+uAmp = unique(StimResponseFiring_all.amplitudes)';
+umN = round((uAmp * 0.158)*1000); %0.158N/V callibation
+uInt = StimResponseFiring_all.frequencies(:,end);
+
+% select data
+tdata = StimResponseFiring_all.firing_mean;
+data = NaN(size(tdata, 1), size(tdata, 2), sum(index)); % initiate data and fill
+data(1,1,:) = tdata(1,1,1,index);
+data(2:end, 1, :) = tdata(2:end,1,2,index);
+data(1, 2:end, :) = tdata(1,2:end,3,index);
+data(2:end, 2:end, :) = tdata(2:end,2:end,4,index);
+
+% Remove non responsive units
+data = data(:,:,~(all(isnan(data) | isinf(data), [1 2])));
+
+% median FSL
+fr_median = median(data, 3); % size: [length(uInt) x length(umN)]
+%fr_median = mean(data,3);
+
+figure;
+hold on;
+
+% Plot each BBN intensity as a separate line
+colors = ([0 0 0;...
+    0.6549019607843137 0.615686274509804 0.9254901960784314;...
+    0.592156862745098 0.43137254901960786 0.8196078431372549; ...
+    0.42745098039215684	0.27450980392156865	0.6313725490196078; ...
+    0.24705882352941178	0.1568627450980392	0.3058823529411765]); % Distinct colors for each line
+
+
+for i = 1:length(uInt)
+    % Plot mean line
+    plot(umN, fr_median(i,:), '-o', ...
+        'LineWidth', 3, ...
+        'Color', colors(i,:), ...
+        'MarkerFaceColor', colors(i,:), ...
+        'DisplayName', sprintf('%d dB SPL', uInt(i)));
+
+    % Plot individual unit data points
+    for j = 1:length(umN)
+        y = squeeze(data(i,j,:));
+        swarmchart(repmat(umN(j), size(y)), y, 20, colors(i,:), 'filled', 'XJitterWidth', 0.4);
+    end
+end
+
+
+% Customize axes and labels
+xlabel('Pressure intensity (mN)');
+ylabel('\Delta Frirng rate (spikes/s)');
+xticks(umN);
+set(gca, 'FontSize', 18);
+hold off;
+
+%% ----------- FSL line bbn intensity ----------- %%
+% line graph
+
+% unit selection
+cids = StimResponseFiring_all.unitResponses.Cluster;
+%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
+resp_cids = [19153,19265,19296,20277,20290,20303,20306];
+
+index = ismember(cids, resp_cids);
+
+% variables
+uInt = StimResponseFiring_all.frequencies(:,end);
+uInt(1) = 0;
+
+% select data
+tdata = StimResponseFiring_all.FSLmed;
+data = NaN(size(tdata, 1), size(tdata, 2), sum(index)); % initiate data and fill
+data(1,1,:) = tdata(1,1,1,index) * 1000; % control
+data(2:end, 1, :) = tdata(2:end,1,2,index) * 1000; % sound only
+
+
+% median FSL
+fsl_median = median(data, 3);
+fsl_median(fsl_median > 100) = Inf;
+
+figure;
+hold on;
+
+plot(uInt, fsl_median(:,1), '-o', ...
+    'LineWidth', 3, ...
+    'Color', "#c21069", ...
+    'MarkerFaceColor', "#c21069");
+
+% Plot individual unit lines (light gray)
+for unit = 1:size(data, 3)
+    plot(uInt, data(:,1,unit), '-', ...
+        'Color', [0.7 0.7 0.7], ...
+        'LineWidth', 1);
+end
+
+
+% Customize axes and labels
+xlabel('Broadband noise intensity (dB SPL)');
+ylabel('Median first spike latency (ms)');
+xticks(uInt);
+set(gca, 'YScale', 'log', 'FontSize', 18);
+%ylim([14 50])
+xlim([0 60])
+hold off;
+
+%% ----------- Mean firing rate bbn intensity ----------- %%
+
+% unit selection
+cids = StimResponseFiring_all.unitResponses.Cluster;
+%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
+resp_cids = [19153,19265,19296,20277,20290,20303,20306];
+
+index = ismember(cids, resp_cids);
+
+% variables
+uInt = StimResponseFiring_all.frequencies(:,end);
+uInt(1) = 0;
+
+% select data
+tdata = StimResponseFiring_all.firing_mean;
+data = NaN(size(tdata, 1), size(tdata, 2), sum(index)); % initiate data and fill
+data(1,1,:) = tdata(1,1,1,index); % control
+data(2:end, 1, :) = tdata(2:end,1,2,index); % sound only
+
+% median FSL
+FR_mean = mean(data, 3);
+
+figure;
+hold on;
+
+for unit = 1:size(data, 3)
+    plot(uInt, data(:,1,unit), '-', ...
+        'Color', '#CE87AA', ...
+        'LineWidth', 1);
+end
+
+plot(uInt, FR_mean(:,1), '-o', 'LineWidth', 3, 'Color', "#c21069", 'MarkerFaceColor', "#c21069");
+
+% Customize axes and labels
+xlabel('Broadband noise intensity (dB SPL)');
+ylabel('\Delta Firing rate (spikes/s)');
+xticks(uInt);
+xticklabels({'no sound', '15', '30', '45', '60'})
+set(gca, 'FontSize', 17);
+ylim([-2 90])
+hold off;
 
 %% ----------- FSL plotting bbn intensity ----------- %%
 
