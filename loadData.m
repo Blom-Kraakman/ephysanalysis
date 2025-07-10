@@ -45,7 +45,8 @@ if ~isempty(aligned_spikes_files)
     if isfield(aligned_spikes, "Srise")
         %disp("Srise/Sfall loaded from data file.")
         Srise = aligned_spikes.Srise;
-        Sfall = aligned_spikes.Sfall;
+        %Sfall = aligned_spikes.Sfall;
+        Sfall = [];
     else
         Srise = [];
         Sfall = [];

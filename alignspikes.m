@@ -1,4 +1,4 @@
-function [aligned_spikes] = alignspikes(spiketimes, cids, Srise, stimuli_parameters, Fs)
+function [SpkT] = alignspikes(spiketimes, cids, Srise, stimuli_parameters, Fs)
 % align spikes
 % INPUT - spiketimes (cell array, 1 cell: timestamp of spike for 1 unit),
 % TTLs (vector), stimulus parameters (struct)
@@ -23,8 +23,6 @@ else
     disp(['Stimuli in session: ' num2str(NStim)])
 end
 
-disp(['Aligning session: ' num2str(file)]) % feedback to user
-
 % select correct analysis window
 if strcmp(stimuli_parameters.Par.Rec, 'SOM')
     PreT = str2double(stimuli_parameters.Par.SomatosensoryISI)/4; % amount of msec. to include before Srise;
@@ -43,7 +41,7 @@ elseif strcmp(stimuli_parameters.Par.Rec, 'SxA') % TO TEST
         PostT = (max(str2double(stimuli_parameters.Par.AuditoryStimTime), str2double(stimuli_parameters.Par.SomatosensoryStimTime)) ...
             + str2double(stimuli_parameters.Par.SomatosensoryISI)/2); % take max stim time
     end
-elseif strcmp(stimuli_parameters.Par.Rec, 'FRA')
+elseif strcmp(stimuli_parameters.Par.Rec, 'FRA') || strcmp(stimuli_parameters.Par.Rec, 'Opt') || strcmp(stimuli_parameters.Par.Rec, 'OptoFRA')
     PreT  = str2double(stimuli_parameters.Par.FRAStimTime);
     PostT = str2double(stimuli_parameters.Par.FRAPostTime);
 elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
@@ -54,10 +52,10 @@ end
 
 % initialize variables (does nothing currently)
 SpkT = [];
-aligned_spikes = {}; % nStim x Ncids
+%aligned_spikes = {}; % nStim x Ncids
 
 % actual spike alignment done here
-for cluster = 1:length(cids)
+for cluster = 1:cids
 
     % pre-allocate output cell array
     tSpkT = cell(NStim, 1);
@@ -75,7 +73,7 @@ for cluster = 1:length(cids)
 
 end
 
-aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
+%aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
 fprintf('spike alignment done\n');
 
 end
