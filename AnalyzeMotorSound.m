@@ -1,9 +1,9 @@
 %% 1. load behavioural stimuli
 clearvars
 
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M26\'; % stimuli parameters
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M30\'; % stimuli parameters
 SoundPath = [BehaviorPath 'Sound recording\'];
-OutPath = 'D:\DATA\Processed\M26\Spectograms';
+OutPath = 'D:\DATA\Processed\M30\Spectograms';
 
 % make array with all relevant session numbers
 sound_file_list = dir(fullfile(SoundPath, '*_Sound.mat'));
@@ -306,44 +306,44 @@ end
 
 disp('Spectogram figures done')
 
-%% flag outliers - UNDER CONSTRUCTION
-% Calculate instantaneous power
-%fIdx = f > 10;
-%instPower_raw = reshape(sum(ps_mean(fIdx,:,:)),[nT,nUStim]); % sum freq
-
-% outlier based on average freq trace
-minstPower_raw = sum(instPower_raw,1); % time bins x nUStim
-baselinePower_raw = minstPower_raw(1)*3;
-figure;
-scatter(1:nUStim,minstPower_raw)
-outlierIdx = minstPower_raw >= baselinePower_raw;
-UStim(outlierIdx',:)
-
-% single trial outliers
-% select trial
-stimToPlot = 1:numTrials;
-idx = stimToPlot(StmTemp.SomFreq == UStim.SomFreq(17) & StmTemp.Amplitude == UStim.Amplitude(17));
-
-% time spectogram --> spectogram
-instPower_2d = squeeze(mean(ps_mean(:,:,:),2)); %avg over time
-clim = [-115,-40];
-figure;
-ax2 = gca;
-imagesc(1,f./1000,squeeze(10*log10(instPower_2d(:,17))),clim)
-ax2.YDir = 'normal';
-ylabel(ax2,'Frequency (kHz)')
-xlabel(ax2,'Time (s)')
-xticklabels(ax2, [])
-colorbar
-
-figure;
-ax2 = gca;
-imagesc(t,f./1000,squeeze(10*log10(ps_all(:,:,idx(1)))),clim)
-ax2.YDir = 'normal';
-ylim(freqRange);
-ylabel(ax2,'Frequency (kHz)')
-xlabel(ax2,'Time (s)')
-yyaxis(ax2,'left')
+% %% flag outliers - UNDER CONSTRUCTION
+% % Calculate instantaneous power
+% %fIdx = f > 10;
+% %instPower_raw = reshape(sum(ps_mean(fIdx,:,:)),[nT,nUStim]); % sum freq
+% 
+% % outlier based on average freq trace
+% minstPower_raw = sum(instPower_raw,1); % time bins x nUStim
+% baselinePower_raw = minstPower_raw(1)*3;
+% figure;
+% scatter(1:nUStim,minstPower_raw)
+% outlierIdx = minstPower_raw >= baselinePower_raw;
+% UStim(outlierIdx',:)
+% 
+% % single trial outliers
+% % select trial
+% stimToPlot = 1:numTrials;
+% idx = stimToPlot(StmTemp.SomFreq == UStim.SomFreq(17) & StmTemp.Amplitude == UStim.Amplitude(17));
+% 
+% % time spectogram --> spectogram
+% instPower_2d = squeeze(mean(ps_mean(:,:,:),2)); %avg over time
+% clim = [-115,-40];
+% figure;
+% ax2 = gca;
+% imagesc(1,f./1000,squeeze(10*log10(instPower_2d(:,17))),clim)
+% ax2.YDir = 'normal';
+% ylabel(ax2,'Frequency (kHz)')
+% xlabel(ax2,'Time (s)')
+% xticklabels(ax2, [])
+% colorbar
+% 
+% figure;
+% ax2 = gca;
+% imagesc(t,f./1000,squeeze(10*log10(ps_all(:,:,idx(1)))),clim)
+% ax2.YDir = 'normal';
+% ylim(freqRange);
+% ylabel(ax2,'Frequency (kHz)')
+% xlabel(ax2,'Time (s)')
+% yyaxis(ax2,'left')
 
 %% local functions
 function dbspl = dbv2spl(dbv)

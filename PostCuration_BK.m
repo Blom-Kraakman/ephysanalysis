@@ -20,18 +20,18 @@ clearvars
 % OutPath = 'D:\DATA\Processed\M27'; % output directory
 
 % set directories
-recordingFolder = '\\store\department\neuw\shared\Aaron Wong\Data\InVivoEphys\Blom\EphysRecordings\M19\M19_2024-12-17_11-39-47_ICX\';
+recordingFolder = 'D:\DATA\EphysRecordings\M1600\1600_2025-06-11_16-55-45\';
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
-KSPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\EphysRecordingsSorted\M19\ICX\'; % kilosort ephys data
-BehaviorPath = '\\store\department\neuw\shared\Aaron Wong\Data\InVivoEphys\Blom\BehavioralStimuli\M19\'; % stimuli parameters
-OutPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M19\ICX_test'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M1600\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M1600\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M160\M1600'; % output directory
 
 Fs = 30000; % sampling freq
 
-relevant_sessions = [1 17];
-skip_sessions = [];
+relevant_sessions = [1 4];
+skip_sessions = [3];
 
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13
 %relevant_sessions = [10 13]; %M13 ICX 1:6; ICC 10:13
