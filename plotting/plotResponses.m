@@ -428,6 +428,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
 end
 
 % plot pressure SxA Square: multimodal trials with multiple stim onset delays
+
 if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(str2num(stimuli_parameters.Par.SomAudSOA)) > 2
 
     SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA); % +: sound leading, -: som leading
@@ -509,7 +510,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
         end
 
         %save figures
-        figname = sprintf('M%.2i_S%.2i_%s_unimodal_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+        figname = sprintf('M%.2i_S%.2i_%s_multimodal_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(gcf, fullfile(OutPath, figname));
 
@@ -576,7 +577,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
         end
 
         %save figures
-        figname = sprintf('M%.2i_S%.2i_%s_multimodal_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
+        figname = sprintf('M%.2i_S%.2i_%s_unimodal_cluster_%i', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec, cids(cluster));
         saveas(gcf, fullfile(OutPath, [figname '.jpg']));
         saveas(gcf, fullfile(OutPath, figname));
 
