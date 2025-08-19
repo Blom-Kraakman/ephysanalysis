@@ -74,6 +74,4 @@ for cluster = 1:cids
 end
 
 %aligned_spikes = [aligned_spikes; SpkT]; % stimuli x units recording
-fprintf('spike alignment done\n');
-
 end

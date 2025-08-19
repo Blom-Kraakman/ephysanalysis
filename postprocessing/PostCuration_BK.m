@@ -21,6 +21,13 @@ clearvars
 
 % set directories
 recordingFolder = 'D:\DATA\EphysRecordings\M1600\1600_2025-06-11_16-55-45\';
+% recording details
+mousenr = 31;
+recSession = 'M31_2025-07-01_10-13-15_ICX';
+relevant_sessions = [1 13];
+skip_sessions = [3];
+
+% get directories
 recPath = [recordingFolder 'Record Node 103\experiment1\recording1\continuous\Intan-100.Rhythm Data-A\'];
 TTLPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\Intan-100.Rhythm Data-A\TTL\'];
 messagesPath = [recordingFolder 'Record Node 103\experiment1\recording1\events\MessageCenter\'];
@@ -29,9 +36,6 @@ BehaviorPath = 'D:\DATA\Behavioral Stimuli\M1600\'; % stimuli parameters
 OutPath = 'D:\DATA\Processed\M160\M1600'; % output directory
 
 Fs = 30000; % sampling freq
-
-relevant_sessions = [1 4];
-skip_sessions = [3];
 
 %relevant_sessions = [7 8]; %M12 ICX 1:4, 5:9; ICC 10:13
 %relevant_sessions = [10 13]; %M13 ICX 1:6; ICC 10:13
@@ -87,19 +91,20 @@ end
 
 for session = relevant_sessions(1):relevant_sessions(2)
 
-    % load data
-    [~, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
-
     % skip earlier stim files not in rec session
-    if ismember(str2double(stimuli_parameters.Par.Set), skip_sessions) || ~ismember(str2double(stimuli_parameters.Par.Set), relevant_sessions(1):relevant_sessions(2))
+    if ismember(session, skip_sessions) || ~ismember(session, relevant_sessions(1):relevant_sessions(2))
+        disp(['Skipped session ' num2str(session)])
         continue
     end
 
+    % load data
+    [~, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
+
     % align only if not previously done
-    if isempty(dir([OutPath '\*_' sprintf('S%.2d_' , 4) '*_AlignedSpikes.mat' ]))
+    if isempty(dir([OutPath '\*_' sprintf('S%.2d_' , session) '*_AlignedSpikes.mat' ]))
         disp(['Aligning session: ' num2str(session)])
     else
-        disp('Session previously aligned')
+        disp(['Session  ' num2str(session) ' previously aligned'])
         continue
     end
 

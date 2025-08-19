@@ -139,6 +139,11 @@ for session_file = 1:size(sound_file_list,1)
 
     % load spectogram data
     spectogram_file = dir(fullfile(OutPath, sessionFile));
+    if isempty(spectogram_file)
+        warning('no data from session %i found', session)
+        continue
+    end
+
     spectogramdata = load([spectogram_file.folder '\' spectogram_file.name], 'f', 't', 'ps_mean', 'ps_all', 'UStim');
 
     f = spectogramdata.f;
