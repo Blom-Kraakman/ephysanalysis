@@ -23,7 +23,7 @@ close all
 OutPath = 'D:\DATA\Processed\M26\postCA'; % output directory
 BehaviorPath = 'D:\DATA\Behavioral Stimuli\M26\'; % stimuli parameters
 
-% load FRA session(s) aligned spikes
+%% load FRA session(s) aligned spikes
 aligned_spikes_files = dir(fullfile(OutPath, '*FRA_AlignedSpikes.mat'));
 
 for file = 1:size(aligned_spikes_files, 1)

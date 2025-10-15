@@ -1,4 +1,19 @@
-% Parameters
+% channel map
+%xcoords = channel_positions(:,1);
+%ycoords = channel_positions(:,2);
+figure
+margin = 50;
+xMin = min(xcoords); xMax = max(xcoords);
+xSpan = xMax-xMin; xMid = 0.5*(xMax+xMin);
+yMin = min(ycoords); yMax = max(ycoords);
+ySpan = yMax-yMin; yMid = 0.5*(yMax+yMin);
+maxSpan = max(xSpan,ySpan);
+
+figa = scatter(xcoords, ycoords, ".", 'k');
+hold on;
+text(xcoords, ycoords,num2str(chanMap))
+
+%% Parameters
 f = 10;        % Frequency in Hz
 Fs = 1000;     % Sampling frequency in Hz
 T = 0.5;       % Duration in seconds

@@ -4,13 +4,22 @@
 close all
 clearvars
 
-KSPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\EphysRecordingsSorted\M19\ICX\'; % kilosort ephys data
-BehaviorPath = '\\store\department\neuw\shared\Aaron Wong\Data\InVivoEphys\Blom\BehavioralStimuli\M19\'; % stimuli parameters
-OutPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M19\ICX'; % output directory
+KSPath = 'D:\DATA\EphysRecordingsSorted\M30\'; % kilosort ephys data
+BehaviorPath = 'D:\DATA\Behavioral Stimuli\M30\'; % stimuli parameters
+OutPath = 'D:\DATA\Processed\M30'; % output directory
 
-session = 17;
+%% ---------------- OVERVIEW RASTER PLOT ---------------- %%
+% plotting single sessions - in use
+% raster plot of single units
+% saves figures to OutPath
+
+close all
+
+session = 13;
+
 [cids, stimuli_parameters, aligned_spikes, ~, ~, sessions_TTLs, onsetDelay, ~, clusterinfo] = loadData(OutPath, session, BehaviorPath);
 
+plotResponses(stimuli_parameters, aligned_spikes, cids, OutPath);
 %% add spacing where needed
 % never needed anymore, automatically done with loadData.m
 
@@ -66,15 +75,6 @@ PxA_SOM = [10 17]; % [19 32]; % selected cids
 
 %% ---------------------- PostCuration Plotting ---------------------- %%
 % plot aligned spikes from PostCuration_BK output files
-
-
-%% ---------------- USE TO MAKE RASTER OVERVIEW PLOT ---------------- %%
-% plotting single sessions - in use
-% raster plot of single units
-% saves figures to OutPath
-
-close all
-plotResponses(stimuli_parameters, aligned_spikes, cids, OutPath);
 
 
 %% plot single unit - in use
