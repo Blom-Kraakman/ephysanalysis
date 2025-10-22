@@ -1,7 +1,9 @@
 function [FR, nrSpikes] = firingrate(SpkT, PreT, PostT)
 % calculate firing rate in defined time window
 % INPUT - SpkT: cell array with spike times aligned to stimulus onset
+%           [trials x cells]
 % PreT & PostT (in sec) arrays
+%           [ trials x 1]
 
 % input check
 if ~isequal(size(SpkT,1), length(PreT), length(PostT))
@@ -13,7 +15,7 @@ nClust = size(SpkT,2);
 nTrials = size(SpkT,1);
 FR = nan(nTrials, nClust);
 nrSpikes = nan(nTrials, nClust);
-window = PostT - PreT;
+window = PostT + PreT;
 
 % firing rate calculation
 for cluster = 1:nClust
