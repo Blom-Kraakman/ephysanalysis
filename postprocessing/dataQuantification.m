@@ -15,35 +15,6 @@ clearvars
 %session = [5, 3]; % M8
 %session = [4, 6]; % M9
 
-%% ----------------------- FRA analysis & Plotting ----------------------- %%
-% output: FRA & MedFSL 4D: intensity, frequency, set number, cluster
-
-close all
-
-OutPath = 'D:\DATA\Processed\M26\postCA'; % output directory
-BehaviorPath = 'D:\DATA\Behavioral Stimuli\M26\'; % stimuli parameters
-
-%% load FRA session(s) aligned spikes
-aligned_spikes_files = dir(fullfile(OutPath, '*FRA_AlignedSpikes.mat'));
-
-for file = 1:size(aligned_spikes_files, 1)
-
-    % load each FRA aligned spikes file
-    %aligned_spikes = load([aligned_spikes_files(file).folder '\' aligned_spikes_files(file).name]);
-    % load corresponding stimuli file
-    %session = aligned_spikes_files(file).name(6:7);
-    %stim_files = dir(fullfile(BehaviorPath, ['*_S' session '_*.mat']));
-    %stimuli_parameters = load([stim_files.folder '\' stim_files.name]);
-
-    session = str2double(aligned_spikes_files(file).name(6:7));
-    [cids, stimuli_parameters, aligned_spikes, ~, ~, ~, ~, ~] = loadData(OutPath, session, BehaviorPath);
-
-    % FRA analysis saves heatmap figures
-    FSL = 0;
-    heatmap = 1;
-    FRAanalysis(stimuli_parameters, aligned_spikes, cids, OutPath, heatmap, FSL);
-
-end
 
 %% quantitative analysis
 clearvars

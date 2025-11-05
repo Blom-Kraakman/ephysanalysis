@@ -30,7 +30,7 @@ for cluster = 1:length(cidstoplot)
 
     % select 1 frequency to plot
     all_freqs = unique(stimuli_parameters.Stm.SomFreq);
-    for freq = 1:length(all_freqs)
+    for freq = 1:4%length(all_freqs)
 
         % initiate figure
         %fig = figure('position',[-918,294,520,370]);
@@ -60,8 +60,8 @@ for cluster = 1:length(cidstoplot)
                 SOM_Amp = stimuli_parameters.Stm.Amplitude(index);
                 Var = [SOM_Hz, SOM_Amp];
             elseif strcmp(condition, 'SO')
-               % index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
-                index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3170) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
+               index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
+                %index = (stimuli_parameters.Stm.SomFreq == all_freqs(freq)) & (stimuli_parameters.Stm.Amplitude == 0.3170) & (stimuli_parameters.Stm.AudIntensity == -Inf); % select only high pressure case
                 linecolor = '#52A3CF';
 
                 SOM_Hz = stimuli_parameters.Stm.SomFreq(index);
@@ -106,7 +106,7 @@ for cluster = 1:length(cidstoplot)
         % format axis
         xlabel('Time (s)')
         ylabel('trials')
-        raster_fig.FontSize = 11;
+        raster_fig.FontSize = 14;
         %sgtitle(['Cluster ' num2str(cids(cluster)) ' - session ' stimuli_parameters.Par.Set ': ' stimuli_parameters.Par.SomatosensoryLocation])
 
         % make histogram / PSTH
@@ -132,9 +132,9 @@ for cluster = 1:length(cidstoplot)
         %legend('0.1V', '0.3V', 'Location','northwest')
         %xlabel('Time (s)')
         ylabel('Spike rate (Hz)')
-        psth_fig.FontSize = 11;
+        psth_fig.FontSize = 14;
         xlim(psth_fig,xrange);
-        ylim(psth_fig, [0, 200])
+        ylim(psth_fig, [0, 100])
         xline(xlinerange) % on/off set
         xticklabels(psth_fig, {[]})
 
