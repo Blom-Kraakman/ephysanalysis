@@ -120,6 +120,73 @@ set(gca, 'FontSize', 17);
 ylim([-2 90])
 hold off;
 
+
+%% Evaluate effectiveness earplugs
+
+% load data
+sets = [2 6 10]; % pre - plug - post
+
+% load data from 3 PxA sessions
+for set = 1:length(sets)
+    [~, stimuli_parameters, ~, ~, ~, ~, ~, StimResponseFiring, ~] = loadData(OutPath, sets(set), BehaviorPath);
+
+    % get threshold per unit
+    condition = 'OA';
+    uFreq = 0;
+    uInt = unique(stimuli_parameters.Stm.AudIntensity); % sound variable
+    [responsive, hval, pval] = responsiveCells(stimuli_parameters, StimResponseFiring.baselineRate, StimResponseFiring.stimulusRate, StimResponseFiring.cids, condition, uFreq,uInt);
+
+    % neuronal detection thereshold
+    [~,cDTindex] = max(squeeze(hval),[], 1); %position of first sig resp
+    cDT(:,set) = uInt(cDTindex)'; % corresponding stim strength [cids x set]
+
+    % select dFR data
+    tdata = NaN(size(StimResponseFiring.firing_mean, 1), 1, size(StimResponseFiring.firing_mean, 4)); % initiate data and fill
+    tdata(1,1,:) = StimResponseFiring.firing_mean(1,1,1,:); % control
+    tdata(2:end, 1, :) = StimResponseFiring.firing_mean(2:end,1,2,:); % sound only
+    data(:,:,set) = squeeze(tdata); % ints x clusters x sets
+end
+
+%% plotting part
+% plot dFR
+% variables
+uInt = StimResponseFiring.frequencies(:,end);
+uInt(1) = 0;
+ymax = max(max(max(data)))*1.1;
+ymin = min(min(min(data)))*1.1;
+
+figure;
+% Customize axes and labels
+for set = 1:length(sets)
+    subplot(1,3,set)
+    plot(uInt, data(:,:,set), 'k-o')
+    xticks(uInt);
+    xticklabels({'no sound', '15', '30', '45', '60'})
+    ylim([ymin ymax])
+end
+
+xlabel('Broadband noise intensity (dB SPL)');
+ylabel('\Delta Firing rate (spikes/s)');
+
+%% plot neuronal detection threshold level
+figure; hold on
+for cluster = 1:size(cDT)
+    plot(1:length(sets), cDT(cluster,:), '-o')
+end
+legend
+
+% Customize axes and labels
+ylabel('neuronal detection threshold (dB SPL)');
+yticks(uInt);
+yticklabels({'no sound', '15', '30', '45', '60'})
+xlabel('session');
+xticks(1:length(sets))
+xticklabels(sets)
+ylim([10 70])
+hold off;
+
+%markers = {"o", "square", "o"};
+
 %% 3.2 pressure
 %% linegraph: single unit pressure
 
