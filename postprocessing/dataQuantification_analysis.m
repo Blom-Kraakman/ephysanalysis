@@ -154,13 +154,28 @@ clear freq amp condition cluster trial tempSpiketimes index spks
 %% 3. quantify reactive units
 % ! edit AMn indexing if needed (needed in earlier data sets)
 
-for cond = 1:length(conditions)
-    % TO DO: skip non necessary comparisons (ie for condition OO it still
-    % goes over all ampxfreq combinations
-    
-    [responsive, hval, pval] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, conditions(cond), uparamA, uparamB);
+hval = nan(nparamB,nparamA,NClu);
+pval = nan(nparamB,nparamA,NClu);
 
-    % index responsive units
+for cond = 1:length(conditions)
+   
+    [responsive, thval, tpval] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, conditions(cond), uparamA, uparamB);
+
+    % fill hval and pval matrix for all stim combinations
+    if strcmp(conditions(cond), 'OO')
+        hval(1,1,:) = thval;
+        pval(1,1,:) = tpval;
+    elseif strcmp(conditions(cond), 'OA')
+        hval(2:end,1,:) = thval(2:end,1,:);
+        pval(2:end,1,:) = tpval(2:end,1,:);
+    elseif strcmp(conditions(cond), 'SO')
+        hval(1,2:end,:) = thval(1,2:end,:);
+        pval(1,2:end,:) = tpval(1,2:end,:);
+    elseif strcmp(conditions(cond), 'SA')
+        hval(2:end,2:end,:) = thval(2:end,2:end,:);
+        pval(2:end,2:end,:) = tpval(2:end,2:end,:);
+    end
+            % index responsive units
     idx = max(responsive == unitResponses.Cluster, [], 2);
 
     if isempty(idx)
