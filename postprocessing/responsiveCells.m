@@ -12,8 +12,15 @@ if ~exist('uparamA', 'var') && strcmp(condition, 'OA')
     uparamA = [];
 end
 
-nparamA = length(uparamA);
-nparamB = length(uparamB);
+% % avoid needles work for control condition
+if strcmp(condition, 'OO')
+    nparamA = 1;
+    nparamB = 1;
+else
+    nparamA = length(uparamA);
+    nparamB = length(uparamB);
+end
+
 NClu = length(cids);
 
 % intiate variables
@@ -39,17 +46,19 @@ for freq = 1:nparamB
 
         % stat test
         for cluster = 1:NClu
-            [p,h,stats] = ranksum(baseline(:, cluster), stim_evoked(:, cluster), 'alpha',  alpha_val); % nonpaired version: experimental diff from control
-            %[p,h,stats] = signrank(baseline, stim_evoked, 'alpha', 0.01); % paired versiom: exp trial diff from baseline
+            %[p,h,stats] = ranksum(baseline(:, cluster), stim_evoked(:, cluster), 'alpha',  alpha_val); % nonpaired version: experimental diff from control
+            [p,h,~] = signrank(baseline(:, cluster), stim_evoked(:, cluster), 'alpha', alpha_val); % paired versiom: exp trial diff from baseline
             pval(freq, amp,cluster) = p;
-            zval(freq, amp, cluster) = stats.zval;
+            %zval(freq, amp, cluster) = stats.zval;
             hval(freq, amp,cluster) = h;
         end
     end
 end
 
 % unit responsive if sig diff for at least one condition
-if strcmp(stimuli_parameters.Par.Rec, 'AMn')
+if strcmp(condition, 'OO')
+    index = squeeze(hval) == 1;
+elseif strcmp(stimuli_parameters.Par.Rec, 'AMn')
     index = squeeze(max(hval)) == 1;
 elseif (strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square')) && (strcmp(stimuli_parameters.Par.Rec, 'SOM'))
     index = squeeze(max(hval)) == 1;
@@ -59,7 +68,6 @@ end
 
 % responsive units
 responsive = cids(index);
-
 
 
 %% LOCAL FUNCTIONS
@@ -104,7 +112,6 @@ responsive = cids(index);
                 stim_evoked = stimulusRate(index,:);
 
             case 'SxA' % multimodal
-                control = strcmp(stimuli_parameters.Stm.MMType, 'OO');
                 waveform = stimuli_parameters.Par.SomatosensoryWaveform;
                 if strcmp(waveform, 'Square') && strcmp(condition, 'OA') % sound only
                     index = (strcmp(stimuli_parameters.Stm.MMType, condition)) & (stimuli_parameters.Stm.AudIntensity == uparamB(freq));
@@ -113,7 +120,18 @@ responsive = cids(index);
                 elseif strcmp(waveform, 'UniSine')
                     index = (strcmp(stimuli_parameters.Stm.MMType, condition)) & (stimuli_parameters.Stm.Amplitude == uparamA(amp)) & (stimuli_parameters.Stm.SomFreq == uparamB(freq));
                 end
-                baseline = stimulusRate(control,:);
+
+                % control: compare stim period with own baseline
+                % exp: compare stim period with control period
+                control = strcmp(stimuli_parameters.Stm.MMType, 'OO');
+                if strcmp(condition, 'OO')
+                    baseline = baselineRate(control,:);
+                    stim_evoked = stimulusRate(control,:);
+                else
+                    baseline = stimulusRate(control,:);
+                    stim_evoked = stimulusRate(index,:);
+                end
+
 
         end
     end
