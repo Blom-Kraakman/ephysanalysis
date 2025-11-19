@@ -131,15 +131,12 @@ for set = 1:length(sets)
     [~, stimuli_parameters, ~, ~, ~, ~, ~, StimResponseFiring, ~] = loadData(OutPath, sets(set), BehaviorPath);
 
     % get threshold per unit
-    condition = 'OA';
-    uFreq = 0;
     uInt = unique(stimuli_parameters.Stm.AudIntensity); % sound variable
-    [responsive, hval, pval] = responsiveCells(stimuli_parameters, StimResponseFiring.baselineRate, StimResponseFiring.stimulusRate, StimResponseFiring.cids, condition, uFreq,uInt);
-    
-    % TO DO: hval now NaN for all options
-    
+    uInt(1) = 100; % redo int
+    hval = squeeze(StimResponseFiring.hvalue(:,1,:)); % 'OA'
+
     % neuronal detection thereshold
-    [~,cDTindex] = max(squeeze(hval),[], 1); %position of first sig resp
+    [~,cDTindex] = max(hval,[], 1); %position of first sig resp
     cDT(:,set) = uInt(cDTindex)'; % corresponding stim strength [cids x set]
 
     % select dFR data
@@ -148,6 +145,7 @@ for set = 1:length(sets)
     tdata(2:end, 1, :) = StimResponseFiring.firing_mean(2:end,1,2,:); % sound only
     data(:,:,set) = squeeze(tdata); % ints x clusters x sets
 end
+
 
 %% plotting part
 % plot dFR
@@ -172,22 +170,23 @@ ylabel('\Delta Firing rate (spikes/s)');
 
 %% plot neuronal detection threshold level
 figure; hold on
+colors = ['k' 'k' 'k' 'k' 'k' 'k' 'k' 'r' 'k' 'k' 'g' 'k' 'b' 'k' 'c'];
 for cluster = 1:size(cDT)
-    plot(1:length(sets), cDT(cluster,:), '-o')
+    plot(1:length(sets), cDT(cluster,:), '-o', 'Color', colors(cluster))
 end
 legend
 
 % Customize axes and labels
 ylabel('neuronal detection threshold (dB SPL)');
-yticks(uInt);
+yticks(1:length(uInt));
 yticklabels({'no sound', '15', '30', '45', '60'})
 xlabel('session');
 xticks(1:length(sets))
 xticklabels(sets)
+legend(num2str(StimResponseFiring.cids'))
 ylim([10 70])
 hold off;
 
-%markers = {"o", "square", "o"};
 
 %% 3.2 pressure
 %% linegraph: single unit pressure
