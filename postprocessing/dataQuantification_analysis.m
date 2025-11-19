@@ -155,7 +155,10 @@ clear freq amp condition cluster trial tempSpiketimes index spks
 % ! edit AMn indexing if needed (needed in earlier data sets)
 
 for cond = 1:length(conditions)
-    [responsive, hval, pval] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, conditions(cond), nparamA, uparamA, nparamB, uparamB);
+    % TO DO: skip non necessary comparisons (ie for condition OO it still
+    % goes over all ampxfreq combinations
+    
+    [responsive, hval, pval] = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, conditions(cond), uparamA, uparamB);
 
     % index responsive units
     idx = max(responsive == unitResponses.Cluster, [], 2);
@@ -176,7 +179,7 @@ if strcmp(stimuli_parameters.Par.Rec, "SxA") && str2num(stimuli_parameters.Par.S
     % calculate stimulus induced FR, time window now same as som
     stimulusRate = firingrate(aligned_spikes, onsetDelay_OA, (PostT+onsetDelay_OA));
 
-    responsive = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, 'OA', nparamA, uparamA, nparamB, uparamB); % units responsive
+    responsive = responsiveCells(stimuli_parameters, baselineRate, stimulusRate, cids, 'OA', uparamA, uparamB); % units responsive
 
     % index responsive units
     idx = max(responsive == unitResponses.Cluster, [], 2);
@@ -225,6 +228,6 @@ clear cond index idx
 
 %% 3.5 Save
 filename = sprintf('M%.2i_S%.2i_%s_ResponseProperties', str2double(stimuli_parameters.Par.MouseNum), str2double(stimuli_parameters.Par.Set), stimuli_parameters.Par.Rec);
-save(fullfile(OutPath, filename), "StimResponseFiring")
+save(fullfile([OutPath '\ResponseProperties'], filename), "StimResponseFiring")
     
 end

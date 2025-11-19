@@ -52,7 +52,13 @@ if ~isempty(aligned_spikes_files)
         Sfall = [];
         warning("Extract Srise before continuing")
     end
-    aligned_spikes = aligned_spikes.aligned_spikes;
+
+    try
+        aligned_spikes = aligned_spikes.aligned_spikes;
+    catch
+        aligned_spikes = aligned_spikes.SpkT;
+    end
+
 else
     Srise = [];
     Sfall = [];

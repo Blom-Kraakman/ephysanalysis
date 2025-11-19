@@ -1,11 +1,11 @@
 %% Population plotting
 % plotting of population data / further quantified such as:
-% 1. cluster selection
-% 2. channel map plotting
+% 1. Cluster selection
+% 2. Channel map plotting
 % 3. Fate level functions
 % 4. Fist spike latencies
 % 5. PSTH
-% 6. multimodal integration indexes
+% 6. Multimodal integration indexes
 % 7. CF / BF / Qvalue plotting
 
 %% ---------------------- 1. Cluster Selection ---------------------- %%
@@ -135,7 +135,9 @@ for set = 1:length(sets)
     uFreq = 0;
     uInt = unique(stimuli_parameters.Stm.AudIntensity); % sound variable
     [responsive, hval, pval] = responsiveCells(stimuli_parameters, StimResponseFiring.baselineRate, StimResponseFiring.stimulusRate, StimResponseFiring.cids, condition, uFreq,uInt);
-
+    
+    % TO DO: hval now NaN for all options
+    
     % neuronal detection thereshold
     [~,cDTindex] = max(squeeze(hval),[], 1); %position of first sig resp
     cDT(:,set) = uInt(cDTindex)'; % corresponding stim strength [cids x set]
