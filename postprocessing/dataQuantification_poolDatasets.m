@@ -7,6 +7,14 @@ function dataQuantification_poolDatasets(stimOrder, fn)
 
 for condition = 2:(size(stimOrder, 2)-1)
 
+    % skip analysis if already done
+    StimType = stimOrder.Properties.VariableNames{condition};
+    if ~isempty(dir(['\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M' '*_' StimType '_UnitResponses.mat']))
+        continue
+    end
+
+    disp(['Concatinating ' StimType])
+
     %initiate variables
     unitResponses_all = table;
     firing_mean = [];
@@ -20,8 +28,6 @@ for condition = 2:(size(stimOrder, 2)-1)
     PreT_all = [];
     PostT_all = [];
 
-    disp(['Concatinating ' stimOrder.Properties.VariableNames{condition}])
-
     % get data from session to analyse
     for animal = 1:size(stimOrder,1)
 
@@ -31,7 +37,12 @@ for condition = 2:(size(stimOrder, 2)-1)
             continue
         end
 
-        OutPath = ['D:\DATA\Processed\M' num2str(stimOrder{animal,1}, '%d') '\ICX\ResponseProperties\'];
+        if stimOrder{animal,1} == 10 || stimOrder{animal,1} == 11 ||stimOrder{animal,1} == 19 || stimOrder{animal,1} == 20
+            OutPath = ['\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M' num2str(stimOrder{animal,1}, '%d') '\ICX\ResponseProperties\'];
+        else
+            OutPath = ['\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M' num2str(stimOrder{animal,1}, '%d') '\ResponseProperties\'];
+        end
+
         sessionFile = ['M' num2str(stimOrder{animal,1}, '%.2d') '_S' num2str(stimOrder{animal,condition}, '%.2d') '_*_ResponseProperties.mat']; % select based on stimulus type '_*.mat'
         stim_files = dir(fullfile(OutPath, sessionFile));
         dataS = load([stim_files.folder '\' stim_files.name]);
@@ -70,7 +81,7 @@ for condition = 2:(size(stimOrder, 2)-1)
     newcids = sprintf( '%1d%1d ', [mice;cids]);
     unitResponses_all.Cluster = str2num(newcids)';
 
-    StimResponseFiring_all.StimType = stimOrder.Properties.VariableNames{condition};
+    StimResponseFiring_all.StimType = StimType;
     StimResponseFiring_all.MouseNum = mousenum_all;
     StimResponseFiring_all.session = session_all;
     StimResponseFiring_all.amplitudes = amplitudes_all;
@@ -87,8 +98,8 @@ for condition = 2:(size(stimOrder, 2)-1)
 
 
     % save
-    filename = sprintf('M10-11-19-20_%s_UnitResponses', stimOrder.Properties.VariableNames{condition});
-    save(fullfile('D:\DATA\Processed\', filename), "StimResponseFiring_all", "firing_mean")
+    filename = sprintf('M10-11-19-20-29-31-33_%s_UnitResponses', StimType);
+    save(fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\', filename), "StimResponseFiring_all", "firing_mean")
 
     clear firing_mean
 
