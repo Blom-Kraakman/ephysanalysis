@@ -42,7 +42,8 @@ PxA_SOM = [10 17]; % [19 32]; [10 17]; selected cids
 %% linegraph: plot broadband noise (bbn) for multiple animals
 %data_all = [StimResponseFiring_all.firing_mean(1,1,1,selected_cids_idx); StimResponseFiring_all.firing_mean(2:end,1,2,selected_cids_idx)];
 %data = squeeze(data_all(:,:,:,PxA_SOM(1):PxA_SOM(2)));
-
+cids = StimResponseFiring_all.unitResponses.Cluster;
+resp_cids_idx = ismember(cids, resp_cids);
 close all
 %uInt = unique(Stm.Intensity);
 uInt = [0 15 30 45 60];
@@ -68,23 +69,23 @@ plot(uInt, FRnoise_resp_mean, 'Color',  "#c21069", 'LineWidth', 3)
 %plot(uInt, FRnoise_nonresp_mean, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 3)
 
 % format figure
-set(gca,'fontsize',28)
+set(gca,'fontsize',16)
 ylabel('\Delta Firing rate (spikes/s)')
 xlabel('Broadband noise intensity (dB SPL)')
 xticks(uInt)
-xticklabels({'0', '15', '30', '45', '60'});
-ylim([-5 85])
-
-figname = sprintf('M10-11-19-20_noise tuning curve_%s_resp_pre', StimResponseFiring_all.StimType);
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
+xticklabels({'no sound', '15', '30', '45', '60'});
+ylim([-5 120])
+%%
+figname = sprintf('M10-11-19-20-31-33_noise tuning curve_%s_resp_pre', StimResponseFiring_all.StimType);
+saveas(gcf, fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20-31-33\figures', figname));
+saveas(gcf, fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20-31-33\figures', [figname '.jpg']));
 
 %% ----------- Mean firing rate bbn intensity ----------- %%
 
 % unit selection
 cids = StimResponseFiring_all.unitResponses.Cluster;
 %resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
-resp_cids = [19153,19265,19296,20277,20290,20303,20306];
+%resp_cids = [19153,19265,19296,20277,20290,20303,20306];
 
 index = ismember(cids, resp_cids);
 
@@ -121,13 +122,13 @@ ylim([-2 90])
 hold off;
 
 
-%% Evaluate effectiveness earplugs
+%% Evaluate effectiveness earplugs - 1 mouse
 
 % load data
 sets = [2 6 10]; % pre - plug - post
 
 % load data from 3 PxA sessions
-for set = 1:length(sets)
+for stimset = 1:length(sets)
     [~, stimuli_parameters, ~, ~, ~, ~, ~, StimResponseFiring, ~] = loadData(OutPath, sets(set), BehaviorPath);
 
     % get threshold per unit
@@ -137,17 +138,17 @@ for set = 1:length(sets)
 
     % neuronal detection thereshold
     [~,cDTindex] = max(hval,[], 1); %position of first sig resp
-    cDT(:,set) = uInt(cDTindex)'; % corresponding stim strength [cids x set]
+    cDT(:,stimset) = uInt(cDTindex)'; % corresponding stim strength [cids x set]
 
     % select dFR data
     tdata = NaN(size(StimResponseFiring.firing_mean, 1), 1, size(StimResponseFiring.firing_mean, 4)); % initiate data and fill
     tdata(1,1,:) = StimResponseFiring.firing_mean(1,1,1,:); % control
     tdata(2:end, 1, :) = StimResponseFiring.firing_mean(2:end,1,2,:); % sound only
-    data(:,:,set) = squeeze(tdata); % ints x clusters x sets
+    data(:,:,stimset) = squeeze(tdata); % ints x clusters x sets
 end
 
 
-%% plotting part
+% plotting part
 % plot dFR
 % variables
 uInt = StimResponseFiring.frequencies(:,end);
@@ -157,9 +158,9 @@ ymin = min(min(min(data)))*1.1;
 
 figure;
 % Customize axes and labels
-for set = 1:length(sets)
-    subplot(1,3,set)
-    plot(uInt, data(:,:,set), 'k-o')
+for stimset = 1:length(sets)
+    subplot(1,3,stimset)
+    plot(uInt, data(:,:,stimset), 'k-o')
     xticks(uInt);
     xticklabels({'no sound', '15', '30', '45', '60'})
     ylim([ymin ymax])
@@ -168,25 +169,104 @@ end
 xlabel('Broadband noise intensity (dB SPL)');
 ylabel('\Delta Firing rate (spikes/s)');
 
-%% plot neuronal detection threshold level
-figure; hold on
-colors = ['k' 'k' 'k' 'k' 'k' 'k' 'k' 'r' 'k' 'k' 'g' 'k' 'b' 'k' 'c'];
-for cluster = 1:size(cDT)
-    plot(1:length(sets), cDT(cluster,:), '-o', 'Color', colors(cluster))
+%% %% Evaluate effectiveness earplugs - all mice
+
+% load data
+OutPath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20-31-33';
+sets = {'pre' 'plug' 'post'};
+
+fileName = ['\M10-11-19-20-31-33_PxA_*' sets{1} '_*.mat'];
+stim_files = dir(fullfile(OutPath, fileName));
+load([stim_files.folder '\' stim_files.name]);
+
+% initiate variable
+cDT = NaN(size(StimResponseFiring_all.unitResponses, 1),length(sets));
+
+% load data from 3 PxA sessions
+for stimset = 1:length(sets)
+
+    %load data
+    fileName = ['\M10-11-19-20-31-33_PxA_*' sets{stimset} '_*.mat'];
+    stim_files = dir(fullfile(OutPath, fileName));
+    load([stim_files.folder '\' stim_files.name]);
+
+    % get threshold per unit
+    uInt = unique(StimResponseFiring_all.frequencies); % sound variable
+    uInt(1) = 100; % redo int
+    hval = squeeze(StimResponseFiring_all.hvalue(:,1,:)); % 'OA'
+
+    % neuronal detection thereshold
+    [~,cDTindex] = max(hval,[], 1); %position of first sig resp
+    cDT(:,stimset) = uInt(cDTindex)'; % corresponding stim strength [cids x set]
+
+    % select dFR data
+    tdata = NaN(size(StimResponseFiring_all.firing_mean, 1), 1, size(StimResponseFiring_all.firing_mean, 4)); % initiate data and fill
+    tdata(1,1,:) = StimResponseFiring_all.firing_mean(1,1,1,:); % control
+    tdata(2:end, 1, :) = StimResponseFiring_all.firing_mean(2:end,1,2,:); % sound only
+    data(:,:,stimset) = squeeze(tdata); % ints x clusters x sets
 end
-legend
+
+
+% plotting part
+% plot dFR
+% variables
+uInt = StimResponseFiring_all.frequencies(:,end);
+uInt(1) = 0;
+ymax = max(max(max(data)))*1.1;
+ymin = min(min(min(data)))*1.1;
+
+figure;
+% Customize axes and labels
+for stimset = 1:3
+    subplot(1,3,stimset)
+    plot(uInt, data(:,:,stimset), 'k-o')
+    xticks(uInt);
+    xticklabels({'no sound', '15', '30', '45', '60'})
+    ylim([ymin ymax])
+end
+
+fontsize(16, 'points')
+subplot(1,3,1)
+ylabel('\Delta Firing rate (spikes/s)');
+title('ears open')
+
+subplot(1,3,2)
+xlabel('Broadband noise intensity (dB SPL)');
+title('ears plugged')
+
+subplot(1,3,3)
+title('ears re-opened')
+
+%% plot neuronal detection threshold level
+fig = figure(); hold on;
+
+% unit selection
+cids = StimResponseFiring_all.unitResponses.Cluster;
+index = ismember(cids, resp_cids);
+
+xvals = repmat(1:length(sets), length(cids), 1);
+xjittered = xvals + 0.3 * (rand(length(cids), length(sets)) - 0.5);
+
+% plot each cluster separately
+for cluster = 1:length(cids)
+    if index(cluster)
+        plot(xjittered(cluster,:), cDT(cluster,:), 'r-o') % responsive unit
+    else
+        plot(xjittered(cluster,:), cDT(cluster,:), 'k-o') % non-responsive unit
+    end
+end
 
 % Customize axes and labels
 ylabel('neuronal detection threshold (dB SPL)');
-yticks(1:length(uInt));
-yticklabels({'no sound', '15', '30', '45', '60'})
-xlabel('session');
+yticks(uInt);
+%yticklabels({'no sound', '15', '30', '45', '60'})
 xticks(1:length(sets))
-xticklabels(sets)
-legend(num2str(StimResponseFiring.cids'))
-ylim([10 70])
+xticklabels({'ears open', 'ears plugged', 'ears re-opened'})
+fontsize(fig, 16, 'points')
+%legend(num2str(StimResponseFiring.cids'))
+%legend({'Responsive units','Non-responsive units'});
+ylim([0 70])
 hold off;
-
 
 %% 3.2 pressure
 %% linegraph: single unit pressure
@@ -218,9 +298,9 @@ xlabel('Stimulus strength (mN)')
 %saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
 
 %% linegraph: pressure rate level function
-vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
-pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
-resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
+%vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
+%pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
+%resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
 
 % select units to analyse
 clusters_to_plot = resp_cids;
@@ -238,7 +318,7 @@ data = [control, pressure]; % cids x namp
 FRpressure_resp_mean = mean(data(:,:), 'omitnan');
 
 % plot figure
-figure;
+figure('position', [895,159,562,724]);
 hold on
 plot(umN, data, 'Color',  "#44AA99", 'LineWidth', 1)
 plot(umN, FRpressure_resp_mean, 'Color',  "#267165", 'LineWidth', 4)
@@ -248,14 +328,15 @@ plot(umN, FRpressure_resp_mean, 'Color',  "#267165", 'LineWidth', 4)
 % format figure
 %xlim([0 umN(nmN)]);
 xticks(umN)
-ylim([-3 30])
-set(gca,'fontsize', 28)
+ylim([-3 40])
+set(gca,'fontsize', 20)
 ylabel('\Delta Firing rate (spikes/s)')
 xlabel('Stimulus strength (mN)')
+%%
 
-figname = sprintf('M10-11-19-20_pressure tuning curve_%s_resp', StimResponseFiring_all.StimType);
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', figname));
-saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
+figname = sprintf('M10-11-19-20-31-33_pressure tuning curve_%s_resp', StimResponseFiring_all.StimType);
+saveas(gcf, fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20-31-33\figures', figname));
+saveas(gcf, fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20-31-33\figures', [figname '.jpg']));
 
 hold off
 
@@ -321,12 +402,11 @@ xticks([0 10 20 50 100 200 400])
 ax.XScale = 'log';
 
 %% linegraph: vibrotac tuning curve
-vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
-pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
-resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
+% vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
+% pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
+% resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
 
 % select units to analyse
-clusters_to_plot = resp_cids;
 clusters_to_plot_idx = ismember(StimResponseFiring_all.unitResponses.Cluster, resp_cids);
 
 % variables
@@ -345,7 +425,7 @@ FRpressure_resp_mean = mean(data(:,:), 'omitnan');
 %plot(uFreq, FRvibrotac_mean_selec, 'Color',  "#3FA2D4", 'LineWidth', 3)
 
 % plot figure
-figure;
+figure('position', [680,175,581,703]);
 hold on
 plot(uFreq, data(:,:), 'Color',  "#8BC9E8", 'LineWidth', 1)
 plot(uFreq, FRpressure_resp_mean, 'Color',  "#3FA2D4", 'LineWidth', 4)
@@ -355,11 +435,18 @@ plot(uFreq, FRpressure_resp_mean, 'Color',  "#3FA2D4", 'LineWidth', 4)
 % format figure
 %xlim([0 umN(nmN)]);
 xticks(uFreq)
-ylim([-3 55])
-set(gca,'fontsize', 28)
+ylim([-3 70])
+set(gca,'fontsize', 16)
 ylabel('\Delta Firing rate (spikes/s)')
 xlabel('Stimulus frequency (Hz)')
 
+%%
+
+figname = sprintf('M10-11-19-20-31-33_vibrotactile tuning curve_%s_resp', StimResponseFiring_all.StimType);
+saveas(gcf, fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20-31-33\figures', figname));
+saveas(gcf, fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20-31-33\figures', [figname '.jpg']));
+
+hold off
 %% linegraph: vibrotactile rate level function
 
 % variables
@@ -434,9 +521,9 @@ hold off
 % line graph for all units
 
 % unit selection
-cids = StimResponseFiring_all.unitResponses.Cluster;
+%cids = StimResponseFiring_all.unitResponses.Cluster;
 %resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
-resp_cids = [19153,19265,19296,20277,20290,20303,20306];
+%resp_cids = [19153,19265,19296,20277,20290,20303,20306];
 
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
@@ -470,7 +557,6 @@ colors = ([0 0 0;...
     0.42745098039215684	0.27450980392156865	0.6313725490196078; ...
     0.24705882352941178	0.1568627450980392	0.3058823529411765]); % Distinct colors for each line
 
-
 for i = 1:length(uInt)
     % Plot mean line
     plot(umN, fr_median(i,:), '-o', ...
@@ -485,7 +571,6 @@ for i = 1:length(uInt)
     %     swarmchart(repmat(umN(j), size(y)), y, 20, colors(i,:), 'filled', 'XJitterWidth', 0.4);
     % end
 end
-
 
 % Customize axes and labels
 xlabel('Pressure intensity (mN)');
@@ -638,9 +723,9 @@ hold off;
 % line graph
 
 % unit selection
-cids = StimResponseFiring_all.unitResponses.Cluster;
+%cids = StimResponseFiring_all.unitResponses.Cluster;
 %resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
-resp_cids = [19153,19265,19296,20277,20290,20303,20306];
+%resp_cids = [19153,19265,19296,20277,20290,20303,20306];
 
 index = ismember(cids, resp_cids);
 
@@ -692,8 +777,8 @@ hold off;
 %vibrotac_resp_units = StimResponseFiring.unitResponses.SO;
 %multi_resp_units = (StimResponseFiring.unitResponses.SA) | (StimResponseFiring.unitResponses.OA & StimResponseFiring.unitResponses.SO);
 %resp_units = [276, 277, 290, 303, 306];
-cids = StimResponseFiring_all.unitResponses.Cluster;
-resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
+%cids = StimResponseFiring_all.unitResponses.Cluster;
+%resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Select data to plot
@@ -805,8 +890,8 @@ hold off;
 %% ----------- FSL pressure line --------------%%
 
 % unit selection
-cids = StimResponseFiring_all.unitResponses.Cluster;
-resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
+%cids = StimResponseFiring_all.unitResponses.Cluster;
+%resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Select data to plot
