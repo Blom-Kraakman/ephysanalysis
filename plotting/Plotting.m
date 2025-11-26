@@ -12,9 +12,7 @@
 % cluster ID of different cell groups
 
 % selected responsive units
-vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
-pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
-resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
+resp_cids = singleUnits(); % vibrotac and/or pressure responsive, exclusively with earplug
 
 % selection all vibrotactile responsive units: vibrotac and/or pressure responsive, not exclusively with earplug
 selected_cids = [10121 10328 10330 10334 10382 10386 10400 10421 10423 10441 10457 11210 11212 11217 11247 11257 11259 11263 1939 1990 19153 19265 19287 19296 2046 20225 20276 20277 20287 20290 20303 20306]'; 
@@ -84,9 +82,6 @@ saveas(gcf, fullfile('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedDa
 
 % unit selection
 cids = StimResponseFiring_all.unitResponses.Cluster;
-%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
-%resp_cids = [19153,19265,19296,20277,20290,20303,20306];
-
 index = ismember(cids, resp_cids);
 
 % variables
@@ -298,12 +293,8 @@ xlabel('Stimulus strength (mN)')
 %saveas(gcf, fullfile('D:\DATA\Processed\M10-11-19-20\figures', [figname '.jpg']));
 
 %% linegraph: pressure rate level function
-%vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
-%pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
-%resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
 
 % select units to analyse
-clusters_to_plot = resp_cids;
 clusters_to_plot_idx = ismember(StimResponseFiring_all.unitResponses.Cluster, resp_cids);
 
 % variables
@@ -402,9 +393,6 @@ xticks([0 10 20 50 100 200 400])
 ax.XScale = 'log';
 
 %% linegraph: vibrotac tuning curve
-% vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
-% pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
-% resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
 
 % select units to analyse
 clusters_to_plot_idx = ismember(StimResponseFiring_all.unitResponses.Cluster, resp_cids);
@@ -521,10 +509,6 @@ hold off
 % line graph for all units
 
 % unit selection
-%cids = StimResponseFiring_all.unitResponses.Cluster;
-%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
-%resp_cids = [19153,19265,19296,20277,20290,20303,20306];
-
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % variables
@@ -620,12 +604,9 @@ end
 %[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring, clusterinfo] = loadData(OutPath, session, BehaviorPath);
 
 %responsive units
-%sound_resp_units = StimResponseFiring.unitResponses.OA;
-%vibrotac_resp_units = StimResponseFiring.unitResponses.SO;
-%multi_resp_units = (StimResponseFiring.unitResponses.SA) | (StimResponseFiring.unitResponses.OA & StimResponseFiring.unitResponses.SO);
-%resp_units = [276, 277, 290, 303, 306];
 resp_index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 index(:) = 1;
+
 % Initialize the figure
 figure;
 
@@ -723,10 +704,6 @@ hold off;
 % line graph
 
 % unit selection
-%cids = StimResponseFiring_all.unitResponses.Cluster;
-%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
-%resp_cids = [19153,19265,19296,20277,20290,20303,20306];
-
 index = ismember(cids, resp_cids);
 
 % variables
@@ -772,13 +749,6 @@ hold off;
 
 %[cids, stimuli_parameters, aligned_spikes, Srise, Sfall, sessions_TTLs, onsetDelay, StimResponseFiring, clusterinfo] = loadData(OutPath, session, BehaviorPath);
 
-%responsive units
-%sound_resp_units = StimResponseFiring.unitResponses.OA;
-%vibrotac_resp_units = StimResponseFiring.unitResponses.SO;
-%multi_resp_units = (StimResponseFiring.unitResponses.SA) | (StimResponseFiring.unitResponses.OA & StimResponseFiring.unitResponses.SO);
-%resp_units = [276, 277, 290, 303, 306];
-%cids = StimResponseFiring_all.unitResponses.Cluster;
-%resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Select data to plot
@@ -890,8 +860,6 @@ hold off;
 %% ----------- FSL pressure line --------------%%
 
 % unit selection
-%cids = StimResponseFiring_all.unitResponses.Cluster;
-%resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Select data to plot
@@ -933,7 +901,6 @@ yticklabels(logYTicks);
 
 % Select responsive units
 cids = StimResponseFiring_all.unitResponses.Cluster;
-resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Define stimulation frequencies
@@ -1002,12 +969,7 @@ hold off;
 % heatmaps & line graph per unit
 
 %responsive units
-%sound_resp_units = StimResponseFiring.unitResponses.OA;
-%vibrotac_resp_units = StimResponseFiring.unitResponses.SO;
-%multi_resp_units = (StimResponseFiring.unitResponses.SA) | (StimResponseFiring.unitResponses.OA & StimResponseFiring.unitResponses.SO);
-%resp_units = [276, 277, 290, 303, 306];
 cids = StimResponseFiring_all.unitResponses.Cluster;
-resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Replace Inf with NaN
@@ -1100,9 +1062,6 @@ title('median FSL')
 
 % unit selection
 cids = StimResponseFiring_all.unitResponses.Cluster;
-%resp_cids = [19153,19265,19287,19296,20277,20290,20303,20306];
-resp_cids = [19153,19265,19296,20277,20290,20303,20306];
-
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % variables
@@ -1164,7 +1123,6 @@ hold off;
 
 % select responsive units
 cids = StimResponseFiring_all.unitResponses.Cluster;
-resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids); %max(max(sound_resp_units, vibrotac_resp_units), multi_resp_units);
 
 % Initialize the figure
@@ -1235,7 +1193,6 @@ sgtitle('Combined Scatter Plot and Bar Graph');
 %%
 % Select responsive units
 cids = StimResponseFiring_all.unitResponses.Cluster;
-resp_cids = [10121,10334,10400,10441,10457,11212,11247,11257,11259,19153,19265,19287,19296,20277,20290,20303,20306];
 index = ismember(cids, resp_cids);
 
 % Define stimulation frequencies
@@ -1335,10 +1292,6 @@ load('\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processe
 
 savefigs = 0;
 figsavePath = '\\store\department\neuw\shared\Aaron Wong\Data\ProcessedData\Blom\Processed\M10-11-19-20';
-
-vibrotac_nosound = [10121 10334 10400 10441 10457 11212 11247 11259 19153 19265 19287 20277 20290 20303 20306]'; % vibrotac responsive, during plug
-pressure_nosound = [10400 10441 10457 11212 11257 19265 19287 19296 20277 20303 20306]'; % pressure responsive, during plug
-resp_cids = unique([vibrotac_nosound; pressure_nosound]); % vibrotac and/or pressure responsive, exclusively with earplug
 
 % select units to analyse
 clusters_to_plot_idx = ismember(StimResponseFiring_all.unitResponses.Cluster, resp_cids);
