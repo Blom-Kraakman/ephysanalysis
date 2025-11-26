@@ -304,7 +304,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && length(str2num(stimuli_parameter
             Var = [stimuli_parameters.Stm.Var25, stimuli_parameters.Stm.SomFreq, stimuli_parameters.Stm.Amplitude];
             raster_yinc = [5,10,10];
             % yaxislabels = unique(stimuli_parameters.Stm.SomFreq);
-            yaxislabels = {'Control', 'Vibrotactile only', 'Vibrotactile + noise' 'Noise only'};
+            yaxislabels = {'Control', 'Noise only', 'Vibrotactile only', 'Vibrotactile + noise'};
             yaxistext = '';
 
             % add delay to "SO","OO" if needed
@@ -366,7 +366,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
         ax = subplot(1,2,1); % Make bbn rasterplot
 
         % define stimulus variable space
-        index = stimuli_parameters.Stm.Var25 == 2; % OA
+        index = (stimuli_parameters.Stm.Var25 == 2 | stimuli_parameters.Stm.Var25 == 1); % OA & OO
         Var = stimuli_parameters.Stm.AudIntensity(index);
         yaxislabels = unique(stimuli_parameters.Stm.AudIntensity);
         yaxistext = 'Noise intensity (dB SPL)';
@@ -390,7 +390,7 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
         ax = subplot(1,2,2); % Make somatosensory rasterplot
 
         % define stimulus variable space
-        index = stimuli_parameters.Stm.Var25 == 3; % SO
+        index = (stimuli_parameters.Stm.Var25 == 3| stimuli_parameters.Stm.Var25 == 1); % SO & OO
         Var = stimuli_parameters.Stm.Amplitude(index);
         yaxislabels = round(unique(stimuli_parameters.Stm.Amplitude) * 1000 * 0.158); % [0 2 5 10 15 20 30 40 50];
         yaxistext = 'Pressure (mN)';
@@ -428,7 +428,6 @@ if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.So
 end
 
 % plot pressure SxA Square: multimodal trials with multiple stim onset delays
-
 if strcmp(stimuli_parameters.Par.Rec, 'SxA') && strcmp(stimuli_parameters.Par.SomatosensoryWaveform, 'Square') && length(str2num(stimuli_parameters.Par.SomAudSOA)) > 2
 
     SOAdelays = str2num(stimuli_parameters.Par.SomAudSOA); % +: sound leading, -: som leading
